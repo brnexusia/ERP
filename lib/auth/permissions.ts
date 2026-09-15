@@ -15,8 +15,9 @@ export type Permission =
   | "integrations:manage";
 
 export class PermissionDeniedError extends Error {
-  constructor(permission: Permission) {
-    super(`Permissão negada: ${permission}`);
+  constructor(permission: Permission | readonly Permission[]) {
+    const required = Array.isArray(permission) ? permission.join(" ou ") : permission;
+    super(`Permissão negada: ${required}`);
     this.name = "PermissionDeniedError";
   }
 }
@@ -73,5 +74,14 @@ export function hasPermission(role: MembershipRole, permission: Permission): boo
 export function assertPermission(role: MembershipRole, permission: Permission): void {
   if (!hasPermission(role, permission)) {
     throw new PermissionDeniedError(permission);
+  }
+}
+
+export function assertAnyPermission(
+  role: MembershipRole,
+  permissions: readonly Permission[],
+): void {
+  if (!permissions.some((permission) => hasPermission(role, permission))) {
+    throw new PermissionDeniedError(permissions);
   }
 }
