@@ -1,7 +1,17 @@
+import { OrganizationSwitcher } from "@/app/organization-switcher";
+import { db } from "@/lib/db";
 import { requireTenantContext } from "@/lib/tenant";
 
 export default async function HomePage() {
   const session = await requireTenantContext();
+  const memberships = await db.membership.findMany({
+    where: {
+      userId: session.userId,
+      organization: { status: "ACTIVE" },
+    },
+    include: { organization: true },
+    orderBy: { createdAt: "asc" },
+  });
 
   return (
     <main className="foundation-shell">
@@ -37,6 +47,14 @@ export default async function HomePage() {
             <dd>Progresso 1 — Em construção</dd>
           </div>
         </dl>
+
+        <OrganizationSwitcher
+          activeOrganizationId={session.organizationId}
+          organizations={memberships.map((membership) => ({
+            id: membership.organization.id,
+            name: membership.organization.name,
+          }))}
+        />
       </section>
     </main>
   );
