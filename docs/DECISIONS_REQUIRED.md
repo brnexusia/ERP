@@ -187,16 +187,19 @@ Uma integração não será marcada como conectada apenas por possuir configura�
 
 **Fonte funcional:** domínio próprio e preparação para acesso adicional de compra/assinatura quando comercializado.
 
-**Já existe:** arquitetura multiempresa, isolamento, autenticação, permissões, configuração por empresa, backup/restore e base para provisionamento futuro.
+**Já existe:** arquitetura multiempresa, isolamento, autenticação, permissões, configuração por empresa, backup/restore, gestão tenant-scoped de usuários e provisionamento técnico controlado de nova organização + primeiro `OWNER`. O provisionamento é transacional, auditado e possui teste de isolamento/autenticação.
 
-**Falta definir:**
+**Continua faltando definir:**
 - domínio final;
 - DNS/TLS e VPS/ambiente de produção definitivo;
 - modelo de contratação;
 - planos/assinaturas;
 - cobrança;
-- provisionamento automático de novas organizações;
-- suspensão/cancelamento e ciclo de vida da assinatura.
+- gatilho comercial que chamará o provisionamento após compra/assinatura;
+- suspensão/cancelamento e ciclo de vida da assinatura;
+- política para vincular automaticamente usuários já existentes em contratações futuras.
+
+O provisionamento técnico já existente não deve ser confundido com contratação automática. Enquanto planos, cobrança e ciclo de vida não forem aprovados, nenhuma rota pública de auto-cadastro/checkout será criada por suposição.
 
 ---
 
