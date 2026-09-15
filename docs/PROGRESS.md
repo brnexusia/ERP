@@ -21,7 +21,7 @@ Estados permitidos:
 | 8 | Pagamentos e entrega | 🟡 Em construção |
 | 9 | Vendedoras, metas e comissões | 🟡 Em construção |
 | 10 | Relatórios e dashboards | 🟡 Em construção |
-| 11 | Financeiro | ⬜ Não iniciado |
+| 11 | Financeiro | 🟡 Em construção |
 | 12 | Promoções e catálogo | 🟡 Em construção |
 | 13 | Integrações | ⬜ Não iniciado |
 | 14 | Preparação como produto | ⬜ Não iniciado |
@@ -244,6 +244,32 @@ Backend de indicadores comerciais já iniciado:
 ### Evidência
 
 O run 95 (`35034723144`) concluiu migrations, seed, isolamento, typecheck, build e todos os smoke tests em sucesso, incluindo perfil comercial, categoria predominante, histórico de pagamento, alerta de inatividade, faturamento, ticket médio, canal e performance por vendedora.
+
+## Progresso 11 — Financeiro 🟡
+
+Base funcional da Etapa 4 implementada no servidor:
+
+- [x] Contas a receber derivadas dos pagamentos reais vinculados às vendas, sem duplicar a origem comercial.
+- [x] Situação pendente/recebida e vencimento disponíveis nas contas a receber.
+- [x] Contas a pagar com descrição, valor, vencimento, situação e data efetiva de pagamento.
+- [x] Baixa de conta a pagar auditada.
+- [x] Fluxo de caixa realizado calcula entradas recebidas e saídas efetivamente pagas.
+- [x] Fluxo de caixa aceita filtro por período.
+- [x] Conciliação bancária com lançamento de crédito/débito e vínculo ao recebimento ou pagamento correspondente.
+- [x] Conciliação aceita composição parcial e impede que o valor conciliado ultrapasse o lançamento bancário ou a origem financeira.
+- [x] Crédito bancário só pode ser conciliado com recebimento; débito bancário só pode ser conciliado com conta paga.
+- [x] Relatório financeiro consolida contas a receber pendentes/vencidas, contas a pagar pendentes/vencidas, entradas, saídas, saldo líquido e conciliações.
+- [x] Permissões `finance:read` e `finance:write` aplicadas.
+- [x] Regras críticas de valor/estado protegidas também por constraints no PostgreSQL.
+- [x] Auditoria financeira e isolamento multiempresa validados.
+- [ ] Interface financeira conforme o design system do Stitch.
+- [ ] Importação/sincronização automática de extrato bancário depende da integração bancária que vier a ser definida; o documento exige conciliação, mas não especifica instituição, protocolo ou provedor.
+
+As contas a receber usam os registros reais de pagamento do fluxo comercial como fonte, evitando uma segunda verdade financeira. A conciliação implementada é funcional e manual; nenhum mecanismo de matching automático ou integração bancária foi presumido porque isso não está definido no documento-fonte.
+
+### Evidência
+
+O run 121 (`35035950290`) concluiu migration financeira, validação do Prisma, seed, isolamento multiempresa, typecheck, build e todos os smoke tests em sucesso. O smoke financeiro valida conta a receber real, criação/baixa de conta a pagar, fluxo de caixa, conciliação de crédito e débito, bloqueio de conciliação incompatível, relatório consolidado, auditoria e isolamento cross-tenant.
 
 ## Progresso 12 — Promoções e catálogo 🟡
 
