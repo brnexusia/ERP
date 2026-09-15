@@ -27,6 +27,10 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://erp:erp@localhost:5432/erp_pedro?schema=public
+      SEED_ADMIN_EMAIL: ci-admin@example.test
+      SEED_ADMIN_PASSWORD: ci-password-123
+      SEED_ORG_NAME: Pedro CI
+      SEED_ORG_SLUG: pedro-ci
 
     steps:
       - name: Checkout
@@ -49,8 +53,11 @@ jobs:
       - name: Validate Prisma schema
         run: pnpm exec prisma validate
 
-      - name: Provision test database
-        run: pnpm db:push
+      - name: Apply committed migrations
+        run: pnpm db:deploy
+
+      - name: Seed first tenant and administrator
+        run: pnpm db:seed
 
       - name: Verify tenant isolation and permissions
         run: pnpm test:foundation
