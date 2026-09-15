@@ -147,10 +147,12 @@ O catálogo é construído diretamente a partir dos produtos cadastrados, sem du
 - [x] Produto em estoque baixo identificado automaticamente quando quantidade atual <= mínimo.
 - [x] Endpoint dedicado de estoque baixo por empresa.
 - [x] Categorias predominantes calculadas a partir das compras pagas de cada cliente.
-- [ ] Identificação/alerta de produtos com baixa saída.
-- [ ] Curva ABC por importância, faturamento e giro.
+- [x] Base factual por produto com quantidade vendida, faturamento, quantidade de vendas pagas, última venda e posição atual de estoque.
+- [x] Métricas de produto aceitam filtro por período e usam somente vendas efetivamente pagas.
+- [ ] Identificação/alerta automático de produtos com baixa saída.
+- [ ] Curva ABC classificada por importância, faturamento e giro.
 
-Baixa saída e Curva ABC permanecem sem classificação automática porque o documento não define janela, limiar nem faixas A/B/C. Os dados reais de vendas já existem para aplicar a regra assim que ela estiver definida, sem inventar critérios.
+Baixa saída e Curva ABC permanecem sem classificação automática porque o documento não define janela, limiar nem faixas A/B/C. A base factual necessária já existe; nenhuma classe ou alerta é inventado sem critério aprovado.
 
 ## Progresso 7 — Fluxo comercial 🟡
 
@@ -233,6 +235,7 @@ Backend de indicadores comerciais já iniciado:
 - [x] Quantidade de clientes únicos atendidos por vendedora.
 - [x] Perfil do cliente com total comprado, quantidade de compras, primeira e última compra.
 - [x] Cliente identificado como novo, recorrente ou sem compra registrada a partir do histórico efetivo.
+- [x] Ranking factual de clientes por valor comprado, com quantidade de compras, primeira e última compra.
 - [x] Formas de pagamento utilizadas por cliente.
 - [x] Categorias predominantes por cliente.
 - [x] Filtro de período por data inicial/final na API comercial.
@@ -243,7 +246,7 @@ Backend de indicadores comerciais já iniciado:
 
 ### Evidência
 
-O run 95 (`35034723144`) concluiu migrations, seed, isolamento, typecheck, build e todos os smoke tests em sucesso, incluindo perfil comercial, categoria predominante, histórico de pagamento, alerta de inatividade, faturamento, ticket médio, canal e performance por vendedora.
+O run 138 (`35036847098`) concluiu migrations, seed, isolamento, typecheck, build e todos os smoke tests em sucesso. Além dos indicadores anteriores, a suíte agora valida métricas factuais de produto e o ranking de clientes por valor efetivamente comprado.
 
 ## Progresso 11 — Financeiro 🟡
 
