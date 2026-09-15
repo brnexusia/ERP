@@ -16,7 +16,8 @@
     "db:studio": "prisma studio",
     "test:foundation": "tsx scripts/verify-foundation.ts",
     "test:smoke-auth": "tsx scripts/smoke-auth.ts",
-    "test:smoke-client-management": "tsx scripts/smoke-client-management.ts"
+    "test:smoke-client-management": "tsx scripts/smoke-client-management.ts",
+    "test:smoke-products": "tsx scripts/smoke-products.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
