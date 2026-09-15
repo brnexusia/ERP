@@ -15,14 +15,14 @@ Estados permitidos:
 | 2 | Design system + estrutura visual | 🟡 Em construção |
 | 3 | Gestão de Clientes | 🟡 Em construção |
 | 4 | Crédito, Vale e CRM | 🟡 Em construção |
-| 5 | Produtos e estrutura de estoque | ⬜ Não iniciado |
-| 6 | Estoque inteligente | ⬜ Não iniciado |
+| 5 | Produtos e estrutura de estoque | 🟡 Em construção |
+| 6 | Estoque inteligente | 🟡 Em construção |
 | 7 | Fluxo comercial | ⬜ Não iniciado |
 | 8 | Pagamentos e entrega | ⬜ Não iniciado |
 | 9 | Vendedoras, metas e comissões | ⬜ Não iniciado |
 | 10 | Relatórios e dashboards | ⬜ Não iniciado |
 | 11 | Financeiro | ⬜ Não iniciado |
-| 12 | Promoções e catálogo | ⬜ Não iniciado |
+| 12 | Promoções e catálogo | 🟡 Em construção |
 | 13 | Integrações | ⬜ Não iniciado |
 | 14 | Preparação como produto | ⬜ Não iniciado |
 | 15 | Homologação final | ⬜ Não iniciado |
@@ -144,3 +144,65 @@ O run 51 (`35028235609`) concluiu em sucesso com migrations, seed, isolamento mu
 ### Critério de fechamento do Progresso 4
 
 Só vira ✅ quando as interfaces correspondentes estiverem fiéis ao Stitch e o alerta de inatividade estiver consumindo o histórico real de compras do fluxo comercial.
+
+## Progresso 5 — Produtos e estrutura de estoque 🟡
+
+Base funcional da Etapa 3 implementada no servidor:
+
+- [x] Cadastro de produto isolado por empresa.
+- [x] Nome.
+- [x] SKU único dentro da empresa.
+- [x] Código de barras, também protegido contra duplicidade dentro da empresa.
+- [x] Categoria e subcategoria em dois níveis.
+- [x] Marca/fabricante.
+- [x] Descrição detalhada.
+- [x] Atributos técnicos estruturados.
+- [x] Fotos de produto.
+- [x] Foto pode ser identificada por variação.
+- [x] Preço de custo com precisão decimal.
+- [x] Preço de venda com precisão decimal.
+- [x] Unidade de medida.
+- [x] Consulta, listagem e atualização de produtos por API.
+- [x] Estoque atual, mínimo e máximo por produto.
+- [x] Validação de estoque máximo maior ou igual ao mínimo.
+- [x] Quantidades e preços não negativos protegidos no PostgreSQL.
+- [x] Auditoria de cadastro, atualização e estoque.
+- [x] Permissões `inventory:read` e `inventory:write` aplicadas.
+- [x] Isolamento multiempresa de produtos validado por smoke test.
+- [ ] Interface de Produtos & Estoque conforme Stitch.
+
+### Catálogo automático já conectado
+
+O catálogo é construído diretamente a partir dos produtos cadastrados, sem cadastro duplicado. Já existe token público compartilhável e endpoint público que retorna dados de catálogo. O preço de custo é deliberadamente excluído da saída pública. A página visual de catálogo compartilhável permanece pendente até o design system estar disponível, para não criar uma interface que conflite com a diretriz visual obrigatória.
+
+### Evidência atual
+
+O run 70 (`35033845833`) terminou com migrations, validação do Prisma, isolamento, typecheck, build e smoke tests em sucesso. O smoke de produtos valida categoria/subcategoria, cadastro completo, fotos e variação, SKU único, estoque baixo, atualização de quantidade, catálogo público e isolamento entre empresas.
+
+### Critério de fechamento do Progresso 5
+
+Só vira ✅ quando a interface Produtos & Estoque estiver fiel ao Stitch e o fluxo de mídia/fotos tiver a experiência final de servidor definida na interface aprovada.
+
+## Progresso 6 — Estoque inteligente 🟡
+
+- [x] Estoque mínimo e máximo definidos por produto.
+- [x] Produto em estoque baixo é identificado automaticamente quando a quantidade atual atinge ou fica abaixo do mínimo.
+- [x] Endpoint dedicado lista produtos em estoque baixo por empresa.
+- [ ] Identificação de produtos com baixa saída.
+- [ ] Curva ABC por importância, faturamento e giro.
+- [ ] Análise de categorias predominantes no histórico de compra de cada cliente.
+
+### Dependência controlada de vendas
+
+Baixa saída, Curva ABC e análise por categoria exigem dados reais de vendas, faturamento, quantidade e histórico de compra. Esses indicadores não serão simulados. Serão calculados sobre o fluxo comercial central quando o Progresso 7 registrar pedidos e itens vendidos.
+
+## Progresso 12 — Promoções e catálogo 🟡
+
+- [x] Fonte de catálogo automático é o cadastro real de produtos.
+- [x] Link/token público de catálogo criado sem duplicação de dados.
+- [ ] Página visual pública conforme design system aprovado.
+- [ ] Regras de descontos progressivos por quantidade, categoria ou volume.
+- [ ] Exemplo operacional de preço diferenciado por dúzia fechada.
+- [ ] Tabela de promoções e demais regras da Etapa 4.
+
+As regras de auto-atacado, baseadas em recompra dentro de até 3 meses, e o histórico de formas de pagamento serão conectados aos registros reais do fluxo comercial. Não serão preenchidos artificialmente antes desse histórico existir.
