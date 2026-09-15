@@ -64,6 +64,19 @@ enum PaymentStatus {
   PAID
 }
 
+enum SupportKind {
+  ATTENDANCE
+  AFTER_SALES
+  COMPLAINT
+  SAC
+}
+
+enum DeliveryMethod {
+  PICKUP
+  CORREIOS
+  CARRIER
+}
+
 model Organization {
   id           String             @id @default(cuid())
   name         String
@@ -94,6 +107,8 @@ model Organization {
   sales                 Sale[]
   saleItems             SaleItem[]
   salePayments          SalePayment[]
+  supportRecords        SupportRecord[]
+  saleDeliveries        SaleDelivery[]
 }
 
 model User {
@@ -111,6 +126,7 @@ model User {
   creditMovementsCreated ClientCreditMovement[] @relation("CreditMovementCreator")
   valeMovementsCreated   ClientValeMovement[]   @relation("ValeMovementCreator")
   crmEntriesCreated      ClientCrmEntry[]        @relation("CrmEntryCreator")
+  supportRecordsCreated  SupportRecord[]         @relation("SupportRecordCreator")
 }
 
 model Membership {
@@ -196,9 +212,9 @@ model Client {
   createdAt                     DateTime           @default(now())
   updatedAt                     DateTime           @updatedAt
 
-  organization       Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization       Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   segment            ClientSegment? @relation(fields: [segmentId], references: [id], onDelete: SetNull)
-  responsibleSeller  Membership?   @relation("ClientResponsibleSeller", fields: [responsibleSellerMembershipId], references: [id], onDelete: SetNull)
+  responsibleSeller  Membership?    @relation("ClientResponsibleSeller", fields: [responsibleSellerMembershipId], references: [id], onDelete: SetNull)
   address            ClientAddress?
   creditAccount      ClientCreditAccount?
   creditMovements    ClientCreditMovement[]
@@ -206,6 +222,7 @@ model Client {
   valeMovements      ClientValeMovement[]
   crmEntries         ClientCrmEntry[]
   sales              Sale[]
+  supportRecords     SupportRecord[]
 
   @@unique([organizationId, document])
   @@index([organizationId, name])
@@ -460,11 +477,13 @@ model Sale {
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  client       Client       @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  seller       Membership   @relation("SaleSeller", fields: [sellerMembershipId], references: [id], onDelete: Restrict)
-  items        SaleItem[]
-  payments     SalePayment[]
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client         Client          @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  seller         Membership      @relation("SaleSeller", fields: [sellerMembershipId], references: [id], onDelete: Restrict)
+  items          SaleItem[]
+  payments       SalePayment[]
+  supportRecords SupportRecord[]
+  delivery       SaleDelivery?
 
   @@index([organizationId, stage, createdAt])
   @@index([organizationId, clientId, createdAt])
@@ -510,4 +529,44 @@ model SalePayment {
   @@index([organizationId, saleId, createdAt])
   @@index([organizationId, method, createdAt])
   @@index([organizationId, status, dueDate])
+}
+
+model SupportRecord {
+  id              String      @id @default(cuid())
+  organizationId  String
+  clientId        String
+  saleId          String?
+  kind            SupportKind
+  content         String
+  createdByUserId String
+  createdAt       DateTime    @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  sale         Sale?        @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  createdBy    User         @relation("SupportRecordCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, clientId, createdAt])
+  @@index([organizationId, saleId, createdAt])
+  @@index([organizationId, kind, createdAt])
+}
+
+model SaleDelivery {
+  id                String         @id @default(cuid())
+  organizationId    String
+  saleId            String         @unique
+  method            DeliveryMethod
+  pickupRegisteredAt DateTime?
+  trackingCode      String?
+  carrierName       String?
+  shipmentProofUrl  String?
+  deliveryProofUrl  String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sale         Sale         @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, method, createdAt])
+  @@index([organizationId, trackingCode])
 }
