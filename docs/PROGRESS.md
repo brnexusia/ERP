@@ -23,8 +23,8 @@ Estados permitidos:
 | 10 | Relatórios e dashboards | 🟡 Em construção |
 | 11 | Financeiro | 🟡 Em construção |
 | 12 | Promoções e catálogo | 🟡 Em construção |
-| 13 | Integrações | ⬜ Não iniciado |
-| 14 | Preparação como produto | ⬜ Não iniciado |
+| 13 | Integrações | 🟡 Em construção |
+| 14 | Preparação como produto | 🟡 Em construção |
 | 15 | Homologação final | ⬜ Não iniciado |
 
 ## Progresso 1 — Fundação do sistema ✅
@@ -281,6 +281,55 @@ O run 121 (`35035950290`) concluiu migration financeira, validação do Prisma, 
 - [ ] Exemplo operacional de preço diferenciado por dúzia fechada.
 - [ ] Tabela de promoções e demais regras da Etapa 4.
 - [ ] Regra de auto-atacado baseada em recompra dentro de até 3 meses.
+
+## Progresso 13 — Integrações 🟡
+
+A camada de configuração multiempresa das integrações previstas no escopo foi criada sem simular conectividade externa que ainda não possui contrato técnico fornecido:
+
+- [x] Registro tenant-scoped para VaxChat.
+- [x] Registro tenant-scoped para VaxLab.
+- [x] Registro tenant-scoped para GoPage.
+- [x] Registro tenant-scoped para ShopVax.
+- [x] Registro tenant-scoped para WhatsApp.
+- [x] Registro tenant-scoped para gateway de pagamento.
+- [x] Registro tenant-scoped para e-commerce.
+- [x] Chave de integração única por `empresa + provider + key`, permitindo configurações independentes entre clientes do ERP.
+- [x] Configuração pode ser habilitada/desabilitada sem ser marcada artificialmente como conectada.
+- [x] Referência de segredo é mantida no servidor e não é retornada pela API; a resposta pública informa apenas se existe segredo configurado.
+- [x] Criação/alteração auditada.
+- [x] Isolamento de configurações entre empresas validado por teste.
+- [ ] Integração operacional com GoPage.
+- [ ] Integração operacional com ShopVax.
+- [ ] Vínculo operacional completo com WhatsApp.
+- [ ] Integração operacional com gateway(s) de pagamento.
+- [ ] Integração operacional com e-commerce.
+- [ ] VaxChat/VaxLab operacionais no ERP.
+
+As chamadas reais, webhooks e sincronizações permanecem pendentes até existirem especificações técnicas, URLs, autenticação/credenciais e contratos de eventos de cada provedor. O ERP não considera uma integração conectada apenas porque sua configuração foi cadastrada.
+
+### Evidência
+
+O run 129 (`35036425320`) concluiu Prisma, todas as migrations, seed, isolamento, typecheck, build e todos os smoke tests em sucesso. O smoke de integrações valida os sete tipos previstos, não exposição de `secretRef`, upsert sem duplicação, desativação e isolamento multiempresa.
+
+## Progresso 14 — Preparação como produto 🟡
+
+A arquitetura já incorpora parte da preparação comercial prevista no documento-fonte:
+
+- [x] Estrutura multiempresa/multicliente desde a fundação.
+- [x] Isolamento de dados por empresa validado em PostgreSQL e smoke tests.
+- [x] Usuários e permissões vinculados à empresa.
+- [x] Clientes separados por empresa.
+- [x] Produtos e estoque separados por empresa.
+- [x] Vendas e histórico comercial separados por empresa.
+- [x] Financeiro separado por empresa.
+- [x] Configurações de integrações separadas por empresa.
+- [x] Troca de contexto de empresa exige membership válida.
+- [ ] Provisionamento automatizado de novas contas/clientes.
+- [ ] Fluxo de contratação/assinatura.
+- [ ] Domínio próprio de produção configurado.
+- [ ] Acesso adicional de compra/assinatura quando comercializado.
+
+Este progresso não é marcado como fechado porque a arquitetura SaaS básica existe, mas contratação, assinatura, provisionamento e domínio comercial ainda não foram definidos/configurados.
 
 ## Regras de negócio ainda não definidas no documento-fonte
 
