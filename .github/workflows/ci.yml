@@ -9,8 +9,25 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: erp
+          POSTGRES_PASSWORD: erp
+          POSTGRES_DB: erp_pedro
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U erp -d erp_pedro"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     env:
       DATABASE_URL: postgresql://erp:erp@localhost:5432/erp_pedro?schema=public
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,6 +48,15 @@ jobs:
 
       - name: Validate Prisma schema
         run: pnpm exec prisma validate
+
+      - name: Provision test database
+        run: pnpm db:push
+
+      - name: Verify tenant isolation and permissions
+        run: pnpm test:foundation
+
+      - name: Typecheck
+        run: pnpm typecheck
 
       - name: Build application
         run: pnpm build
