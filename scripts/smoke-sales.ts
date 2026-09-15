@@ -211,7 +211,7 @@ async function main() {
     assert.equal(purchases[0].stage, "PAID");
     assert.equal(purchases[0].payments.length, 2);
 
-    const saleCount = await db.sale.count({ where: { id: saleId, organizationId: organization.id } });
+    const saleCount = await db.sale.count({ where: { id: saleId!, organizationId: organization.id } });
     assert.equal(saleCount, 1, "Orçamento, pedido e pagamento devem permanecer no mesmo registro de venda.");
 
     const secondOrganization = await db.organization.create({
