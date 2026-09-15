@@ -77,6 +77,11 @@ enum DeliveryMethod {
   CARRIER
 }
 
+enum BankEntryDirection {
+  CREDIT
+  DEBIT
+}
+
 model Organization {
   id           String             @id @default(cuid())
   name         String
@@ -109,6 +114,9 @@ model Organization {
   salePayments          SalePayment[]
   supportRecords        SupportRecord[]
   saleDeliveries        SaleDelivery[]
+  accountPayables       AccountPayable[]
+  bankStatementEntries  BankStatementEntry[]
+  bankReconciliations   BankReconciliation[]
 }
 
 model User {
@@ -523,8 +531,9 @@ model SalePayment {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  sale         Sale         @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  organization    Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sale            Sale                 @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  reconciliations BankReconciliation[]
 
   @@index([organizationId, saleId, createdAt])
   @@index([organizationId, method, createdAt])
@@ -552,21 +561,77 @@ model SupportRecord {
 }
 
 model SaleDelivery {
-  id                String         @id @default(cuid())
-  organizationId    String
-  saleId            String         @unique
-  method            DeliveryMethod
+  id                 String         @id @default(cuid())
+  organizationId     String
+  saleId             String         @unique
+  method             DeliveryMethod
   pickupRegisteredAt DateTime?
-  trackingCode      String?
-  carrierName       String?
-  shipmentProofUrl  String?
-  deliveryProofUrl  String?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  trackingCode       String?
+  carrierName        String?
+  shipmentProofUrl   String?
+  deliveryProofUrl   String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   sale         Sale         @relation(fields: [saleId], references: [id], onDelete: Cascade)
 
   @@index([organizationId, method, createdAt])
   @@index([organizationId, trackingCode])
+}
+
+model AccountPayable {
+  id             String        @id @default(cuid())
+  organizationId String
+  description    String
+  amount         Decimal       @db.Decimal(14, 2)
+  dueDate        DateTime
+  status         PaymentStatus @default(PENDING)
+  paidAt         DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization    Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  reconciliations BankReconciliation[]
+
+  @@index([organizationId, status, dueDate])
+  @@index([organizationId, paidAt])
+}
+
+model BankStatementEntry {
+  id             String             @id @default(cuid())
+  organizationId String
+  direction      BankEntryDirection
+  amount         Decimal            @db.Decimal(14, 2)
+  occurredAt     DateTime
+  description    String
+  reference      String?
+  createdAt      DateTime           @default(now())
+
+  organization    Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  reconciliations BankReconciliation[]
+
+  @@index([organizationId, occurredAt])
+  @@index([organizationId, direction, occurredAt])
+  @@index([organizationId, reference])
+}
+
+model BankReconciliation {
+  id               String   @id @default(cuid())
+  organizationId   String
+  bankEntryId      String
+  salePaymentId    String?
+  accountPayableId String?
+  amount           Decimal  @db.Decimal(14, 2)
+  note             String?
+  reconciledAt     DateTime @default(now())
+
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  bankEntry      BankStatementEntry @relation(fields: [bankEntryId], references: [id], onDelete: Cascade)
+  salePayment    SalePayment?       @relation(fields: [salePaymentId], references: [id], onDelete: Cascade)
+  accountPayable AccountPayable?    @relation(fields: [accountPayableId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, bankEntryId, reconciledAt])
+  @@index([organizationId, salePaymentId, reconciledAt])
+  @@index([organizationId, accountPayableId, reconciledAt])
 }
