@@ -11,8 +11,8 @@ Estados permitidos:
 
 | # | Progresso | Estado |
 |---|---|---|
-| 1 | Fundação do sistema | 🟡 Em construção |
-| 2 | Design system + estrutura visual | ⬜ Não iniciado |
+| 1 | Fundação do sistema | ✅ Fechado |
+| 2 | Design system + estrutura visual | 🟡 Em construção |
 | 3 | Gestão de Clientes | ⬜ Não iniciado |
 | 4 | Crédito, Vale e CRM | ⬜ Não iniciado |
 | 5 | Produtos e estrutura de estoque | ⬜ Não iniciado |
@@ -27,25 +27,49 @@ Estados permitidos:
 | 14 | Preparação como produto | ⬜ Não iniciado |
 | 15 | Homologação final | ⬜ Não iniciado |
 
-## Checklist do Progresso 1
+## Progresso 1 — Fundação do sistema ✅
 
 - [x] Repositório oficial identificado e inicializado.
 - [x] Arquitetura-base documentada.
 - [x] Estratégia multiempresa definida.
 - [x] Regra de isolamento de dados definida.
 - [x] Aplicação Next.js/TypeScript criada.
-- [x] PostgreSQL local reproduzível configurado.
+- [x] PostgreSQL reproduzível configurado.
 - [x] Prisma configurado.
+- [x] Migration inicial versionada e aplicada em PostgreSQL real de CI.
 - [x] Modelos base de empresa, usuário, membership, sessão, integração e auditoria.
-- [x] Autenticação base implementada (senha + sessão persistida + logout).
+- [x] Autenticação implementada com senha scrypt e sessão persistida.
+- [x] Logout com invalidação da sessão.
 - [x] Controle de tenant e troca segura de empresa implementados.
+- [x] Matriz inicial de papéis e permissões implementada.
+- [x] Helpers de acesso tenant-scoped criados.
 - [x] Rota raiz protegida e tela provisória de login criada.
-- [ ] Instalação/build executados em ambiente do projeto.
-- [ ] Primeira migration aplicada no PostgreSQL real.
-- [ ] Seed do primeiro tenant/administrador executado.
-- [ ] Teste real de isolamento entre duas empresas.
-- [ ] Estrutura de produção/backups definida.
+- [x] Seletor provisório de empresa conectado à autorização do servidor.
+- [x] Seed do primeiro tenant/administrador executado em CI.
+- [x] Teste real de isolamento A/B entre duas empresas.
+- [x] Tentativa de troca para empresa sem membership bloqueada com 403.
+- [x] Build e typecheck executados com sucesso.
+- [x] Smoke test HTTP de login, navegação, troca de empresa e logout executado com sucesso.
+- [x] Healthcheck do banco/aplicação criado.
+- [x] Estrutura de produção, backup e recuperação documentada.
+- [x] Scripts de backup e restore do PostgreSQL criados.
 
-## Critério de fechamento do Progresso 1
+### Evidência de fechamento
 
-O marco só vira ✅ quando for possível autenticar, selecionar/operar dentro de uma empresa, navegar na estrutura-base e provar por teste que um usuário de uma empresa não acessa dados de outra.
+O workflow `ERP CI` executa PostgreSQL real em container, migration versionada, seed, teste de isolamento multiempresa, matriz de permissões, typecheck, build e smoke test HTTP da aplicação. O run 20 (`35026877272`) terminou com todos os passos em sucesso.
+
+## Progresso 2 — Design system + estrutura visual 🟡
+
+Fonte obrigatória: Stitch aprovado. O documento oficial disponível confirma que devem ser reproduzidos fielmente estrutura de páginas/sidebar, cabeçalhos, cards, dashboards, tabelas, gráficos, cores, tipografia, espaçamentos, botões, ícones, campos, filtros, modais, estados e responsividade.
+
+Telas explicitamente indicadas como já desenhadas no Stitch:
+- Dashboard Geral;
+- Clientes & CRM;
+- Produtos & Estoque;
+- design system do ERP.
+
+Regra deste progresso: não converter a tela provisória atual em design definitivo a partir de interpretação. Os valores visuais finais só entram a partir de referência suficientemente detalhada do Stitch.
+
+### Critério de fechamento do Progresso 2
+
+O marco vira ✅ quando shell global, sidebar, cabeçalho e componentes compartilhados estiverem implementados e comparados com a fonte oficial do Stitch, incluindo estados e responsividade relevantes.
