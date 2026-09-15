@@ -33,12 +33,16 @@ Estados permitidos:
 - [x] Arquitetura-base documentada.
 - [x] Estratégia multiempresa definida.
 - [x] Regra de isolamento de dados definida.
-- [ ] Aplicação Next.js/TypeScript criada.
-- [ ] PostgreSQL local reproduzível.
-- [ ] Prisma configurado.
-- [ ] Modelos base de empresa, usuário, membership e auditoria.
-- [ ] Autenticação implementada.
-- [ ] Controle de acesso implementado.
+- [x] Aplicação Next.js/TypeScript criada.
+- [x] PostgreSQL local reproduzível configurado.
+- [x] Prisma configurado.
+- [x] Modelos base de empresa, usuário, membership, sessão, integração e auditoria.
+- [x] Autenticação base implementada (senha + sessão persistida + logout).
+- [x] Controle de tenant e troca segura de empresa implementados.
+- [x] Rota raiz protegida e tela provisória de login criada.
+- [ ] Instalação/build executados em ambiente do projeto.
+- [ ] Primeira migration aplicada no PostgreSQL real.
+- [ ] Seed do primeiro tenant/administrador executado.
 - [ ] Teste real de isolamento entre duas empresas.
 - [ ] Estrutura de produção/backups definida.
 
