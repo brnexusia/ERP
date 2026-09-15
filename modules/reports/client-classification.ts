@@ -60,9 +60,11 @@ export async function getClientLifecycleClassification(context: ClientAccessCont
         ? "NEW"
         : "RECURRING";
 
-    const stoppedBuying = inactivityDays === null || lastPurchaseAt === null
-      ? false
-      : daysWithoutPurchase! >= inactivityDays;
+    const stoppedBuying = inactivityDays === null
+      ? null
+      : lastPurchaseAt === null
+        ? false
+        : daysWithoutPurchase! >= inactivityDays;
 
     return {
       client,
@@ -83,7 +85,9 @@ export async function getClientLifecycleClassification(context: ClientAccessCont
       withoutPurchase: classified.filter((entry) => entry.customerType === "NO_PURCHASE").length,
       newClients: classified.filter((entry) => entry.customerType === "NEW").length,
       recurringClients: classified.filter((entry) => entry.customerType === "RECURRING").length,
-      stoppedBuying: classified.filter((entry) => entry.stoppedBuying).length,
+      stoppedBuying: inactivityDays === null
+        ? null
+        : classified.filter((entry) => entry.stoppedBuying === true).length,
     },
     clients: classified,
     reducedPurchases: {
