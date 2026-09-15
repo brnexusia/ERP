@@ -36,7 +36,7 @@ export async function listClients(context: ClientAccessContext) {
 
   return db.client.findMany({
     where: { organizationId: context.organizationId },
-    include: { address: true },
+    include: { address: true, segment: true },
     orderBy: [{ name: "asc" }, { createdAt: "asc" }],
   });
 }
@@ -49,7 +49,7 @@ export async function getClient(context: ClientAccessContext, clientId: string) 
       id: clientId,
       organizationId: context.organizationId,
     },
-    include: { address: true },
+    include: { address: true, segment: true },
   });
 }
 
@@ -82,7 +82,7 @@ export async function createClient(context: ClientAccessContext, input: ClientCr
             },
           },
         },
-        include: { address: true },
+        include: { address: true, segment: true },
       });
 
       await tx.auditLog.create({
@@ -156,7 +156,7 @@ export async function updateClient(
               }
             : undefined,
         },
-        include: { address: true },
+        include: { address: true, segment: true },
       });
 
       await tx.auditLog.create({
