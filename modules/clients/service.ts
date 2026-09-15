@@ -31,12 +31,20 @@ function throwIfUniqueConflict(error: unknown): never {
   throw error;
 }
 
+function clientInclude() {
+  return {
+    address: true,
+    segment: true,
+    responsibleSeller: { include: { user: true } },
+  };
+}
+
 export async function listClients(context: ClientAccessContext) {
   assertPermission(context.role, "clients:read");
 
   return db.client.findMany({
     where: { organizationId: context.organizationId },
-    include: { address: true, segment: true },
+    include: clientInclude(),
     orderBy: [{ name: "asc" }, { createdAt: "asc" }],
   });
 }
@@ -49,7 +57,7 @@ export async function getClient(context: ClientAccessContext, clientId: string) 
       id: clientId,
       organizationId: context.organizationId,
     },
-    include: { address: true, segment: true },
+    include: clientInclude(),
   });
 }
 
@@ -82,7 +90,7 @@ export async function createClient(context: ClientAccessContext, input: ClientCr
             },
           },
         },
-        include: { address: true, segment: true },
+        include: clientInclude(),
       });
 
       await tx.auditLog.create({
@@ -156,7 +164,7 @@ export async function updateClient(
               }
             : undefined,
         },
-        include: { address: true, segment: true },
+        include: clientInclude(),
       });
 
       await tx.auditLog.create({
