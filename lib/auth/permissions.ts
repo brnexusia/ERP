@@ -14,6 +14,13 @@ export type Permission =
   | "reports:read"
   | "integrations:manage";
 
+export class PermissionDeniedError extends Error {
+  constructor(permission: Permission) {
+    super(`Permissão negada: ${permission}`);
+    this.name = "PermissionDeniedError";
+  }
+}
+
 const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
   OWNER: [
     "organization:manage",
@@ -65,6 +72,6 @@ export function hasPermission(role: MembershipRole, permission: Permission): boo
 
 export function assertPermission(role: MembershipRole, permission: Permission): void {
   if (!hasPermission(role, permission)) {
-    throw new Error(`Permissão negada: ${permission}`);
+    throw new PermissionDeniedError(permission);
   }
 }
