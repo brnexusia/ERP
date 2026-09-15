@@ -14,7 +14,7 @@ Estados permitidos:
 | 1 | Fundação do sistema | ✅ Fechado |
 | 2 | Design system + estrutura visual | 🟡 Em construção |
 | 3 | Gestão de Clientes | 🟡 Em construção |
-| 4 | Crédito, Vale e CRM | ⬜ Não iniciado |
+| 4 | Crédito, Vale e CRM | 🟡 Em construção |
 | 5 | Produtos e estrutura de estoque | ⬜ Não iniciado |
 | 6 | Estoque inteligente | ⬜ Não iniciado |
 | 7 | Fluxo comercial | ⬜ Não iniciado |
@@ -88,6 +88,7 @@ Base funcional implementada sem inventar o visual definitivo:
 - [x] Consulta individual por tenant.
 - [x] Cadastro de cliente.
 - [x] Atualização de cliente e endereço.
+- [x] Segmento atual exposto nas consultas de cliente.
 - [x] Auditoria de criação e atualização.
 - [x] Permissões `clients:read` e `clients:write` aplicadas.
 - [x] API bloqueia acesso cruzado entre empresas.
@@ -105,3 +106,41 @@ O run 31 (`35027529904`) concluiu com sucesso migration, seed, isolamento, typec
 ### Critério de fechamento do Progresso 3
 
 Só vira ✅ quando cadastro, consulta, edição, endereço e histórico de compras estiverem funcionais na interface fiel ao Stitch e mantiverem o isolamento multiempresa já validado no backend.
+
+## Progresso 4 — Crédito, Vale e CRM 🟡
+
+Base funcional implementada a partir do escopo oficial da Etapa 1:
+
+- [x] Segmentos/grupos são cadastrados por empresa.
+- [x] Cliente pode ser classificado em segmento/grupo da própria empresa.
+- [x] Linha de crédito por cliente com limite registrado.
+- [x] Valor utilizado mantido com precisão decimal.
+- [x] Valor disponível calculado como limite menos utilizado.
+- [x] Histórico de utilização de crédito com saldo anterior, saldo posterior, observação, usuário e data.
+- [x] Movimentação que ultrapassa o limite é bloqueada.
+- [x] Limite não pode ser reduzido abaixo do crédito já utilizado.
+- [x] Vale por cliente com saldo atual.
+- [x] Histórico de movimentações de vale com saldo anterior, saldo posterior, observação, usuário e data.
+- [x] Lançamentos de vale permitidos para perfis com escrita de clientes, incluindo vendedoras.
+- [x] Saldo de vale negativo é bloqueado.
+- [x] CRM com histórico de relacionamento, registro de atividade, conteúdo, data da ocorrência e acompanhamento futuro.
+- [x] Atividade de CRM pode receber data de follow-up e data de conclusão.
+- [x] Configuração de `X dias` de inatividade por empresa criada.
+- [x] Todas as estruturas são isoladas por empresa e auditadas.
+- [x] Regras financeiras críticas também protegidas por constraints no PostgreSQL.
+- [x] Migration, Prisma schema, typecheck e build validados.
+- [x] Smoke test HTTP real validou segmento, crédito, vale, CRM e configuração de inatividade.
+- [ ] Alerta automático de inatividade ligado ao histórico real de compras.
+- [ ] Interface final de Crédito/Vale/CRM conforme Stitch.
+
+### Dependência controlada do alerta de inatividade
+
+O documento exige alerta automático após X dias sem compra. O valor X já está configurável. A geração do alerta não será simulada com datas artificiais: ela será conectada ao histórico real de pedidos/compras quando o Progresso 7 implementar o fluxo comercial. Assim a informação de inatividade terá uma única fonte real e não haverá duplicação silenciosa de histórico.
+
+### Evidência atual
+
+O run 51 (`35028235609`) concluiu em sucesso com migrations, seed, isolamento multiempresa, typecheck, build e smoke tests HTTP de autenticação, clientes, segmentação, crédito, vale, CRM e configuração de inatividade.
+
+### Critério de fechamento do Progresso 4
+
+Só vira ✅ quando as interfaces correspondentes estiverem fiéis ao Stitch e o alerta de inatividade estiver consumindo o histórico real de compras do fluxo comercial.
