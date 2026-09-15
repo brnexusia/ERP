@@ -294,3 +294,88 @@ export async function listInactivityAlerts(context: ClientAccessContext) {
       .sort((a, b) => b.daysWithoutPurchase - a.daysWithoutPurchase),
   };
 }
+
+export async function getProductSalesMetrics(context: ClientAccessContext, period: ReportPeriod) {
+  assertPermission(context.role, "inventory:read");
+  assertPermission(context.role, "sales:read");
+
+  const paidAt = paidAtFilter(period);
+  const [products, soldItems] = await Promise.all([
+    db.product.findMany({
+      where: { organizationId: context.organizationId },
+      include: {
+        category: true,
+        subcategory: true,
+        stock: true,
+      },
+      orderBy: [{ name: "asc" }, { createdAt: "asc" }],
+    }),
+    db.saleItem.findMany({
+      where: {
+        organizationId: context.organizationId,
+        sale: {
+          stage: "PAID",
+          ...(paidAt ? { paidAt } : {}),
+        },
+      },
+      include: {
+        sale: { select: { id: true, paidAt: true } },
+      },
+    }),
+  ]);
+
+  const metrics = new Map<
+    string,
+    {
+      soldQuantity: Prisma.Decimal;
+      revenue: Prisma.Decimal;
+      paidSaleIds: Set<string>;
+      lastSaleAt: Date | null;
+    }
+  >();
+
+  for (const item of soldItems) {
+    const current = metrics.get(item.productId) ?? {
+      soldQuantity: new Prisma.Decimal(0),
+      revenue: new Prisma.Decimal(0),
+      paidSaleIds: new Set<string>(),
+      lastSaleAt: null,
+    };
+    current.soldQuantity = current.soldQuantity.add(item.quantity);
+    current.revenue = current.revenue.add(item.lineTotal);
+    current.paidSaleIds.add(item.saleId);
+    if (item.sale.paidAt && (!current.lastSaleAt || item.sale.paidAt > current.lastSaleAt)) {
+      current.lastSaleAt = item.sale.paidAt;
+    }
+    metrics.set(item.productId, current);
+  }
+
+  return {
+    period,
+    products: products.map((product) => {
+      const metric = metrics.get(product.id) ?? {
+        soldQuantity: new Prisma.Decimal(0),
+        revenue: new Prisma.Decimal(0),
+        paidSaleIds: new Set<string>(),
+        lastSaleAt: null,
+      };
+      return {
+        product: {
+          id: product.id,
+          name: product.name,
+          sku: product.sku,
+          category: product.category,
+          subcategory: product.subcategory,
+          costPrice: product.costPrice,
+          salePrice: product.salePrice,
+          unitMeasure: product.unitMeasure,
+        },
+        stock: product.stock,
+        soldQuantity: metric.soldQuantity,
+        revenue: metric.revenue,
+        paidSales: metric.paidSaleIds.size,
+        lastSaleAt: metric.lastSaleAt,
+      };
+    }),
+  };
+}
