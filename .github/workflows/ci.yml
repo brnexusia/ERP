@@ -69,7 +69,7 @@ jobs:
       - name: Build application
         run: pnpm build
 
-      - name: Smoke test login, session and tenant switching
+      - name: Smoke test application flows
         shell: bash
         run: |
           set -euo pipefail
@@ -92,3 +92,4 @@ jobs:
           fi
 
           pnpm test:smoke-auth
+          pnpm test:smoke-client-management
