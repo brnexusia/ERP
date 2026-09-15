@@ -7,10 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
+    "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "node prisma/seed.mjs",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "test:foundation": "tsx scripts/verify-foundation.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
@@ -24,6 +27,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "prisma": "^6.0.0",
+    "tsx": "^4.19.0",
     "typescript": "^5.7.0"
   },
   "packageManager": "pnpm@10.0.0"
