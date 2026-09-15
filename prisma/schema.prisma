@@ -49,19 +49,24 @@ model Organization {
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
-  memberships          Membership[]
-  auditLogs            AuditLog[]
-  integrations         Integration[]
-  activeSessions       Session[]
-  clients              Client[]
-  clientAddresses      ClientAddress[]
-  clientSegments       ClientSegment[]
-  clientCreditAccounts ClientCreditAccount[]
+  memberships           Membership[]
+  auditLogs             AuditLog[]
+  integrations          Integration[]
+  activeSessions        Session[]
+  clients               Client[]
+  clientAddresses       ClientAddress[]
+  clientSegments        ClientSegment[]
+  clientCreditAccounts  ClientCreditAccount[]
   clientCreditMovements ClientCreditMovement[]
-  clientValeAccounts   ClientValeAccount[]
-  clientValeMovements  ClientValeMovement[]
-  clientCrmEntries     ClientCrmEntry[]
-  clientModuleSettings ClientModuleSettings?
+  clientValeAccounts    ClientValeAccount[]
+  clientValeMovements   ClientValeMovement[]
+  clientCrmEntries      ClientCrmEntry[]
+  clientModuleSettings  ClientModuleSettings?
+  productCategories     ProductCategory[]
+  products              Product[]
+  productPhotos         ProductPhoto[]
+  productStocks         ProductStock[]
+  catalogShare          CatalogShare?
 }
 
 model User {
@@ -73,9 +78,9 @@ model User {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
-  memberships           Membership[]
-  auditLogs             AuditLog[]
-  sessions              Session[]
+  memberships            Membership[]
+  auditLogs              AuditLog[]
+  sessions               Session[]
   creditMovementsCreated ClientCreditMovement[] @relation("CreditMovementCreator")
   valeMovementsCreated   ClientValeMovement[]   @relation("ValeMovementCreator")
   crmEntriesCreated      ClientCrmEntry[]        @relation("CrmEntryCreator")
@@ -222,8 +227,8 @@ model ClientCreditAccount {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  client       Client                @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client                 @relation(fields: [clientId], references: [id], onDelete: Cascade)
   movements    ClientCreditMovement[]
 
   @@index([organizationId, clientId])
@@ -241,10 +246,10 @@ model ClientCreditMovement {
   createdByUserId String
   createdAt       DateTime @default(now())
 
-  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  client       Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client              @relation(fields: [clientId], references: [id], onDelete: Cascade)
   account      ClientCreditAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  createdBy    User               @relation("CreditMovementCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  createdBy    User                @relation("CreditMovementCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
 
   @@index([organizationId, clientId, createdAt])
   @@index([organizationId, accountId, createdAt])
@@ -258,8 +263,8 @@ model ClientValeAccount {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  client       Client              @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client               @relation(fields: [clientId], references: [id], onDelete: Cascade)
   movements    ClientValeMovement[]
 
   @@index([organizationId, clientId])
@@ -277,10 +282,10 @@ model ClientValeMovement {
   createdByUserId String
   createdAt       DateTime @default(now())
 
-  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  client       Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
   account      ClientValeAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  createdBy    User             @relation("ValeMovementCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  createdBy    User              @relation("ValeMovementCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
 
   @@index([organizationId, clientId, createdAt])
   @@index([organizationId, accountId, createdAt])
@@ -311,6 +316,96 @@ model ClientModuleSettings {
   id             String   @id @default(cuid())
   organizationId String   @unique
   inactivityDays Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model ProductCategory {
+  id             String   @id @default(cuid())
+  organizationId String
+  parentId       String?
+  name           String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  parent           ProductCategory?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children         ProductCategory[] @relation("CategoryTree")
+  products         Product[]         @relation("ProductCategory")
+  subcategoryItems Product[]         @relation("ProductSubcategory")
+
+  @@unique([organizationId, parentId, name])
+  @@index([organizationId, parentId, name])
+}
+
+model Product {
+  id                  String   @id @default(cuid())
+  organizationId      String
+  categoryId          String
+  subcategoryId       String?
+  name                String
+  sku                 String
+  barcode             String?
+  brandManufacturer   String
+  description         String
+  technicalAttributes Json?
+  costPrice           Decimal  @db.Decimal(14, 2)
+  salePrice           Decimal  @db.Decimal(14, 2)
+  unitMeasure         String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category     ProductCategory  @relation("ProductCategory", fields: [categoryId], references: [id], onDelete: Restrict)
+  subcategory  ProductCategory? @relation("ProductSubcategory", fields: [subcategoryId], references: [id], onDelete: SetNull)
+  photos       ProductPhoto[]
+  stock        ProductStock?
+
+  @@unique([organizationId, sku])
+  @@unique([organizationId, barcode])
+  @@index([organizationId, name])
+  @@index([organizationId, categoryId])
+  @@index([organizationId, subcategoryId])
+}
+
+model ProductPhoto {
+  id             String   @id @default(cuid())
+  organizationId String
+  productId      String
+  url            String
+  variation      String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  product      Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, productId])
+  @@index([organizationId, productId, variation])
+}
+
+model ProductStock {
+  id             String   @id @default(cuid())
+  organizationId String
+  productId      String   @unique
+  quantity       Decimal  @default(0) @db.Decimal(14, 3)
+  minimum        Decimal  @default(0) @db.Decimal(14, 3)
+  maximum        Decimal  @default(0) @db.Decimal(14, 3)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  product      Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, productId])
+  @@index([organizationId, quantity])
+}
+
+model CatalogShare {
+  id             String   @id @default(cuid())
+  organizationId String   @unique
+  token          String   @unique
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
