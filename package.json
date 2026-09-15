@@ -16,11 +16,12 @@
     "db:studio": "prisma studio",
     "test:foundation": "tsx scripts/verify-foundation.ts",
     "test:smoke-auth": "tsx scripts/smoke-auth.ts",
-    "test:smoke-client-management": "tsx scripts/smoke-client-management.ts && tsx scripts/smoke-products.ts && tsx scripts/smoke-sales.ts && tsx scripts/smoke-reports.ts && tsx scripts/smoke-support-delivery.ts",
+    "test:smoke-client-management": "tsx scripts/smoke-client-management.ts && tsx scripts/smoke-products.ts && tsx scripts/smoke-sales.ts && tsx scripts/smoke-reports.ts && tsx scripts/smoke-support-delivery.ts && tsx scripts/smoke-finance.ts",
     "test:smoke-products": "tsx scripts/smoke-products.ts",
     "test:smoke-sales": "tsx scripts/smoke-sales.ts",
     "test:smoke-reports": "tsx scripts/smoke-reports.ts",
-    "test:smoke-support-delivery": "tsx scripts/smoke-support-delivery.ts"
+    "test:smoke-support-delivery": "tsx scripts/smoke-support-delivery.ts",
+    "test:smoke-finance": "tsx scripts/smoke-finance.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
