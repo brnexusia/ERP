@@ -1,4 +1,4 @@
-import type { IntegrationStatus, MembershipRole } from "@prisma/client";
+import { Prisma, type IntegrationStatus, type MembershipRole } from "@prisma/client";
 import { db } from "@/lib/db";
 import { assertPermission } from "@/lib/auth/permissions";
 import type { IntegrationConfigInput } from "@/modules/integrations/schema";
@@ -21,6 +21,13 @@ function publicIntegration<T extends { secretRef: string | null }>(integration: 
   return {
     ...safe,
     secretConfigured: Boolean(secretRef),
+  };
+}
+
+function integrationSettingsData(settings: IntegrationConfigInput["settings"]) {
+  if (settings === undefined) return {};
+  return {
+    settings: settings === null ? Prisma.DbNull : (settings as Prisma.InputJsonValue),
   };
 }
 
@@ -63,8 +70,8 @@ export async function upsertIntegration(
           where: { id: existing.id },
           data: {
             displayName: input.displayName,
-            settings: input.settings === undefined ? existing.settings : input.settings,
-            secretRef: input.secretRef === undefined ? existing.secretRef : input.secretRef,
+            ...integrationSettingsData(input.settings),
+            ...(input.secretRef === undefined ? {} : { secretRef: input.secretRef }),
             status: nextStatus,
           },
         })
@@ -74,7 +81,7 @@ export async function upsertIntegration(
             provider: input.provider,
             key: input.key,
             displayName: input.displayName,
-            settings: input.settings ?? undefined,
+            ...integrationSettingsData(input.settings),
             secretRef: input.secretRef ?? null,
             status: nextStatus,
           },
