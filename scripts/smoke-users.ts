@@ -151,14 +151,14 @@ async function main() {
     assert.equal(removeResponse.status, 200);
     assert.equal((await removeResponse.json()).result.removed, true);
 
-    const removedMembership = await db.membership.findUnique({ where: { id: newMembershipId } });
+    const removedMembership = await db.membership.findUnique({ where: { id: newMembershipId! } });
     assert.equal(removedMembership, null);
 
     const auditActions = await db.auditLog.findMany({
       where: {
         organizationId: organization.id,
         entityType: "Membership",
-        entityId: newMembershipId,
+        entityId: newMembershipId!,
         action: {
           in: [
             "ORGANIZATION_USER_ADD",
