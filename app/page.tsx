@@ -17,9 +17,9 @@ export default async function HomePage() {
     <main className="foundation-shell">
       <section className="foundation-card">
         <p className="eyebrow">ERP PEDRO</p>
-        <h1>Fundação do sistema em construção</h1>
+        <h1>Base funcional validada</h1>
         <p>
-          Esta tela é provisória. O layout definitivo só será fechado a partir das fontes oficiais do Stitch.
+          Esta tela continua provisória. O layout definitivo só será fechado a partir das fontes oficiais do Stitch.
         </p>
         <dl>
           <div>
@@ -36,15 +36,23 @@ export default async function HomePage() {
           </div>
           <div>
             <dt>Arquitetura</dt>
-            <dd>Multiempresa desde a base</dd>
+            <dd>Multiempresa validada</dd>
           </div>
           <div>
             <dt>Banco</dt>
             <dd>PostgreSQL + Prisma</dd>
           </div>
           <div>
-            <dt>Status</dt>
-            <dd>Progresso 1 — Em construção</dd>
+            <dt>Fundação</dt>
+            <dd>Progresso 1 — Fechado</dd>
+          </div>
+          <div>
+            <dt>Visual</dt>
+            <dd>Progresso 2 — Em construção</dd>
+          </div>
+          <div>
+            <dt>Clientes</dt>
+            <dd>Progresso 3 — Em construção</dd>
           </div>
         </dl>
 
