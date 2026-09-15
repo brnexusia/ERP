@@ -186,12 +186,27 @@ O run 87 (`35034493876`) concluiu com migration, Prisma, isolamento, typecheck, 
 - [x] Múltiplos registros de pagamento podem compor o valor do pedido sem ultrapassar o total.
 - [x] Venda só muda para `PAID` quando o total quitado alcança o total do pedido.
 - [x] Histórico de formas de pagamento disponível no perfil comercial do cliente.
-- [ ] Retirada: registro da retirada.
-- [ ] Correios: código de rastreio.
-- [ ] Envio de rastreio por e-mail/WhatsApp.
-- [ ] Transportadora: registro e comprovante de envio/entrega.
+- [x] Atendimento registrado no histórico do cliente.
+- [x] Pós-venda registrado no histórico do cliente.
+- [x] Reclamações registradas no histórico do cliente.
+- [x] SAC registrado no histórico do cliente.
+- [x] Registro de suporte pode ser vinculado à venda correspondente sem duplicar o histórico comercial.
+- [x] Retirada registrada com data/hora da retirada.
+- [x] Correios com código de rastreio registrado.
+- [x] Transportadora registrada por nome.
+- [x] Comprovante de envio da transportadora suportado por URL.
+- [x] Comprovante de entrega da transportadora suportado por URL.
+- [x] Registro logístico só é permitido depois que o orçamento virou pedido.
+- [x] Suporte e logística auditados e isolados por empresa.
+- [ ] Envio do rastreio por e-mail.
+- [ ] Envio do rastreio por WhatsApp.
+- [ ] Interface de suporte/entrega conforme Stitch.
 
-O envio externo de rastreio ficará ligado às integrações correspondentes; não foi simulado como se uma mensagem tivesse sido enviada.
+O envio externo do rastreio permanece pendente até as integrações correspondentes existirem. Nenhum envio foi marcado como realizado sem uma integração real.
+
+### Evidência
+
+O run 106 (`35035182736`) concluiu migrations, Prisma, isolamento, typecheck, build e todos os smoke tests em sucesso. O teste de suporte/logística valida as quatro categorias exigidas pelo escopo, vínculo opcional à venda, bloqueio de entrega em orçamento, retirada, Correios, transportadora, comprovantes, auditoria e isolamento cross-tenant.
 
 ## Progresso 9 — Vendedoras, metas e comissões 🟡
 
