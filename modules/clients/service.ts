@@ -1,4 +1,4 @@
-import { Prisma, type MembershipRole } from "@prisma/client";
+import { Prisma, type ClientDocumentType, type MembershipRole } from "@prisma/client";
 import { db } from "@/lib/db";
 import { assertPermission } from "@/lib/auth/permissions";
 import { detectDocumentType } from "@/modules/clients/document";
@@ -122,8 +122,12 @@ export async function updateClient(
 
       if (!current) throw new ClientNotFoundError();
 
-      const documentType = input.document ? detectDocumentType(input.document) : undefined;
-      if (input.document && !documentType) throw new Error("CPF/CNPJ inválido.");
+      let documentType: ClientDocumentType | undefined;
+      if (input.document) {
+        const detectedDocumentType = detectDocumentType(input.document);
+        if (!detectedDocumentType) throw new Error("CPF/CNPJ inválido.");
+        documentType = detectedDocumentType;
+      }
 
       if (input.address && !current.address) {
         throw new Error("Endereço do cliente não encontrado.");
