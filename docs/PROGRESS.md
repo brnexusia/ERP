@@ -321,18 +321,28 @@ A arquitetura já incorpora parte da preparação comercial prevista no document
 - [x] Estrutura multiempresa/multicliente desde a fundação.
 - [x] Isolamento de dados por empresa validado em PostgreSQL e smoke tests.
 - [x] Usuários e permissões vinculados à empresa.
+- [x] Gestão tenant-scoped de usuários: listar, criar/vincular, alterar papel e remover acesso.
+- [x] Proteção do último `OWNER`, bloqueio de auto-rebaixamento/auto-remoção e revogação de sessão ao remover acesso.
+- [x] Alterações de acesso auditadas e memberships de outras empresas invisíveis pela API.
 - [x] Clientes separados por empresa.
 - [x] Produtos e estoque separados por empresa.
 - [x] Vendas e histórico comercial separados por empresa.
 - [x] Financeiro separado por empresa.
 - [x] Configurações de integrações separadas por empresa.
 - [x] Troca de contexto de empresa exige membership válida.
-- [ ] Provisionamento automatizado de novas contas/clientes.
+- [x] Provisionamento técnico controlado cria nova empresa, primeiro usuário `OWNER`, membership e auditoria de forma transacional.
+- [x] Empresa provisionada pode autenticar e operar isoladamente sem reutilizar o tenant original.
+- [x] Comando interno `pnpm db:provision` documentado para provisionamento controlado.
+- [ ] Provisionamento acionado automaticamente por compra/assinatura.
 - [ ] Fluxo de contratação/assinatura.
 - [ ] Domínio próprio de produção configurado.
 - [ ] Acesso adicional de compra/assinatura quando comercializado.
 
-Este progresso não é marcado como fechado porque a arquitetura SaaS básica existe, mas contratação, assinatura, provisionamento e domínio comercial ainda não foram definidos/configurados.
+O provisionamento técnico já existe, mas não é tratado como assinatura automática. Planos, cobrança, gatilho comercial, suspensão/cancelamento e domínio final continuam dependendo de definição própria.
+
+### Evidência
+
+O run 153 (`35037627507`) concluiu migrations, seed, isolamento, typecheck, build e toda a suíte de smoke tests em sucesso. A suíte valida gestão tenant-scoped de usuários, bloqueio de privilégios indevidos, isolamento cross-tenant, auditoria, revogação de acesso, criação transacional de nova organização + `OWNER`, autenticação do tenant provisionado e rejeição de provisionamento duplicado sem deixar estado parcial.
 
 ## Regras de negócio ainda não definidas no documento-fonte
 
