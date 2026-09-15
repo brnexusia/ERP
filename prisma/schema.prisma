@@ -44,22 +44,24 @@ model Organization {
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
-  memberships  Membership[]
-  auditLogs    AuditLog[]
-  integrations Integration[]
+  memberships   Membership[]
+  auditLogs     AuditLog[]
+  integrations  Integration[]
+  activeSessions Session[]
 }
 
 model User {
-  id           String       @id @default(cuid())
-  email        String       @unique
+  id           String     @id @default(cuid())
+  email        String     @unique
   name         String
   passwordHash String?
-  status       UserStatus   @default(ACTIVE)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   memberships Membership[]
   auditLogs   AuditLog[]
+  sessions    Session[]
 }
 
 model Membership {
@@ -76,6 +78,22 @@ model Membership {
   @@unique([organizationId, userId])
   @@index([userId])
   @@index([organizationId, role])
+}
+
+model Session {
+  id                   String   @id @default(cuid())
+  tokenHash            String   @unique
+  userId               String
+  activeOrganizationId String
+  expiresAt            DateTime
+  createdAt            DateTime @default(now())
+  lastSeenAt           DateTime @default(now())
+
+  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activeOrganization Organization @relation(fields: [activeOrganizationId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([activeOrganizationId, expiresAt])
 }
 
 model AuditLog {
