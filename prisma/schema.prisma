@@ -49,12 +49,19 @@ model Organization {
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
-  memberships    Membership[]
-  auditLogs      AuditLog[]
-  integrations   Integration[]
-  activeSessions Session[]
-  clients        Client[]
-  clientAddresses ClientAddress[]
+  memberships          Membership[]
+  auditLogs            AuditLog[]
+  integrations         Integration[]
+  activeSessions       Session[]
+  clients              Client[]
+  clientAddresses      ClientAddress[]
+  clientSegments       ClientSegment[]
+  clientCreditAccounts ClientCreditAccount[]
+  clientCreditMovements ClientCreditMovement[]
+  clientValeAccounts   ClientValeAccount[]
+  clientValeMovements  ClientValeMovement[]
+  clientCrmEntries     ClientCrmEntry[]
+  clientModuleSettings ClientModuleSettings?
 }
 
 model User {
@@ -66,9 +73,12 @@ model User {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
-  memberships Membership[]
-  auditLogs   AuditLog[]
-  sessions    Session[]
+  memberships           Membership[]
+  auditLogs             AuditLog[]
+  sessions              Session[]
+  creditMovementsCreated ClientCreditMovement[] @relation("CreditMovementCreator")
+  valeMovementsCreated   ClientValeMovement[]   @relation("ValeMovementCreator")
+  crmEntriesCreated      ClientCrmEntry[]        @relation("CrmEntryCreator")
 }
 
 model Membership {
@@ -142,6 +152,7 @@ model Integration {
 model Client {
   id             String             @id @default(cuid())
   organizationId String
+  segmentId      String?
   name           String
   documentType   ClientDocumentType
   document       String
@@ -150,13 +161,20 @@ model Client {
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 
-  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  address      ClientAddress?
+  organization    Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  segment         ClientSegment?          @relation(fields: [segmentId], references: [id], onDelete: SetNull)
+  address         ClientAddress?
+  creditAccount   ClientCreditAccount?
+  creditMovements ClientCreditMovement[]
+  valeAccount     ClientValeAccount?
+  valeMovements   ClientValeMovement[]
+  crmEntries      ClientCrmEntry[]
 
   @@unique([organizationId, document])
   @@index([organizationId, name])
   @@index([organizationId, whatsapp])
   @@index([organizationId, email])
+  @@index([organizationId, segmentId])
 }
 
 model ClientAddress {
@@ -179,4 +197,122 @@ model ClientAddress {
 
   @@index([organizationId, city, state])
   @@index([organizationId, postalCode])
+}
+
+model ClientSegment {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  clients      Client[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId, name])
+}
+
+model ClientCreditAccount {
+  id             String   @id @default(cuid())
+  organizationId String
+  clientId       String   @unique
+  creditLimit    Decimal  @default(0) @db.Decimal(14, 2)
+  usedAmount     Decimal  @default(0) @db.Decimal(14, 2)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client                @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  movements    ClientCreditMovement[]
+
+  @@index([organizationId, clientId])
+}
+
+model ClientCreditMovement {
+  id              String   @id @default(cuid())
+  organizationId  String
+  clientId        String
+  accountId       String
+  amountDelta     Decimal  @db.Decimal(14, 2)
+  usedBefore      Decimal  @db.Decimal(14, 2)
+  usedAfter       Decimal  @db.Decimal(14, 2)
+  note            String?
+  createdByUserId String
+  createdAt       DateTime @default(now())
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  account      ClientCreditAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  createdBy    User               @relation("CreditMovementCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, clientId, createdAt])
+  @@index([organizationId, accountId, createdAt])
+}
+
+model ClientValeAccount {
+  id             String   @id @default(cuid())
+  organizationId String
+  clientId       String   @unique
+  balance        Decimal  @default(0) @db.Decimal(14, 2)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client              @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  movements    ClientValeMovement[]
+
+  @@index([organizationId, clientId])
+}
+
+model ClientValeMovement {
+  id              String   @id @default(cuid())
+  organizationId  String
+  clientId        String
+  accountId       String
+  amountDelta     Decimal  @db.Decimal(14, 2)
+  balanceBefore   Decimal  @db.Decimal(14, 2)
+  balanceAfter    Decimal  @db.Decimal(14, 2)
+  note            String?
+  createdByUserId String
+  createdAt       DateTime @default(now())
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  account      ClientValeAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  createdBy    User             @relation("ValeMovementCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, clientId, createdAt])
+  @@index([organizationId, accountId, createdAt])
+}
+
+model ClientCrmEntry {
+  id              String   @id @default(cuid())
+  organizationId  String
+  clientId        String
+  title           String
+  content         String
+  occurredAt      DateTime @default(now())
+  followUpAt      DateTime?
+  completedAt     DateTime?
+  createdByUserId String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation("CrmEntryCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, clientId, occurredAt])
+  @@index([organizationId, followUpAt])
+}
+
+model ClientModuleSettings {
+  id             String   @id @default(cuid())
+  organizationId String   @unique
+  inactivityDays Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
