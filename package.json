@@ -13,10 +13,11 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "node prisma/seed.mjs",
+    "db:provision": "tsx scripts/provision-organization.ts",
     "db:studio": "prisma studio",
     "test:foundation": "tsx scripts/verify-foundation.ts",
     "test:smoke-auth": "tsx scripts/smoke-auth.ts",
-    "test:smoke-client-management": "tsx scripts/smoke-client-management.ts && tsx scripts/smoke-products.ts && tsx scripts/smoke-sales.ts && tsx scripts/smoke-reports.ts && tsx scripts/smoke-product-metrics.ts && tsx scripts/smoke-client-ranking.ts && tsx scripts/smoke-support-delivery.ts && tsx scripts/smoke-finance.ts && tsx scripts/smoke-integrations.ts && tsx scripts/smoke-users.ts",
+    "test:smoke-client-management": "tsx scripts/smoke-client-management.ts && tsx scripts/smoke-products.ts && tsx scripts/smoke-sales.ts && tsx scripts/smoke-reports.ts && tsx scripts/smoke-product-metrics.ts && tsx scripts/smoke-client-ranking.ts && tsx scripts/smoke-support-delivery.ts && tsx scripts/smoke-finance.ts && tsx scripts/smoke-integrations.ts && tsx scripts/smoke-users.ts && tsx scripts/smoke-provisioning.ts",
     "test:smoke-products": "tsx scripts/smoke-products.ts",
     "test:smoke-sales": "tsx scripts/smoke-sales.ts",
     "test:smoke-reports": "tsx scripts/smoke-reports.ts",
@@ -25,7 +26,8 @@
     "test:smoke-support-delivery": "tsx scripts/smoke-support-delivery.ts",
     "test:smoke-finance": "tsx scripts/smoke-finance.ts",
     "test:smoke-integrations": "tsx scripts/smoke-integrations.ts",
-    "test:smoke-users": "tsx scripts/smoke-users.ts"
+    "test:smoke-users": "tsx scripts/smoke-users.ts",
+    "test:smoke-provisioning": "tsx scripts/smoke-provisioning.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
