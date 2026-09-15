@@ -40,6 +40,30 @@ enum ClientDocumentType {
   CNPJ
 }
 
+enum SaleStage {
+  QUOTE
+  ORDER
+  PAID
+}
+
+enum SalesChannel {
+  WHATSAPP
+  SITE
+  PHYSICAL_STORE
+}
+
+enum PaymentMethod {
+  CARD
+  PIX
+  BOLETO
+  CHEQUE
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+}
+
 model Organization {
   id           String             @id @default(cuid())
   name         String
@@ -67,6 +91,9 @@ model Organization {
   productPhotos         ProductPhoto[]
   productStocks         ProductStock[]
   catalogShare          CatalogShare?
+  sales                 Sale[]
+  saleItems             SaleItem[]
+  salePayments          SalePayment[]
 }
 
 model User {
@@ -94,8 +121,10 @@ model Membership {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  responsibleClients Client[]     @relation("ClientResponsibleSeller")
+  assignedSales      Sale[]       @relation("SaleSeller")
 
   @@unique([organizationId, userId])
   @@index([userId])
@@ -155,31 +184,35 @@ model Integration {
 }
 
 model Client {
-  id             String             @id @default(cuid())
-  organizationId String
-  segmentId      String?
-  name           String
-  documentType   ClientDocumentType
-  document       String
-  whatsapp       String
-  email          String
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  id                            String             @id @default(cuid())
+  organizationId                String
+  segmentId                     String?
+  responsibleSellerMembershipId String?
+  name                          String
+  documentType                  ClientDocumentType
+  document                      String
+  whatsapp                      String
+  email                         String
+  createdAt                     DateTime           @default(now())
+  updatedAt                     DateTime           @updatedAt
 
-  organization    Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  segment         ClientSegment?          @relation(fields: [segmentId], references: [id], onDelete: SetNull)
-  address         ClientAddress?
-  creditAccount   ClientCreditAccount?
-  creditMovements ClientCreditMovement[]
-  valeAccount     ClientValeAccount?
-  valeMovements   ClientValeMovement[]
-  crmEntries      ClientCrmEntry[]
+  organization       Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  segment            ClientSegment? @relation(fields: [segmentId], references: [id], onDelete: SetNull)
+  responsibleSeller  Membership?   @relation("ClientResponsibleSeller", fields: [responsibleSellerMembershipId], references: [id], onDelete: SetNull)
+  address            ClientAddress?
+  creditAccount      ClientCreditAccount?
+  creditMovements    ClientCreditMovement[]
+  valeAccount        ClientValeAccount?
+  valeMovements      ClientValeMovement[]
+  crmEntries         ClientCrmEntry[]
+  sales              Sale[]
 
   @@unique([organizationId, document])
   @@index([organizationId, name])
   @@index([organizationId, whatsapp])
   @@index([organizationId, email])
   @@index([organizationId, segmentId])
+  @@index([organizationId, responsibleSellerMembershipId])
 }
 
 model ClientAddress {
@@ -362,6 +395,7 @@ model Product {
   subcategory  ProductCategory? @relation("ProductSubcategory", fields: [subcategoryId], references: [id], onDelete: SetNull)
   photos       ProductPhoto[]
   stock        ProductStock?
+  saleItems    SaleItem[]
 
   @@unique([organizationId, sku])
   @@unique([organizationId, barcode])
@@ -410,4 +444,70 @@ model CatalogShare {
   updatedAt      DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model Sale {
+  id                 String       @id @default(cuid())
+  organizationId     String
+  clientId           String
+  sellerMembershipId String
+  stage              SaleStage    @default(QUOTE)
+  channel            SalesChannel
+  totalAmount        Decimal      @default(0) @db.Decimal(14, 2)
+  quotedAt           DateTime     @default(now())
+  orderedAt          DateTime?
+  paidAt             DateTime?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client       @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  seller       Membership   @relation("SaleSeller", fields: [sellerMembershipId], references: [id], onDelete: Restrict)
+  items        SaleItem[]
+  payments     SalePayment[]
+
+  @@index([organizationId, stage, createdAt])
+  @@index([organizationId, clientId, createdAt])
+  @@index([organizationId, sellerMembershipId, createdAt])
+  @@index([organizationId, channel, createdAt])
+}
+
+model SaleItem {
+  id             String   @id @default(cuid())
+  organizationId String
+  saleId         String
+  productId      String
+  productName    String
+  sku            String
+  quantity       Decimal  @db.Decimal(14, 3)
+  unitPrice      Decimal  @db.Decimal(14, 2)
+  lineTotal      Decimal  @db.Decimal(14, 2)
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sale         Sale         @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product      Product      @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, saleId])
+  @@index([organizationId, productId, createdAt])
+}
+
+model SalePayment {
+  id             String        @id @default(cuid())
+  organizationId String
+  saleId         String
+  method         PaymentMethod
+  status         PaymentStatus @default(PENDING)
+  amount         Decimal       @db.Decimal(14, 2)
+  dueDate        DateTime?
+  settledAt      DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sale         Sale         @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, saleId, createdAt])
+  @@index([organizationId, method, createdAt])
+  @@index([organizationId, status, dueDate])
 }
