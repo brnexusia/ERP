@@ -35,6 +35,11 @@ enum IntegrationStatus {
   DISABLED
 }
 
+enum ClientDocumentType {
+  CPF
+  CNPJ
+}
+
 model Organization {
   id           String             @id @default(cuid())
   name         String
@@ -44,10 +49,12 @@ model Organization {
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
-  memberships   Membership[]
-  auditLogs     AuditLog[]
-  integrations  Integration[]
+  memberships    Membership[]
+  auditLogs      AuditLog[]
+  integrations   Integration[]
   activeSessions Session[]
+  clients        Client[]
+  clientAddresses ClientAddress[]
 }
 
 model User {
@@ -130,4 +137,46 @@ model Integration {
 
   @@unique([organizationId, provider, key])
   @@index([organizationId, provider])
+}
+
+model Client {
+  id             String             @id @default(cuid())
+  organizationId String
+  name           String
+  documentType   ClientDocumentType
+  document       String
+  whatsapp       String
+  email          String
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  address      ClientAddress?
+
+  @@unique([organizationId, document])
+  @@index([organizationId, name])
+  @@index([organizationId, whatsapp])
+  @@index([organizationId, email])
+}
+
+model ClientAddress {
+  id             String   @id @default(cuid())
+  organizationId String
+  clientId       String   @unique
+  postalCode     String
+  street         String
+  number         String
+  complement     String?
+  district       String
+  city           String
+  state          String
+  country        String   @default("BR")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, city, state])
+  @@index([organizationId, postalCode])
 }
