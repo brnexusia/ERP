@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 
 export async function assertOrganizationMembership(userId: string, organizationId: string) {
@@ -47,7 +48,7 @@ export async function writeTenantAudit(input: {
   action: string;
   entityType: string;
   entityId?: string | null;
-  metadata?: Record<string, unknown>;
+  metadata?: Prisma.InputJsonValue;
 }) {
   return db.auditLog.create({
     data: {
