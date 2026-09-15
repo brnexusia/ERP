@@ -13,7 +13,7 @@ Estados permitidos:
 |---|---|---|
 | 1 | Fundação do sistema | ✅ Fechado |
 | 2 | Design system + estrutura visual | 🟡 Em construção |
-| 3 | Gestão de Clientes | ⬜ Não iniciado |
+| 3 | Gestão de Clientes | 🟡 Em construção |
 | 4 | Crédito, Vale e CRM | ⬜ Não iniciado |
 | 5 | Produtos e estrutura de estoque | ⬜ Não iniciado |
 | 6 | Estoque inteligente | ⬜ Não iniciado |
@@ -73,3 +73,35 @@ Regra deste progresso: não converter a tela provisória atual em design definit
 ### Critério de fechamento do Progresso 2
 
 O marco vira ✅ quando shell global, sidebar, cabeçalho e componentes compartilhados estiverem implementados e comparados com a fonte oficial do Stitch, incluindo estados e responsividade relevantes.
+
+## Progresso 3 — Gestão de Clientes 🟡
+
+Base funcional implementada sem inventar o visual definitivo:
+
+- [x] Modelo `Client` isolado por empresa.
+- [x] Endereço completo em entidade própria e isolada por empresa.
+- [x] CPF/CNPJ normalizado, classificado e validado.
+- [x] CPF/CNPJ único dentro de cada empresa e permitido entre empresas distintas.
+- [x] WhatsApp normalizado.
+- [x] E-mail validado.
+- [x] Listagem de clientes por tenant.
+- [x] Consulta individual por tenant.
+- [x] Cadastro de cliente.
+- [x] Atualização de cliente e endereço.
+- [x] Auditoria de criação e atualização.
+- [x] Permissões `clients:read` e `clients:write` aplicadas.
+- [x] API bloqueia acesso cruzado entre empresas.
+- [x] Migration de clientes aplicada com sucesso.
+- [x] Smoke test real da API passou em PostgreSQL: criar, consultar, atualizar, listar, bloquear duplicidade interna e bloquear acesso cross-tenant.
+- [ ] Tela de listagem conforme Stitch.
+- [ ] Tela/formulário de cadastro conforme Stitch.
+- [ ] Tela de detalhe/edição conforme Stitch.
+- [ ] Histórico de compras conectado ao fluxo comercial quando o Progresso 7 existir.
+
+### Evidência atual
+
+O run 31 (`35027529904`) concluiu com sucesso migration, seed, isolamento, typecheck, build e smoke test HTTP incluindo as operações de clientes.
+
+### Critério de fechamento do Progresso 3
+
+Só vira ✅ quando cadastro, consulta, edição, endereço e histórico de compras estiverem funcionais na interface fiel ao Stitch e mantiverem o isolamento multiempresa já validado no backend.
