@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { db } from "../lib/db";
 
 const BASE_URL = process.env.APP_URL ?? "http://127.0.0.1:3000";
+const TEST_DOCUMENT = "52998224725";
 
 function cookiePair(setCookie: string | null): string {
   if (!setCookie) {
@@ -9,6 +10,25 @@ function cookiePair(setCookie: string | null): string {
   }
 
   return setCookie.split(";", 1)[0];
+}
+
+function clientPayload(name: string, email: string) {
+  return {
+    name,
+    document: "529.982.247-25",
+    whatsapp: "55 71 99999-1111",
+    email,
+    address: {
+      postalCode: "44470-000",
+      street: "Rua de Teste",
+      number: "100",
+      complement: "Sala 1",
+      district: "Centro",
+      city: "Vera Cruz",
+      state: "BA",
+      country: "BR",
+    },
+  };
 }
 
 async function main() {
@@ -68,6 +88,35 @@ async function main() {
     const firstHtml = await firstHome.text();
     assert.match(firstHtml, /Pedro CI/, "Tenant inicial não apareceu na home autenticada.");
 
+    const createFirstClient = await fetch(`${BASE_URL}/api/clients`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: sessionCookie,
+      },
+      body: JSON.stringify(clientPayload("Cliente Tenant A", "tenant-a@example.test")),
+    });
+    assert.equal(createFirstClient.status, 201, `Cadastro de cliente A falhou: ${createFirstClient.status}.`);
+    const firstClientBody = await createFirstClient.json();
+    const firstClientId = firstClientBody.client?.id as string | undefined;
+    assert.ok(firstClientId, "API não retornou ID do cliente A.");
+    assert.equal(firstClientBody.client.document, TEST_DOCUMENT);
+
+    const duplicateFirstClient = await fetch(`${BASE_URL}/api/clients`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: sessionCookie,
+      },
+      body: JSON.stringify(clientPayload("Duplicado Tenant A", "duplicado-a@example.test")),
+    });
+    assert.equal(duplicateFirstClient.status, 409, "CPF duplicado dentro do mesmo tenant não foi bloqueado.");
+
+    const getFirstClient = await fetch(`${BASE_URL}/api/clients/${firstClientId}`, {
+      headers: { Cookie: sessionCookie },
+    });
+    assert.equal(getFirstClient.status, 200, "Cliente do tenant ativo não pôde ser consultado.");
+
     const switchAllowed = await fetch(`${BASE_URL}/api/auth/organization`, {
       method: "POST",
       headers: {
@@ -86,6 +135,59 @@ async function main() {
     assert.equal(secondHome.status, 200);
     const secondHtml = await secondHome.text();
     assert.match(secondHtml, /Pedro CI Second/, "Tenant trocado não apareceu na home.");
+
+    const crossTenantClient = await fetch(`${BASE_URL}/api/clients/${firstClientId}`, {
+      headers: { Cookie: sessionCookie },
+    });
+    assert.equal(
+      crossTenantClient.status,
+      404,
+      `Tenant B acessou cliente do Tenant A; status ${crossTenantClient.status}.`,
+    );
+
+    const createSecondClient = await fetch(`${BASE_URL}/api/clients`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: sessionCookie,
+      },
+      body: JSON.stringify(clientPayload("Cliente Tenant B", "tenant-b@example.test")),
+    });
+    assert.equal(
+      createSecondClient.status,
+      201,
+      "Mesmo CPF deveria ser permitido em empresas diferentes.",
+    );
+    const secondClientBody = await createSecondClient.json();
+    const secondClientId = secondClientBody.client?.id as string | undefined;
+    assert.ok(secondClientId, "API não retornou ID do cliente B.");
+
+    const updateSecondClient = await fetch(`${BASE_URL}/api/clients/${secondClientId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: sessionCookie,
+      },
+      body: JSON.stringify({
+        whatsapp: "55 71 98888-2222",
+        address: { city: "Salvador" },
+      }),
+    });
+    assert.equal(updateSecondClient.status, 200, "Atualização do cliente B falhou.");
+    const updatedSecondBody = await updateSecondClient.json();
+    assert.equal(updatedSecondBody.client.whatsapp, "5571988882222");
+    assert.equal(updatedSecondBody.client.address?.city, "Salvador");
+
+    const secondList = await fetch(`${BASE_URL}/api/clients`, {
+      headers: { Cookie: sessionCookie },
+    });
+    assert.equal(secondList.status, 200);
+    const secondListBody = await secondList.json();
+    assert.deepEqual(
+      secondListBody.clients.map((client: { name: string }) => client.name),
+      ["Cliente Tenant B"],
+      "Listagem do Tenant B vazou clientes de outra empresa.",
+    );
 
     const switchForbidden = await fetch(`${BASE_URL}/api/auth/organization`, {
       method: "POST",
@@ -125,11 +227,15 @@ async function main() {
 
     console.log("✓ login e sessão persistida validados");
     console.log("✓ navegação autenticada validada");
+    console.log("✓ cadastro, consulta, edição e listagem de clientes validados");
+    console.log("✓ CPF duplicado bloqueado dentro do tenant e permitido entre tenants");
+    console.log("✓ cliente de outro tenant invisível pela API");
     console.log("✓ troca autorizada de empresa validada");
     console.log("✓ troca sem membership bloqueada com 403");
     console.log("✓ logout e invalidação de sessão validados");
   } finally {
     await db.session.deleteMany({ where: { userId: user.id } });
+    await db.client.deleteMany({ where: { document: TEST_DOCUMENT } });
     await db.organization.deleteMany({
       where: { id: { in: [secondOrganization.id, forbiddenOrganization.id] } },
     });
