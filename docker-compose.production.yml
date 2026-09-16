@@ -46,17 +46,16 @@ services:
     entrypoint: ["/bin/sh", "-ec"]
     command: |
       timestamp="$$(date -u +%Y%m%dT%H%M%SZ)"
-      archive="/backups/erp-pedro-files-$${timestamp}.tar.gz"
-      checksum="$${archive}.sha256"
+      archive_name="erp-pedro-files-$${timestamp}.tar.gz"
+      checksum_name="$${archive_name}.sha256"
+      archive="/backups/$${archive_name}"
       tar -czf "$${archive}" -C /data .
-      (
-        cd /backups
-        sha256sum "$$(basename "$${archive}")" > "$$(basename "$${checksum}")"
-      )
+      cd /backups
+      sha256sum "$${archive_name}" > "$${checksum_name}"
       find /backups -type f -name 'erp-pedro-files-*.tar.gz' -mtime "+$${RETENTION_DAYS}" -delete
       find /backups -type f -name 'erp-pedro-files-*.tar.gz.sha256' -mtime "+$${RETENTION_DAYS}" -delete
       printf 'Backup de arquivos concluído: %s\n' "$${archive}"
-      printf 'Checksum SHA-256: %s\n' "$${checksum}"
+      printf 'Checksum SHA-256: /backups/%s\n' "$${checksum_name}"
 
   storage-restore:
     image: alpine:3.20
@@ -74,13 +73,12 @@ services:
         */*|*..*) echo 'Nome de arquivo de restore inválido' >&2; exit 1 ;;
       esac
       archive="/backups/$${RESTORE_ARCHIVE}"
-      checksum="$${archive}.sha256"
+      checksum_name="$${RESTORE_ARCHIVE}.sha256"
+      checksum="/backups/$${checksum_name}"
       test -f "$${archive}" || { echo "Backup não encontrado: $${archive}" >&2; exit 1; }
       if test -f "$${checksum}"; then
-        (
-          cd /backups
-          sha256sum -c "$$(basename "$${checksum}")"
-        )
+        cd /backups
+        sha256sum -c "$${checksum_name}"
       elif test "$${ALLOW_UNVERIFIED_BACKUP}" != "YES"; then
         echo "Checksum não encontrado: $${checksum}" >&2
         echo 'Restore bloqueado. Para backup legado revisado, use ALLOW_UNVERIFIED_BACKUP=YES explicitamente.' >&2
