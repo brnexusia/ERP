@@ -10,9 +10,9 @@ Quando o escopo determina **o que** deve existir, mas não define critério, fó
 
 **Fonte funcional:** classificação comercial deve identificar clientes que reduziram compras.
 
-**Já existe:** histórico real de compras pagas, faturamento, quantidade de compras, primeira/última compra, ranking e filtros por período.
+**Já existe:** histórico real de compras pagas, faturamento, quantidade de compras, primeira/última compra, ranking e filtros por período. Clientes sem compra, novos e recorrentes já são classificados factualmente; “parou de comprar” reaproveita o `X dias` de inatividade configurado pela própria empresa. Quando esse limite não existe, o sistema não inventa a classificação.
 
-**Falta definir:**
+**Falta definir apenas para “reduziu compras”:**
 - quais períodos devem ser comparados;
 - se a redução é medida por faturamento, quantidade de pedidos, quantidade de itens ou combinação;
 - percentual/valor mínimo de queda para classificar como redução relevante;
@@ -164,7 +164,7 @@ Uma integração não será marcada como conectada apenas por possuir configura�
 
 **Fonte visual obrigatória:** Stitch aprovado.
 
-**Já existe:** backend funcional e telas provisórias suficientes para desenvolvimento/validação técnica.
+**Já existe:** backend funcional, endpoint agregado do Dashboard Geral e telas provisórias suficientes para desenvolvimento/validação técnica.
 
 **Falta para fechamento visual:** referência detalhada/exportável das telas e do design system do Stitch para implementar e comparar:
 - shell/sidebar;
@@ -187,19 +187,22 @@ Uma integração não será marcada como conectada apenas por possuir configura�
 
 **Fonte funcional:** domínio próprio e preparação para acesso adicional de compra/assinatura quando comercializado.
 
-**Já existe:** arquitetura multiempresa, isolamento, autenticação, permissões, configuração por empresa, backup/restore, gestão tenant-scoped de usuários e provisionamento técnico controlado de nova organização + primeiro `OWNER`. O provisionamento é transacional, auditado e possui teste de isolamento/autenticação.
+**Já existe:** arquitetura multiempresa, isolamento, autenticação, permissões, configuração por empresa, backup/restore, gestão tenant-scoped de usuários e provisionamento técnico controlado de nova organização + primeiro `OWNER`. O provisionamento é transacional, auditado e possui teste de isolamento/autenticação. Também já existe estrutura versionada de container/Compose para aplicação + PostgreSQL, template de variáveis sem segredos e procedimento controlado de deploy em VPS.
 
-**Continua faltando definir:**
+**Continua faltando definir/fornecer:**
+- provedor e acesso à VPS definitiva;
 - domínio final;
-- DNS/TLS e VPS/ambiente de produção definitivo;
+- DNS/TLS definitivo;
+- conta/e-mail empresarial apropriado;
 - modelo de contratação;
 - planos/assinaturas;
 - cobrança;
 - gatilho comercial que chamará o provisionamento após compra/assinatura;
 - suspensão/cancelamento e ciclo de vida da assinatura;
-- política para vincular automaticamente usuários já existentes em contratações futuras.
+- política para vincular automaticamente usuários já existentes em contratações futuras;
+- política operacional final de retenção/offsite dos backups.
 
-O provisionamento técnico já existente não deve ser confundido com contratação automática. Enquanto planos, cobrança e ciclo de vida não forem aprovados, nenhuma rota pública de auto-cadastro/checkout será criada por suposição.
+A presença da stack de deploy não significa que produção já foi implantada. O provisionamento técnico também não deve ser confundido com contratação automática. Enquanto planos, cobrança e ciclo de vida não forem aprovados, nenhuma rota pública de auto-cadastro/checkout será criada por suposição.
 
 ---
 
