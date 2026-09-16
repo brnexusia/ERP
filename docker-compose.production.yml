@@ -35,6 +35,43 @@ services:
     networks:
       - erp_internal
 
+  storage-backup:
+    image: alpine:3.20
+    profiles: ["ops"]
+    environment:
+      RETENTION_DAYS: ${RETENTION_DAYS:-14}
+    volumes:
+      - file_storage:/data:ro
+      - ./backups:/backups
+    entrypoint: ["/bin/sh", "-ec"]
+    command: |
+      timestamp="$$(date -u +%Y%m%dT%H%M%SZ)"
+      archive="/backups/erp-pedro-files-$${timestamp}.tar.gz"
+      tar -czf "$${archive}" -C /data .
+      find /backups -type f -name 'erp-pedro-files-*.tar.gz' -mtime "+$${RETENTION_DAYS}" -delete
+      printf 'Backup de arquivos concluído: %s\n' "$${archive}"
+
+  storage-restore:
+    image: alpine:3.20
+    profiles: ["ops"]
+    environment:
+      RESTORE_ARCHIVE: ${RESTORE_ARCHIVE:-}
+    volumes:
+      - file_storage:/data
+      - ./backups:/backups:ro
+    entrypoint: ["/bin/sh", "-ec"]
+    command: |
+      test -n "$${RESTORE_ARCHIVE}" || { echo 'RESTORE_ARCHIVE não definido' >&2; exit 1; }
+      case "$${RESTORE_ARCHIVE}" in
+        */*|*..*) echo 'Nome de arquivo de restore inválido' >&2; exit 1 ;;
+      esac
+      archive="/backups/$${RESTORE_ARCHIVE}"
+      test -f "$${archive}" || { echo "Backup não encontrado: $${archive}" >&2; exit 1; }
+      tar -tzf "$${archive}" >/dev/null
+      find /data -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+      tar -xzf "$${archive}" -C /data
+      printf 'Restauração de arquivos concluída: %s\n' "$${archive}"
+
 volumes:
   postgres_data:
   file_storage:
