@@ -191,10 +191,10 @@ async function main() {
     productId = (await productResponse.json()).product.id;
 
     saleIds.push(
-      await createPaidSale(cookie, clients.newActive, productId, new Date(Date.now() - 5 * 86_400_000)),
-      await createPaidSale(cookie, clients.recurring, productId, new Date(Date.now() - 60 * 86_400_000)),
-      await createPaidSale(cookie, clients.recurring, productId, new Date(Date.now() - 2 * 86_400_000)),
-      await createPaidSale(cookie, clients.stopped, productId, new Date(Date.now() - 45 * 86_400_000)),
+      await createPaidSale(cookie, clients.newActive, productId!, new Date(Date.now() - 5 * 86_400_000)),
+      await createPaidSale(cookie, clients.recurring, productId!, new Date(Date.now() - 60 * 86_400_000)),
+      await createPaidSale(cookie, clients.recurring, productId!, new Date(Date.now() - 2 * 86_400_000)),
+      await createPaidSale(cookie, clients.stopped, productId!, new Date(Date.now() - 45 * 86_400_000)),
     );
 
     const classificationResponse = await requestJson("/api/reports/clients/classification", cookie);
