@@ -1,13 +1,8 @@
 # Progresso — ERP Pedro
 
-Estados permitidos:
-- ⬜ Não iniciado
-- 🟡 Em construção
-- 🟠 Funcional
-- 🔵 Em homologação
-- ✅ Fechado
+Estados: ⬜ Não iniciado · 🟡 Em construção · 🟠 Funcional · 🔵 Em homologação · ✅ Fechado.
 
-**Regra:** 🟠 significa que a base funcional correspondente já opera e possui testes, mas ainda pode depender de interface Stitch ou de complementos externos. ✅ só é usado quando funcionalidade, dados, segurança, testes e visual aplicável estiverem efetivamente fechados.
+**Regra:** 🟠 indica base funcional operando com testes, ainda podendo depender de Stitch ou complementos externos. ✅ exige funcionalidade, dados, segurança, testes e visual aplicável efetivamente fechados.
 
 ## Marcos
 
@@ -29,310 +24,113 @@ Estados permitidos:
 | 14 | Preparação como produto | 🟡 Em construção |
 | 15 | Homologação final | ⬜ Não iniciado |
 
-## Progresso 1 — Fundação do sistema ✅
+## 1 — Fundação ✅
 
-Fechado e continuamente validado:
-- Next.js + TypeScript + PostgreSQL + Prisma;
-- migrations versionadas;
-- autenticação com senha e sessão persistida;
-- logout e invalidação de sessão;
-- `Organization`, `User` e `Membership`;
-- multiempresa e troca segura de tenant;
-- RBAC no servidor;
-- isolamento A/B entre empresas em PostgreSQL e smoke tests;
-- auditoria de ações relevantes;
-- consulta administrativa de auditoria tenant-scoped;
-- healthcheck do PostgreSQL por TCP e do armazenamento persistente;
-- scripts de backup/restore do PostgreSQL;
-- build/typecheck/CI reproduzíveis;
-- cabeçalhos HTTP básicos de endurecimento;
-- mutações `/api` bloqueiam origem cross-site explícita e `Origin` divergente da origem da aplicação.
+Next.js/TypeScript/PostgreSQL/Prisma, migrations, autenticação e sessão persistida, `Organization`/`User`/`Membership`, RBAC, auditoria, healthchecks, backup/restore e CI estão operacionais. O isolamento multiempresa existe na aplicação e possui defesa em profundidade no PostgreSQL: relações operacionais críticas, sessões e conciliação financeira não podem misturar tenants mesmo em escrita direta no banco.
 
-O fechamento da fundação não implica fechamento visual. A interface definitiva continua subordinada ao Stitch.
+O fechamento da fundação não implica fechamento visual; a interface final continua subordinada ao Stitch.
 
-## Progresso 2 — Design system + estrutura visual 🟡
+## 2 — Design system + estrutura visual 🟡
 
-O Stitch aprovado é a fonte visual obrigatória. Devem ser reproduzidos fielmente:
-- shell/sidebar e navegação;
-- cabeçalhos, cards e dashboards;
-- tabelas, gráficos, filtros e formulários;
-- botões, ícones, modais e estados;
-- tipografia, cores, espaçamentos e hierarquia;
-- responsividade.
+O Stitch aprovado é a fonte visual obrigatória para shell/sidebar, cabeçalhos, cards, dashboards, tabelas, gráficos, filtros, formulários, botões, ícones, modais, estados, tipografia, cores, espaçamentos e responsividade. Dashboard Geral, Clientes & CRM, Produtos & Estoque e o design system são explicitamente citados como telas já desenhadas.
 
-Telas explicitamente indicadas como já desenhadas no Stitch: Dashboard Geral, Clientes & CRM, Produtos & Estoque e o design system do ERP.
+**Bloqueio:** a referência disponível no PDF não possui detalhe suficiente para declarar fidelidade tela/estado/responsividade. Nenhum visual provisório será marcado como final.
 
-**Bloqueio atual:** a referência disponível no PDF não contém detalhe suficiente para declarar fidelidade pixel/estado/responsividade. Nenhum visual provisório será marcado como final por interpretação.
+## 3 — Gestão de Clientes 🟠
 
-## Progresso 3 — Gestão de Clientes 🟠
+Cadastro/consulta/edição tenant-scoped, nome/razão, CPF/CNPJ, endereço, WhatsApp, e-mail, segmento, vendedora responsável, histórico real de compras pagas, perfil comercial e perfil central estão funcionais. Auditoria, permissões e bloqueio cross-tenant também estão validados.
 
-Funcional no backend:
-- cadastro/consulta/edição tenant-scoped;
-- nome/razão, CPF/CNPJ, endereço completo, WhatsApp e e-mail;
-- validação e normalização de documento/contatos;
-- segmento e vendedora responsável;
-- histórico real de compras pagas;
-- perfil comercial;
-- perfil central reunindo cadastro, compras, crédito, vale, CRM e suporte;
-- auditoria e permissões;
-- bloqueio cross-tenant.
+**Pendente para ✅:** interface final conforme Stitch.
 
-**Pendente para ✅:** listagem, formulário e perfil visual conforme Stitch.
+## 4 — Crédito, Vale e CRM 🟠
 
-## Progresso 4 — Crédito, Vale e CRM 🟠
+Linha de crédito com limite/utilizado/disponível/movimentos, vale com saldo/movimentos, CRM com histórico/follow-up/conclusão, segmentos e `X dias` de inatividade configurável estão funcionais. Constraints críticas, auditoria e isolamento multiempresa estão ativos.
 
-Funcional no backend:
-- grupos/segmentos por empresa;
-- linha de crédito com limite, utilizado, disponível e movimentos;
-- bloqueio de uso acima do limite;
-- vale com saldo e movimentos;
-- bloqueio de saldo inválido;
-- CRM com histórico, atividades, follow-up e conclusão;
-- `X dias` de inatividade configurável por empresa;
-- alerta baseado exclusivamente na última compra efetivamente paga;
-- constraints críticas no PostgreSQL;
-- auditoria e isolamento multiempresa.
+**Pendente para ✅:** interface final conforme Stitch.
 
-**Pendente para ✅:** interface final Crédito/Vale/CRM conforme Stitch.
+## 5 — Produtos e estrutura de estoque 🟠
 
-## Progresso 5 — Produtos e estrutura de estoque 🟠
-
-Funcional no backend:
-- nome, SKU, código de barras;
-- categoria/subcategoria em dois níveis;
-- marca/fabricante, descrição e atributos técnicos;
-- fotos com variação;
-- custo, preço e unidade de medida;
-- estoque atual, mínimo e máximo;
-- validações e constraints de valores/quantidades;
-- API tenant-scoped e auditoria;
-- armazenamento real de imagens de produto;
-- imagem de catálogo pode ser explicitamente pública;
-- token de arquivo assinado e validação de assinatura do conteúdo conhecido;
-- catálogo automático lê o cadastro real, sem segunda base.
+Produto possui nome, SKU, código de barras, categoria/subcategoria, marca/fabricante, descrição, atributos, fotos/variação, custo, preço, unidade, estoque atual/mínimo/máximo, APIs tenant-scoped, auditoria e armazenamento real de imagens. O catálogo automático lê a mesma base de produtos.
 
 **Pendente para ✅:** Produtos & Estoque conforme Stitch.
 
-## Progresso 6 — Estoque inteligente 🟡
+## 6 — Estoque inteligente 🟡
 
-Já implementado:
-- mínimo/máximo;
-- alerta factual de estoque baixo quando quantidade <= mínimo;
-- métricas por produto: quantidade vendida, faturamento, vendas pagas, última venda e estoque;
-- filtro por período;
-- categorias predominantes por cliente.
+Já existem alerta de estoque baixo, mínimo/máximo, quantidade vendida, faturamento, vendas pagas, última venda, estoque e categorias predominantes por cliente.
 
-Aguardando regra objetiva do negócio:
-- produto de baixa saída: janela/limiar;
-- Curva ABC: faixas/pesos/período;
-- momento da baixa física e eventual reserva de estoque.
+**Aguardando regra objetiva:** baixa saída, Curva ABC e momento da baixa/reserva física. Nenhum critério será presumido.
 
-Nenhuma dessas regras será presumida.
+## 7 — Fluxo comercial 🟠
 
-## Progresso 7 — Fluxo comercial 🟠
+`Cliente → Orçamento → Pedido → Pagamento` funciona no mesmo `sale.id`, preservando cliente, vendedora, canal, itens, preço congelado, pagamentos e histórico. A timeline agrega transições, pagamentos, suporte e entrega. Canais: WhatsApp, Site e Loja Física.
 
-Fluxo central funcional:
+**Pendente para ✅:** interface fiel ao Stitch e decisão de baixa física do estoque.
 
-`Cliente → Orçamento → Pedido → Pagamento`
+## 8 — Pagamentos e entrega 🟠
 
-- cliente, vendedora, canal, produtos, quantidade e valores;
-- preço congelado no item comercial;
-- orçamento editável antes da confirmação;
-- orçamento vira pedido no mesmo registro;
-- pedido vira pago no mesmo `sale.id` quando o total quitado alcança o total;
-- timeline unificada preserva transições, pagamentos, suporte e entrega no mesmo histórico comercial;
-- canais WhatsApp, Site e Loja Física;
-- histórico de compras usa somente vendas pagas;
-- auditoria e isolamento multiempresa.
+Cartão, Pix, boleto e cheque; pagamento pendente/quitado; boleto/cheque com vencimento opcional; pagamentos parciais; atendimento/pós-venda/reclamações/SAC; retirada; Correios; transportadora e comprovantes privados estão funcionais e isolados por empresa.
 
-**Pendente para ✅:** interface comercial fiel ao Stitch e decisão formal sobre baixa física do estoque.
+**Pendente para ✅:** envio real de rastreio por e-mail/WhatsApp, provedores/templates/gatilhos e interface final.
 
-## Progresso 8 — Pagamentos e entrega 🟠
+## 9 — Vendedoras, metas e comissões 🟡
 
-Funcional no backend:
-- cartão, Pix, boleto e cheque;
-- pagamento pendente/quitado;
-- cartão e Pix não aceitam vencimento;
-- boleto e cheque aceitam vencimento opcional, representando a condição à vista/pré-datada prevista no documento-fonte;
-- API rejeita vencimento indevido em Pix/cartão;
-- pagamentos parciais sem ultrapassar o total;
-- atendimento, pós-venda, reclamações e SAC;
-- retirada;
-- Correios + código de rastreio;
-- transportadora;
-- upload de comprovantes de envio/entrega diretamente no ERP;
-- armazenamento privado de comprovantes;
-- arquivo privado exige autenticação, tenant correto e permissão adequada;
-- comprovante de entrega não pode ser publicado anonimamente;
-- suporte/logística auditados e isolados por empresa.
+Já implementado: carteira da vendedora, venda vinculada à responsável, vendas pagas, faturamento, clientes únicos, ticket médio, canais e filtro por período.
 
-Ainda pendente para ✅:
-- envio real do rastreio por e-mail;
-- envio real do rastreio por WhatsApp;
-- provedores/templates/gatilhos correspondentes;
-- interface conforme Stitch.
+Metas agora são funcionais sem presumir periodicidade: cada meta escolhe uma métrica explicitamente prevista no escopo (`REVENUE`, `SALES` ou `CLIENTS`) e informa `startAt`/`endAt`. O realizado usa somente vendas `PAID`; o ERP calcula realizado, percentual, atingimento e estado `UPCOMING`/`ACTIVE`/`ENDED`. Criação/edição/exclusão são auditadas e o PostgreSQL impede vínculo com vendedora de outro tenant. O perfil da vendedora expõe metas reais.
 
-## Progresso 9 — Vendedoras, metas e comissões 🟡
+**Ainda pendente:** fórmula/base/momento das comissões, tratamento de estornos/devoluções, eventual fluxo específico de treinamento/desenvolvimento além dos indicadores já disponíveis e interface final. Comissões continuam explicitamente sem cálculo automático enquanto não houver regra aprovada.
 
-Já implementado:
-- cliente vinculado à vendedora responsável;
-- venda mantém a vendedora durante o fluxo;
-- perfil factual da vendedora;
-- carteira de clientes atribuídos;
-- vendas pagas, faturamento, clientes únicos e ticket médio;
-- desempenho por canal;
-- filtro por período;
-- isolamento multiempresa.
+## 10 — Relatórios e dashboards 🟡
 
-O endpoint de perfil retorna metas e comissões explicitamente como `PENDING_RULE_DEFINITION` enquanto não houver regra aprovada.
+Já existem vendas/faturamento por período, ticket médio geral/novos/antigos, canais, performance por vendedora, ranking de compradores, classificação sem compra/novo/recorrente, inatividade por `X dias`, formas de pagamento, categorias predominantes e métricas de produto.
 
-Ainda depende de definição:
-- métrica/periodicidade da meta;
-- fórmula e base das comissões;
-- momento de reconhecimento e tratamento de estornos/devoluções;
-- indicadores finais de treinamento/desenvolvimento;
-- interface final.
+O Dashboard Geral agrega comercial, clientes, inatividade, estoque baixo e financeiro e agora também inclui metas por vendedora com identidade, alvo, realizado, percentual, atingimento e estado temporal. O filtro do dashboard seleciona metas por sobreposição de período sem alterar o período próprio de cálculo da meta. O dashboard é permission-aware e tenant-scoped.
 
-## Progresso 10 — Relatórios e dashboards 🟡
+**Pendente:** visual conforme Stitch, comissões após definição de regra e “reduziu compras” após definição de período/métrica/limiar.
 
-Já implementado:
-- vendas e faturamento por período;
-- ticket médio geral, novos e antigos;
-- canais;
-- performance por vendedora;
-- ranking factual de compradores;
-- cliente sem compra/novo/recorrente;
-- cliente que parou de comprar conforme `X dias` configurado;
-- formas de pagamento e categorias predominantes por cliente;
-- métricas factuais de produto;
-- Dashboard Geral agregado com comercial, clientes, inatividade, estoque baixo e financeiro;
-- dashboard respeita permissões e tenant.
+## 11 — Financeiro 🟠
 
-Ainda pendente:
-- Dashboard visual conforme Stitch;
-- metas e comissões no dashboard após definição das regras;
-- “reduziu compras” após definição de período/métrica/limiar.
+Contas a receber derivadas de pagamentos reais, contas a pagar, fluxo de caixa realizado, conciliação bancária manual e relatório consolidado estão funcionais. Conciliações também possuem guard cross-tenant no PostgreSQL.
 
-## Progresso 11 — Financeiro 🟠
+**Pendente para ✅:** interface final. Automação/importação bancária depende de provedor/contrato técnico.
 
-Funcional no backend:
-- contas a receber derivadas dos pagamentos reais da venda;
-- pendência, recebimento e vencimento;
-- contas a pagar e baixa;
-- fluxo de caixa realizado;
-- conciliação bancária manual com crédito/débito e vínculo à origem;
-- composição parcial com limites;
-- relatório financeiro consolidado;
-- permissões, auditoria, constraints e isolamento multiempresa.
+## 12 — Promoções e catálogo 🟡
 
-**Pendente para ✅:** interface financeira conforme Stitch. Automação/importação bancária só será criada se houver provedor/contrato técnico definido.
+Catálogo automático compartilhável por link, imagens públicas de produto, custo oculto e histórico de formas de pagamento já existem.
 
-## Progresso 12 — Promoções e catálogo 🟡
+**Aguardando regra:** descontos progressivos, dúzia fechada, promoções, prioridade/empilhamento/vigência/arredondamento e auto-atacado. Falta também página visual pública segundo o design system aprovado.
 
-Já implementado:
-- catálogo automático a partir de `Product`;
-- token/link público;
-- imagem pública de produto armazenável pelo próprio ERP;
-- custo não exposto no catálogo;
-- histórico de formas de pagamento disponível.
+## 13 — Integrações 🟡
 
-Ainda depende de regra aprovada:
-- descontos progressivos;
-- preço por dúzia fechada;
-- promoções por produto/categoria/valor/quantidade;
-- empilhamento/prioridade/vigência/arredondamento;
-- auto-atacado.
+A camada tenant-scoped de configuração está preparada para VaxChat, VaxLab, GoPage, ShopVax, WhatsApp, gateway e e-commerce, com estado, referência de segredo, auditoria e isolamento.
 
-Também falta a página visual pública conforme design system aprovado.
+Chamadas reais/webhooks/sincronizações dependem de documentação/API, URLs, autenticação, credenciais e contrato de eventos. Configuração cadastrada não significa integração conectada.
 
-## Progresso 13 — Integrações 🟡
+## 14 — Preparação como produto 🟡
 
-Camada de configuração tenant-scoped pronta para:
-- VaxChat;
-- VaxLab;
-- GoPage;
-- ShopVax;
-- WhatsApp;
-- gateway de pagamento;
-- e-commerce.
+Multiempresa, gestão de usuários, proteção do último `OWNER`, provisionamento de nova empresa + primeiro `OWNER`, Docker/Compose, PostgreSQL e arquivos persistentes, tokens HMAC, validação de arquivos, auditoria, backup/restore com SHA-256 e round-trip real de recuperação estão operacionais. O CI valida migrations, isolamento, typecheck, build, Compose, recuperação e smoke tests. A concorrência do CI é separada por workflow/ref para PRs e `main` não se cancelarem indevidamente.
 
-Existe habilitação/desabilitação, referência de segredo sem exposição pela API, auditoria e isolamento.
+**Pendente:** VPS real, domínio/DNS/TLS, e-mail empresarial, política final offsite/retention, planos/cobrança/assinatura e provisionamento acionado por contratação.
 
-As integrações **não são marcadas como conectadas** apenas por possuírem configuração. Chamadas reais, webhooks e sincronizações aguardam documentação/API, URLs, autenticação, credenciais e contrato de eventos de cada provedor. Webhooks futuros devem possuir autenticação/assinatura própria e exceção explícita, nunca desativar silenciosamente a proteção cross-site global.
+## 15 — Homologação final ⬜
 
-## Progresso 14 — Preparação como produto 🟡
+Só começa quando as dependências necessárias estiverem resolvidas. Deve cobrir E2E, permissões, isolamento, consistência, arquivos/recuperação, erros/duplicidades, segurança, performance, responsividade, comparação tela a tela com Stitch e integrações externas reais.
 
-Já implementado:
-- multiempresa/multicliente;
-- isolamento de clientes, produtos, estoque, vendas, financeiro, integrações e arquivos;
-- gestão tenant-scoped de usuários;
-- proteção do último `OWNER` e revogação de sessão ao remover acesso;
-- provisionamento transacional de nova empresa + primeiro `OWNER`;
-- comando `pnpm db:provision`;
-- Dockerfile e stack Compose de produção;
-- PostgreSQL persistente e não exposto publicamente;
-- aplicação em loopback preparada para proxy/TLS;
-- volume persistente `file_storage`;
-- upload público/privado por finalidade;
-- tokens HMAC de arquivo via `FILE_TOKEN_SECRET`;
-- tipos executáveis não previstos bloqueados;
-- validação de assinatura para PNG/JPEG/GIF/WebP/PDF;
-- consulta de auditoria administrativa por tenant;
-- backup/restore de PostgreSQL com checksum SHA-256;
-- backup/restore do volume de arquivos com checksum SHA-256;
-- round-trip real de recuperação do PostgreSQL e do volume de arquivos validado no CI;
-- restore destrutivo protegido por confirmação explícita;
-- validação de scripts operacionais e Compose no CI;
-- healthcheck do PostgreSQL por TCP, evitando falso positivo durante inicialização temporária.
+## Evidências recentes
 
-Ainda pendente:
-- VPS real e homologada;
-- domínio/DNS/TLS definitivos;
-- conta/e-mail empresarial;
-- política final de backup offsite/retention;
-- planos, cobrança, contratação e ciclo de vida de assinatura;
-- provisionamento acionado automaticamente por contratação.
+- Run 237 (`35048022891`): proteção cross-site e pagamentos + suíte verde.
+- Run 258 (`35049646523`): restore real PostgreSQL/arquivos + suíte verde.
+- Run 267 (`35050244542`): fonte oficial revalidada e formas de pagamento preservadas.
+- Run 269 (`35051330767`): guards de consistência multiempresa no PostgreSQL.
+- Run 271 (`35051855628`): guards de tenant na conciliação financeira.
+- Run 273 (`35059990237`): definição/acompanhamento de metas por vendedora + suíte completa verde.
+- Run 276 (`35060420308`): metas integradas ao Dashboard Geral + concorrência de CI corrigida + suíte completa verde.
+- Run 277 (`35060600021`): mesma cabeça funcional incorporada ao `main`, com migrations, isolamento, typecheck, build, recuperação e smoke tests verdes.
 
-## Progresso 15 — Homologação final ⬜
+A matriz requisito oficial → implementação → progresso está em `docs/SCOPE_TRACEABILITY.md`.
 
-Só começa quando as dependências necessárias para o produto final estiverem resolvidas. A homologação deve cobrir:
-- fluxos end-to-end;
-- permissões;
-- isolamento multiempresa;
-- consistência de dados;
-- arquivos e recuperação;
-- erros/duplicidades;
-- segurança;
-- performance;
-- responsividade;
-- comparação tela a tela com o Stitch;
-- integrações externas efetivamente ativadas.
+## Regras ainda pendentes
 
-## Evidências recentes de validação
+Permanecem sem implementação automática final até aprovação objetiva: “reduziu compras”, baixa saída, Curva ABC, comissões, auto-atacado, baixa/reserva de estoque, promoções/descontos progressivos e integrações externas cujo contrato técnico ainda não foi fornecido.
 
-- Run 166 (`35038451808`): perfil central do cliente e isolamento.
-- Run 170 (`35038674059`): Dashboard Geral agregado e permission-aware.
-- Run 176 (`35038885199`): configuração de produção/Compose validada.
-- Run 213 (`35041806933`): perfil factual da vendedora + suíte completa verde.
-- Run 216 (`35041950612`): segurança de leitura de arquivos privados + suíte completa verde.
-- Run 233 (`35042735654`): comprovantes privados de transportadora + suíte completa verde.
-- Run 237 (`35048022891`): proteção cross-site e regra à vista/pré-datada de pagamento + migrations, isolamento, typecheck, build, Compose e smoke tests verdes.
-- Run 258 (`35049646523`): restore real de PostgreSQL e arquivos, migrations, isolamento, typecheck, build, Compose e smoke tests verdes.
-- Run 267 (`35050244542`): fonte oficial revalidada sem expansão silenciosa de formas de pagamento; migrations, isolamento, typecheck, build, recuperação e smoke tests verdes.
-
-A matriz detalhada requisito oficial → implementação → progresso está em `docs/SCOPE_TRACEABILITY.md`.
-
-## Regras ainda não definidas pelo documento-fonte
-
-Permanecem sem implementação automática final até aprovação objetiva:
-- “reduziu compras”;
-- baixa saída;
-- Curva ABC;
-- comissões;
-- metas;
-- auto-atacado;
-- baixa/reserva de estoque;
-- promoções/descontos progressivos;
-- integrações externas reais onde o contrato técnico ainda não foi fornecido.
-
-O desenvolvimento continua avançando sobre os dados-base e infraestrutura sem transformar essas lacunas em suposições.
+Metas não estão mais nessa lista: a empresa escolhe por meta uma métrica suportada pela fonte e informa explicitamente o período, sem recorrência presumida.
