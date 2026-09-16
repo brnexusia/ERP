@@ -37,12 +37,23 @@ export const saleQuoteUpdateSchema = z
   })
   .refine((value) => Object.keys(value).length > 0, "Informe ao menos um campo para atualização.");
 
-export const salePaymentCreateSchema = z.object({
-  method: z.nativeEnum(PaymentMethod),
-  status: z.nativeEnum(PaymentStatus),
-  amount: money,
-  dueDate: z.string().datetime({ offset: true }).transform((value) => new Date(value)).nullable().optional(),
-});
+export const salePaymentCreateSchema = z
+  .object({
+    method: z.nativeEnum(PaymentMethod),
+    status: z.nativeEnum(PaymentStatus),
+    amount: money,
+    dueDate: z.string().datetime({ offset: true }).transform((value) => new Date(value)).nullable().optional(),
+  })
+  .superRefine((value, context) => {
+    const supportsDueDate = value.method === PaymentMethod.BOLETO || value.method === PaymentMethod.CHEQUE;
+    if (value.dueDate && !supportsDueDate) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["dueDate"],
+        message: "Vencimento só pode ser informado para boleto ou cheque.",
+      });
+    }
+  });
 
 export const salePaymentUpdateSchema = z.object({
   status: z.nativeEnum(PaymentStatus),
