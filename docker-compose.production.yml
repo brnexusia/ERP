@@ -30,11 +30,14 @@ services:
         condition: service_healthy
     ports:
       - "127.0.0.1:${APP_PORT:-3000}:3000"
+    volumes:
+      - file_storage:/app/storage
     networks:
       - erp_internal
 
 volumes:
   postgres_data:
+  file_storage:
 
 networks:
   erp_internal:
