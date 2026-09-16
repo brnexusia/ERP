@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionContext } from "@/lib/auth/session";
 import {
+  assertStoredFileReadPermission,
   FileStorageNotFoundError,
   readStoredFile,
   removeStoredFile,
@@ -20,6 +21,7 @@ export async function GET(_request: Request, context: RouteContext) {
   try {
     const file = await readStoredFile(token);
     if (file.organizationId !== session.organizationId) throw new FileStorageNotFoundError();
+    assertStoredFileReadPermission(session.role, file.purpose);
 
     return new Response(file.data, {
       status: 200,
