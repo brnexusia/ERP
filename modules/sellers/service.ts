@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { assertPermission } from "@/lib/auth/permissions";
 import type { ClientAccessContext } from "@/modules/clients/service";
 import type { ReportPeriod } from "@/modules/reports/schema";
+import { listSellerGoalsWithProgress } from "@/modules/sellers/goal-service";
 
 export class SellerNotFoundError extends Error {
   constructor(message = "Vendedora não encontrada.") {
@@ -61,23 +62,26 @@ export async function getSellerProfile(
   if (!seller) throw new SellerNotFoundError();
 
   const paidAt = paidAtFilter(period);
-  const sales = await db.sale.findMany({
-    where: {
-      organizationId: context.organizationId,
-      sellerMembershipId: seller.id,
-      stage: "PAID",
-      ...(paidAt ? { paidAt } : {}),
-    },
-    include: {
-      client: {
-        select: {
-          id: true,
-          name: true,
+  const [sales, goals] = await Promise.all([
+    db.sale.findMany({
+      where: {
+        organizationId: context.organizationId,
+        sellerMembershipId: seller.id,
+        stage: "PAID",
+        ...(paidAt ? { paidAt } : {}),
+      },
+      include: {
+        client: {
+          select: {
+            id: true,
+            name: true,
+          },
         },
       },
-    },
-    orderBy: [{ paidAt: "desc" }, { createdAt: "desc" }],
-  });
+      orderBy: [{ paidAt: "desc" }, { createdAt: "desc" }],
+    }),
+    listSellerGoalsWithProgress(context, seller.id),
+  ]);
 
   const revenue = sales.reduce(
     (total, sale) => total.add(sale.totalAmount),
@@ -112,10 +116,7 @@ export async function getSellerProfile(
       channels: channelMap,
       paidSales: sales,
     },
-    goals: {
-      status: "PENDING_RULE_DEFINITION" as const,
-      reason: "O escopo exige metas, mas não define métrica, periodicidade ou regra de atingimento.",
-    },
+    goals,
     commissions: {
       status: "PENDING_RULE_DEFINITION" as const,
       reason: "O escopo exige comissões, mas não define fórmula, percentual, base ou momento de reconhecimento.",
