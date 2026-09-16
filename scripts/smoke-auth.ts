@@ -204,6 +204,31 @@ async function main() {
       `Troca para tenant sem vínculo deveria retornar 403; retornou ${switchForbidden.status}.`,
     );
 
+    const crossSiteLogout = await fetch(`${BASE_URL}/api/auth/logout`, {
+      method: "POST",
+      headers: {
+        Cookie: sessionCookie,
+        Origin: "https://malicious.example",
+        "Sec-Fetch-Site": "cross-site",
+      },
+      redirect: "manual",
+    });
+    assert.equal(
+      crossSiteLogout.status,
+      403,
+      `Mutação cross-site deveria ser bloqueada; retornou ${crossSiteLogout.status}.`,
+    );
+
+    const homeAfterBlockedCrossSite = await fetch(`${BASE_URL}/`, {
+      headers: { Cookie: sessionCookie },
+      redirect: "manual",
+    });
+    assert.equal(
+      homeAfterBlockedCrossSite.status,
+      200,
+      "Tentativa cross-site bloqueada não deve invalidar a sessão legítima.",
+    );
+
     const logout = await fetch(`${BASE_URL}/api/auth/logout`, {
       method: "POST",
       headers: { Cookie: sessionCookie },
@@ -232,6 +257,7 @@ async function main() {
     console.log("✓ cliente de outro tenant invisível pela API");
     console.log("✓ troca autorizada de empresa validada");
     console.log("✓ troca sem membership bloqueada com 403");
+    console.log("✓ mutações API cross-site bloqueadas sem derrubar a sessão legítima");
     console.log("✓ logout e invalidação de sessão validados");
   } finally {
     await db.session.deleteMany({ where: { userId: user.id } });
