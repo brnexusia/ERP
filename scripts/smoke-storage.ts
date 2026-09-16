@@ -24,7 +24,8 @@ async function upload(
   input: { name: string; type: string; bytes: Uint8Array; purpose: string; visibility: string },
 ) {
   const form = new FormData();
-  form.append("file", new Blob([input.bytes], { type: input.type }), input.name);
+  const blobBytes = input.bytes.slice().buffer as ArrayBuffer;
+  form.append("file", new Blob([blobBytes], { type: input.type }), input.name);
   form.append("purpose", input.purpose);
   form.append("visibility", input.visibility);
 
@@ -73,7 +74,8 @@ async function main() {
     });
     assert.equal(publicUpload.status, 201, `Upload público falhou: ${publicUpload.status}`);
     const publicFile = (await publicUpload.json()).file;
-    publicToken = publicFile.token;
+    const publicTokenValue = String(publicFile.token);
+    publicToken = publicTokenValue;
     assert.equal(publicFile.visibility, "public");
     assert.equal(publicFile.purpose, "PRODUCT_IMAGE");
     assert.equal(publicFile.mimeType, "image/png");
@@ -85,7 +87,7 @@ async function main() {
     assert.deepEqual(new Uint8Array(await publicRead.arrayBuffer()), pngBytes);
 
     const tamperedPublic = await fetch(
-      `${BASE_URL}/api/public/files/${tamperTokenPurpose(publicToken)}`,
+      `${BASE_URL}/api/public/files/${tamperTokenPurpose(publicTokenValue)}`,
       { redirect: "manual" },
     );
     assert.equal(tamperedPublic.status, 404, "Token adulterado precisa ser rejeitado.");
@@ -100,7 +102,8 @@ async function main() {
     });
     assert.equal(privateUpload.status, 201, `Upload privado falhou: ${privateUpload.status}`);
     const privateFile = (await privateUpload.json()).file;
-    privateToken = privateFile.token;
+    const privateTokenValue = String(privateFile.token);
+    privateToken = privateTokenValue;
     assert.ok(privateFile.url.includes("/api/files/"));
 
     const anonymousPrivate = await fetch(privateFile.url, { redirect: "manual" });
@@ -114,7 +117,7 @@ async function main() {
     assert.equal(authenticatedPrivate.headers.get("content-type"), "application/pdf");
     assert.deepEqual(new Uint8Array(await authenticatedPrivate.arrayBuffer()), pdfBytes);
 
-    const tamperedDelete = await fetch(`${BASE_URL}/api/files/${tamperTokenPurpose(privateToken)}`, {
+    const tamperedDelete = await fetch(`${BASE_URL}/api/files/${tamperTokenPurpose(privateTokenValue)}`, {
       method: "DELETE",
       headers: { Cookie: cookie },
       redirect: "manual",
@@ -152,7 +155,7 @@ async function main() {
     });
     assert.equal(crossTenantPrivate.status, 404, "Arquivo privado de outro tenant deve ficar invisível.");
 
-    const crossTenantDelete = await fetch(`${BASE_URL}/api/files/${privateToken}`, {
+    const crossTenantDelete = await fetch(`${BASE_URL}/api/files/${privateTokenValue}`, {
       method: "DELETE",
       headers: { Cookie: cookie },
       redirect: "manual",
@@ -167,7 +170,7 @@ async function main() {
     });
     assert.equal(switchBack.status, 200);
 
-    const deletePrivate = await fetch(`${BASE_URL}/api/files/${privateToken}`, {
+    const deletePrivate = await fetch(`${BASE_URL}/api/files/${privateTokenValue}`, {
       method: "DELETE",
       headers: { Cookie: cookie },
       redirect: "manual",
@@ -181,7 +184,7 @@ async function main() {
     });
     assert.equal(afterDelete.status, 404);
 
-    const deletePublic = await fetch(`${BASE_URL}/api/files/${publicToken}`, {
+    const deletePublic = await fetch(`${BASE_URL}/api/files/${publicTokenValue}`, {
       method: "DELETE",
       headers: { Cookie: cookie },
       redirect: "manual",
