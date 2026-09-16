@@ -24,6 +24,10 @@ Regras:
 4. Restrições únicas que variam por empresa devem ser compostas com `organizationId`.
 5. Integrações e configurações são isoladas por empresa.
 6. Arquivos privados também são isolados pelo tenant ativo e não podem ser lidos ou removidos por outra empresa.
+7. Relações operacionais críticas que carregam `organizationId` possuem guards no PostgreSQL para rejeitar vínculo com pai de outro tenant, inclusive cliente, crédito/vale/CRM, produtos/estoque, vendas, suporte, entrega e conciliação financeira.
+8. Uma `Session` só pode apontar para uma organização se existir `Membership` correspondente para o mesmo usuário; essa condição é validada pela aplicação e também pelo PostgreSQL.
+
+O filtro/autorização no servidor continua sendo a camada primária. Os guards do PostgreSQL são defesa em profundidade para impedir que uma escrita direta, bug de serviço ou futura integração persista uma relação cross-tenant inconsistente.
 
 ### Acesso
 Modelo inicial:
