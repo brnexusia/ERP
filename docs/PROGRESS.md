@@ -42,7 +42,7 @@ Fechado e continuamente validado:
 - isolamento A/B entre empresas em PostgreSQL e smoke tests;
 - auditoria de ações relevantes;
 - consulta administrativa de auditoria tenant-scoped;
-- healthcheck de banco e armazenamento persistente;
+- healthcheck do PostgreSQL por TCP e do armazenamento persistente;
 - scripts de backup/restore do PostgreSQL;
 - build/typecheck/CI reproduzíveis;
 - cabeçalhos HTTP básicos de endurecimento;
@@ -278,11 +278,12 @@ Já implementado:
 - tipos executáveis não previstos bloqueados;
 - validação de assinatura para PNG/JPEG/GIF/WebP/PDF;
 - consulta de auditoria administrativa por tenant;
-- backup/restore de PostgreSQL;
-- backup/restore do volume de arquivos;
-- restore de arquivos protegido por confirmação explícita;
+- backup/restore de PostgreSQL com checksum SHA-256;
+- backup/restore do volume de arquivos com checksum SHA-256;
+- round-trip real de recuperação do PostgreSQL e do volume de arquivos validado no CI;
+- restore destrutivo protegido por confirmação explícita;
 - validação de scripts operacionais e Compose no CI;
-- healthcheck de banco + armazenamento.
+- healthcheck do PostgreSQL por TCP, evitando falso positivo durante inicialização temporária.
 
 Ainda pendente:
 - VPS real e homologada;
@@ -316,6 +317,8 @@ Só começa quando as dependências necessárias para o produto final estiverem 
 - Run 216 (`35041950612`): segurança de leitura de arquivos privados + suíte completa verde.
 - Run 233 (`35042735654`): comprovantes privados de transportadora + suíte completa verde.
 - Run 237 (`35048022891`): proteção cross-site e regra à vista/pré-datada de pagamento + migrations, isolamento, typecheck, build, Compose e smoke tests verdes.
+- Run 258 (`35049646523`): restore real de PostgreSQL e arquivos, migrations, isolamento, typecheck, build, Compose e smoke tests verdes.
+- Run 267 (`35050244542`): fonte oficial revalidada sem expansão silenciosa de formas de pagamento; migrations, isolamento, typecheck, build, recuperação e smoke tests verdes.
 
 A matriz detalhada requisito oficial → implementação → progresso está em `docs/SCOPE_TRACEABILITY.md`.
 
