@@ -36,6 +36,17 @@ async function upload(
   });
 }
 
+function tamperTokenPurpose(token: string): string {
+  const [encodedPayload, signature] = token.split(".");
+  const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8")) as {
+    key: string;
+    purpose: string;
+  };
+  payload.purpose = payload.purpose === "PRODUCT_IMAGE" ? "DELIVERY_PROOF" : "PRODUCT_IMAGE";
+  const tamperedPayload = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+  return `${tamperedPayload}.${signature}`;
+}
+
 async function main() {
   const adminEmail = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
   const adminPassword = process.env.SEED_ADMIN_PASSWORD;
@@ -73,6 +84,12 @@ async function main() {
     assert.equal(publicRead.headers.get("content-type"), "image/png");
     assert.deepEqual(new Uint8Array(await publicRead.arrayBuffer()), pngBytes);
 
+    const tamperedPublic = await fetch(
+      `${BASE_URL}/api/public/files/${tamperTokenPurpose(publicToken)}`,
+      { redirect: "manual" },
+    );
+    assert.equal(tamperedPublic.status, 404, "Token adulterado precisa ser rejeitado.");
+
     const pdfBytes = new TextEncoder().encode("%PDF-1.4\nERP PEDRO STORAGE SMOKE\n%%EOF");
     const privateUpload = await upload(cookie, {
       name: "comprovante.pdf",
@@ -96,6 +113,13 @@ async function main() {
     assert.equal(authenticatedPrivate.status, 200);
     assert.equal(authenticatedPrivate.headers.get("content-type"), "application/pdf");
     assert.deepEqual(new Uint8Array(await authenticatedPrivate.arrayBuffer()), pdfBytes);
+
+    const tamperedDelete = await fetch(`${BASE_URL}/api/files/${tamperTokenPurpose(privateToken)}`, {
+      method: "DELETE",
+      headers: { Cookie: cookie },
+      redirect: "manual",
+    });
+    assert.equal(tamperedDelete.status, 404, "Purpose do token não pode ser trocado para contornar permissão.");
 
     const invalidUpload = await upload(cookie, {
       name: "script.html",
@@ -179,6 +203,7 @@ async function main() {
 
     console.log("✓ imagens públicas podem alimentar catálogo sem expor arquivos privados");
     console.log("✓ comprovantes privados exigem sessão e tenant correto");
+    console.log("✓ token assinado rejeita adulteração de caminho/purpose");
     console.log("✓ tipos executáveis não autorizados são rejeitados");
     console.log("✓ upload e remoção deixam trilha de auditoria");
   } finally {
