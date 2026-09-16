@@ -82,6 +82,12 @@ enum BankEntryDirection {
   DEBIT
 }
 
+enum SellerGoalMetric {
+  REVENUE
+  SALES
+  CLIENTS
+}
+
 model Organization {
   id           String             @id @default(cuid())
   name         String
@@ -114,6 +120,7 @@ model Organization {
   salePayments          SalePayment[]
   supportRecords        SupportRecord[]
   saleDeliveries        SaleDelivery[]
+  sellerGoals           SellerGoal[]
   accountPayables       AccountPayable[]
   bankStatementEntries  BankStatementEntry[]
   bankReconciliations   BankReconciliation[]
@@ -135,6 +142,7 @@ model User {
   valeMovementsCreated   ClientValeMovement[]   @relation("ValeMovementCreator")
   crmEntriesCreated      ClientCrmEntry[]        @relation("CrmEntryCreator")
   supportRecordsCreated  SupportRecord[]         @relation("SupportRecordCreator")
+  sellerGoalsCreated     SellerGoal[]            @relation("SellerGoalCreator")
 }
 
 model Membership {
@@ -149,6 +157,7 @@ model Membership {
   user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   responsibleClients Client[]     @relation("ClientResponsibleSeller")
   assignedSales      Sale[]       @relation("SaleSeller")
+  sellerGoals        SellerGoal[] @relation("SellerGoalSeller")
 
   @@unique([organizationId, userId])
   @@index([userId])
@@ -469,6 +478,27 @@ model CatalogShare {
   updatedAt      DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model SellerGoal {
+  id                 String           @id @default(cuid())
+  organizationId     String
+  sellerMembershipId String
+  metric             SellerGoalMetric
+  targetValue        Decimal          @db.Decimal(14, 2)
+  startAt            DateTime
+  endAt              DateTime
+  note               String?
+  createdByUserId    String
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  seller       Membership   @relation("SellerGoalSeller", fields: [sellerMembershipId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation("SellerGoalCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, sellerMembershipId, startAt, endAt])
+  @@index([organizationId, metric, startAt, endAt])
 }
 
 model Sale {
