@@ -4,15 +4,17 @@
 
 A estrutura de deploy está preparada no repositório, mas **nenhum ambiente de produção é considerado configurado** enquanto VPS, domínio, DNS/TLS e variáveis reais não forem fornecidos e validados.
 
-O documento-fonte exige VPS/ambiente de produção, banco/armazenamento, segurança de acesso, backup/recuperação, domínio e arquitetura preparada para crescimento e múltiplas empresas. Este procedimento prepara a aplicação e o PostgreSQL para esse ambiente sem escolher silenciosamente um provedor ou domínio.
+O documento-fonte exige VPS/ambiente de produção, banco/armazenamento, segurança de acesso, backup/recuperação, domínio e arquitetura preparada para crescimento e múltiplas empresas. Este procedimento prepara a aplicação, o PostgreSQL e o armazenamento persistente de arquivos para esse ambiente sem escolher silenciosamente um provedor ou domínio.
 
 ## Arquivos
 
 - `Dockerfile` — imagem da aplicação;
-- `docker-compose.production.yml` — aplicação + PostgreSQL persistente;
+- `docker-compose.production.yml` — aplicação + PostgreSQL + volume persistente de arquivos;
 - `.env.production.example` — modelo de variáveis, sem segredos reais;
-- `ops/backup-postgres.sh` — backup;
-- `ops/restore-postgres.sh` — recuperação;
+- `ops/backup-postgres.sh` — backup do PostgreSQL;
+- `ops/restore-postgres.sh` — recuperação do PostgreSQL;
+- `ops/backup-storage.sh` — backup do volume persistente de arquivos;
+- `ops/restore-storage.sh` — recuperação protegida do volume persistente de arquivos;
 - `/api/health` — healthcheck da aplicação.
 
 ## Princípios de produção
@@ -21,8 +23,11 @@ O documento-fonte exige VPS/ambiente de produção, banco/armazenamento, seguran
 - A aplicação publica por padrão apenas `127.0.0.1:3000`, para ficar atrás de proxy reverso/TLS no host.
 - Migrations versionadas são aplicadas antes da inicialização da aplicação.
 - Dados do PostgreSQL ficam em volume persistente.
+- Arquivos enviados pelo ERP ficam em volume persistente separado (`file_storage`).
+- Arquivos privados exigem sessão e tenant correto; arquivos marcados explicitamente como públicos podem alimentar catálogo/imagens públicas.
+- Tokens de arquivo são assinados com `FILE_TOKEN_SECRET`; produção exige segredo com pelo menos 32 caracteres.
 - `.env.production` é arquivo local do servidor e não deve ser commitado.
-- Senhas e referências de segredo das integrações não devem ser colocadas no repositório.
+- Senhas, `FILE_TOKEN_SECRET` e referências de segredo das integrações não devem ser colocadas no repositório.
 
 ## Preparação do servidor
 
@@ -32,7 +37,7 @@ Pré-requisitos mínimos:
 - Docker Engine;
 - Docker Compose v2;
 - firewall permitindo apenas o necessário para SSH, HTTP e HTTPS;
-- espaço persistente para banco e backups;
+- espaço persistente para banco, arquivos e backups;
 - usuário operacional sem depender de login root para rotina diária.
 
 ## Primeiro deploy
@@ -41,19 +46,20 @@ Pré-requisitos mínimos:
 2. Copiar `.env.production.example` para `.env.production`.
 3. Substituir todos os valores de exemplo por valores reais e seguros.
 4. Garantir que `DATABASE_URL` use o hostname interno `postgres` e corresponda ao usuário/senha/database definidos para o container PostgreSQL.
-5. Construir e iniciar:
+5. Gerar um `FILE_TOKEN_SECRET` aleatório e forte com pelo menos 32 caracteres; não reutilizar senha de banco.
+6. Construir e iniciar:
 
 ```bash
 docker compose --env-file .env.production -f docker-compose.production.yml up -d --build
 ```
 
-6. Conferir estado:
+7. Conferir estado:
 
 ```bash
 docker compose --env-file .env.production -f docker-compose.production.yml ps
 ```
 
-7. Conferir healthcheck local:
+8. Conferir healthcheck local:
 
 ```bash
 curl -fsS http://127.0.0.1:${APP_PORT:-3000}/api/health
@@ -80,6 +86,8 @@ docker compose --env-file .env.production -f docker-compose.production.yml up -d
 
 A imagem executa `prisma migrate deploy` antes do `next start`. Uma atualização com migration inválida deve impedir a nova aplicação de iniciar em vez de ignorar o problema de banco.
 
+O volume `file_storage` não é recriado em rebuild normal. Atualizar a imagem da aplicação, portanto, não deve apagar fotos, comprovantes ou arquivos enviados pelo ERP.
+
 ## Domínio e HTTPS
 
 O domínio definitivo ainda não foi definido no documento técnico disponível. Quando houver domínio aprovado:
@@ -89,19 +97,84 @@ O domínio definitivo ainda não foi definido no documento técnico disponível.
 3. encaminhar HTTPS para `127.0.0.1:APP_PORT`;
 4. emitir/renovar certificado TLS;
 5. atualizar `APP_URL` para a URL HTTPS definitiva;
-6. validar cookies, autenticação, APIs e callbacks/webhooks das integrações no endereço definitivo.
+6. validar cookies, autenticação, URLs dos arquivos públicos/privados, APIs e callbacks/webhooks das integrações no endereço definitivo.
 
 Não se deve expor diretamente a porta do PostgreSQL ou tratar o endereço provisório da VPS como domínio final.
 
-## Backup e recuperação
+## Armazenamento de arquivos
 
-A presença do script de backup não substitui a execução programada. Antes de considerar produção homologada é obrigatório:
+O endpoint autenticado `POST /api/files` recebe `multipart/form-data` e exige:
 
-- definir periodicidade;
+- `file` — arquivo;
+- `purpose` — `PRODUCT_IMAGE`, `DELIVERY_PROOF`, `CLIENT_FILE` ou `OTHER`;
+- `visibility` — `public` ou `private`.
+
+O limite técnico padrão é 25 MiB (`MAX_UPLOAD_BYTES`) e pode ser ajustado no ambiente. Tipos executáveis como HTML não são aceitos. A permissão de upload é derivada da finalidade do arquivo:
+
+- imagem de produto → `inventory:write`;
+- comprovante de entrega → `sales:write`;
+- arquivo de cliente → `clients:write`;
+- outros arquivos → uma permissão operacional de escrita/gestão compatível.
+
+Arquivos privados são servidos por rota autenticada e não ficam acessíveis a outro tenant. Arquivos públicos são expostos apenas quando o upload foi marcado explicitamente como público. Upload e remoção deixam trilha no `AuditLog`.
+
+## Backup do PostgreSQL
+
+Os scripts genéricos continuam disponíveis:
+
+```bash
+DATABASE_URL="..." ./ops/backup-postgres.sh
+```
+
+Para restore:
+
+```bash
+DATABASE_URL="..." BACKUP_FILE="./backups/erp-pedro-....dump" ./ops/restore-postgres.sh
+```
+
+O restore deve ser feito em janela controlada, preferencialmente com a aplicação parada ou sem escrita concorrente.
+
+## Backup do armazenamento de arquivos
+
+A stack de produção contém um serviço operacional isolado que monta o volume `file_storage` somente para backup.
+
+```bash
+./ops/backup-storage.sh
+```
+
+Isso cria em `./backups` um arquivo no formato:
+
+`erp-pedro-files-YYYYMMDDTHHMMSSZ.tar.gz`
+
+A retenção padrão é de 14 dias e pode ser alterada por `RETENTION_DAYS`.
+
+## Restore do armazenamento de arquivos
+
+O restore é destrutivo para o conteúdo atual do volume e exige confirmação explícita. O arquivo é validado como `tar.gz` antes de o volume ser limpo.
+
+```bash
+CONFIRM_RESTORE=YES ./ops/restore-storage.sh erp-pedro-files-YYYYMMDDTHHMMSSZ.tar.gz
+```
+
+Antes de restaurar em produção:
+
+1. confirmar que o arquivo selecionado é o correto;
+2. criar um backup do estado atual;
+3. parar ou bloquear uploads durante a restauração;
+4. validar após o restore pelo menos uma imagem pública e um arquivo privado autenticado.
+
+## Política de backup e recuperação
+
+A presença dos scripts não substitui a execução programada. Antes de considerar produção homologada é obrigatório:
+
+- definir periodicidade para PostgreSQL e `file_storage`;
 - definir retenção;
 - guardar cópia fora do mesmo volume/VPS;
-- executar pelo menos um teste de restore em ambiente isolado;
-- registrar data e resultado do teste de recuperação.
+- executar pelo menos um teste de restore do banco em ambiente isolado;
+- executar pelo menos um teste de restore do volume de arquivos;
+- registrar data e resultado dos testes de recuperação.
+
+Banco e arquivos fazem parte do mesmo produto. Um backup de banco sem as fotos/comprovantes correspondentes não representa recuperação completa do ERP.
 
 ## Checklist antes de liberar uso real
 
@@ -111,9 +184,14 @@ A presença do script de backup não substitui a execução programada. Antes de
 - login e isolamento multiempresa testados;
 - permissões revisadas;
 - banco não exposto publicamente;
+- volume de arquivos persistente montado;
+- `FILE_TOKEN_SECRET` real e fora do Git;
+- arquivo privado bloqueado sem sessão e entre tenants;
 - TLS ativo;
-- backup automatizado;
-- restore testado;
+- backup de banco automatizado;
+- backup do `file_storage` automatizado;
+- restore de banco testado;
+- restore de arquivos testado;
 - domínio/APP_URL corretos;
 - credenciais reais fora do Git;
 - integrações externas homologadas individualmente quando forem ativadas.
@@ -127,7 +205,7 @@ Este repositório não escolhe por conta própria:
 - configuração DNS;
 - provedor de proxy/TLS, se houver preferência operacional;
 - conta/e-mail empresarial;
-- armazenamento externo de arquivos, caso seja necessário além do servidor;
-- política final de retenção de backup.
+- armazenamento externo de arquivos, caso seja necessário além do volume persistente da VPS;
+- política final de retenção/offsite dos backups.
 
 Esses itens devem ser preenchidos no momento da implantação real, sem alterar as regras funcionais do ERP.
