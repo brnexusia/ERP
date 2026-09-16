@@ -26,6 +26,7 @@ O documento-fonte exige VPS/ambiente de produção, banco/armazenamento, seguran
 - Arquivos enviados pelo ERP ficam em volume persistente separado (`file_storage`).
 - Arquivos privados exigem sessão e tenant correto; arquivos marcados explicitamente como públicos podem alimentar catálogo/imagens públicas.
 - Tokens de arquivo são assinados com `FILE_TOKEN_SECRET`; produção exige segredo com pelo menos 32 caracteres.
+- Backups novos de banco e arquivos recebem checksum SHA-256; o restore valida a integridade antes de substituir dados.
 - `.env.production` é arquivo local do servidor e não deve ser commitado.
 - Senhas, `FILE_TOKEN_SECRET` e referências de segredo das integrações não devem ser colocadas no repositório.
 
@@ -126,11 +127,18 @@ Os scripts genéricos continuam disponíveis:
 DATABASE_URL="..." ./ops/backup-postgres.sh
 ```
 
-Para restore:
+Cada backup novo gera dois arquivos correspondentes:
+
+- `erp-pedro-YYYYMMDDTHHMMSSZ.dump`
+- `erp-pedro-YYYYMMDDTHHMMSSZ.dump.sha256`
+
+O checksum é calculado somente depois que o `pg_dump` termina. Para restore:
 
 ```bash
 DATABASE_URL="..." BACKUP_FILE="./backups/erp-pedro-....dump" ./ops/restore-postgres.sh
 ```
+
+Antes do `pg_restore`, o script valida o `.sha256`. Se o checksum divergir, o restore para antes de alterar o banco. Um backup legado sem checksum também é bloqueado por padrão; somente após revisão explícita pode ser usado com `ALLOW_UNVERIFIED_BACKUP=YES`.
 
 O restore deve ser feito em janela controlada, preferencialmente com a aplicação parada ou sem escrita concorrente.
 
@@ -142,26 +150,30 @@ A stack de produção contém um serviço operacional isolado que monta o volume
 ./ops/backup-storage.sh
 ```
 
-Isso cria em `./backups` um arquivo no formato:
+Cada execução cria em `./backups`:
 
-`erp-pedro-files-YYYYMMDDTHHMMSSZ.tar.gz`
+- `erp-pedro-files-YYYYMMDDTHHMMSSZ.tar.gz`
+- `erp-pedro-files-YYYYMMDDTHHMMSSZ.tar.gz.sha256`
 
-A retenção padrão é de 14 dias e pode ser alterada por `RETENTION_DAYS`.
+A retenção padrão é de 14 dias e pode ser alterada por `RETENTION_DAYS`. O arquivo de checksum segue a mesma política de retenção do backup correspondente.
 
 ## Restore do armazenamento de arquivos
 
-O restore é destrutivo para o conteúdo atual do volume e exige confirmação explícita. O arquivo é validado como `tar.gz` antes de o volume ser limpo.
+O restore é destrutivo para o conteúdo atual do volume e exige confirmação explícita. Antes de limpar o volume, o serviço verifica o checksum SHA-256 e também valida que o arquivo é um `tar.gz` legível.
 
 ```bash
 CONFIRM_RESTORE=YES ./ops/restore-storage.sh erp-pedro-files-YYYYMMDDTHHMMSSZ.tar.gz
 ```
 
+Backup legado sem `.sha256` é rejeitado por padrão. Se houver um caso excepcional previamente revisado, o operador precisa habilitar explicitamente `ALLOW_UNVERIFIED_BACKUP=YES` junto da confirmação de restore.
+
 Antes de restaurar em produção:
 
 1. confirmar que o arquivo selecionado é o correto;
-2. criar um backup do estado atual;
-3. parar ou bloquear uploads durante a restauração;
-4. validar após o restore pelo menos uma imagem pública e um arquivo privado autenticado.
+2. confirmar que o checksum correspondente está presente e válido;
+3. criar um backup do estado atual;
+4. parar ou bloquear uploads durante a restauração;
+5. validar após o restore pelo menos uma imagem pública e um arquivo privado autenticado.
 
 ## Política de backup e recuperação
 
@@ -170,11 +182,12 @@ A presença dos scripts não substitui a execução programada. Antes de conside
 - definir periodicidade para PostgreSQL e `file_storage`;
 - definir retenção;
 - guardar cópia fora do mesmo volume/VPS;
+- preservar arquivo e checksum correspondente no destino offsite;
 - executar pelo menos um teste de restore do banco em ambiente isolado;
 - executar pelo menos um teste de restore do volume de arquivos;
 - registrar data e resultado dos testes de recuperação.
 
-Banco e arquivos fazem parte do mesmo produto. Um backup de banco sem as fotos/comprovantes correspondentes não representa recuperação completa do ERP.
+Banco e arquivos fazem parte do mesmo produto. Um backup de banco sem as fotos/comprovantes correspondentes não representa recuperação completa do ERP. O checksum detecta corrupção/alteração do arquivo, mas não substitui teste real de restauração.
 
 ## Checklist antes de liberar uso real
 
@@ -190,6 +203,7 @@ Banco e arquivos fazem parte do mesmo produto. Um backup de banco sem as fotos/c
 - TLS ativo;
 - backup de banco automatizado;
 - backup do `file_storage` automatizado;
+- checksums de banco e arquivos gerados e preservados;
 - restore de banco testado;
 - restore de arquivos testado;
 - domínio/APP_URL corretos;
