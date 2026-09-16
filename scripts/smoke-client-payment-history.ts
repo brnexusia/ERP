@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { db } from "../lib/db";
 
@@ -26,6 +27,8 @@ async function main() {
   });
   assert.equal(login.status, 200);
   const cookie = cookiePair(login.headers.get("set-cookie"));
+  const sessionToken = cookie.slice(cookie.indexOf("=") + 1);
+  const sessionTokenHash = createHash("sha256").update(sessionToken).digest("hex");
 
   const suffix = Date.now().toString();
   const sellerUser = await db.user.create({
@@ -165,7 +168,7 @@ async function main() {
     await db.client.deleteMany({ where: { id: client.id } });
     await db.membership.deleteMany({ where: { id: seller.id } });
     await db.user.deleteMany({ where: { id: sellerUser.id } });
-    await db.session.deleteMany({ where: { tokenHash: { not: "" } } });
+    await db.session.deleteMany({ where: { tokenHash: sessionTokenHash } });
     await db.$disconnect();
   }
 }
