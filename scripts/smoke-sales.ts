@@ -174,6 +174,21 @@ async function main() {
       "Pix não deve aceitar vencimento; à vista/pré-datado pertence a boleto/cheque no escopo oficial.",
     );
 
+    const invalidCashDueDate = await requestJson(`/api/sales/${saleId}/payments`, cookie, {
+      method: "POST",
+      body: {
+        method: "CASH",
+        status: "PAID",
+        amount: "1.00",
+        dueDate: "2026-10-15T15:00:00.000Z"
+      }
+    });
+    assert.equal(
+      invalidCashDueDate.status,
+      400,
+      "Dinheiro não deve aceitar vencimento; vencimento pertence a boleto/cheque.",
+    );
+
     const pendingPaymentResponse = await requestJson(`/api/sales/${saleId}/payments`, cookie, {
       method: "POST",
       body: {
@@ -190,12 +205,27 @@ async function main() {
     assert.equal(pendingResult.payment.settledAt, null);
     assert.ok(pendingResult.payment.dueDate, "Boleto pré-datado deve preservar vencimento.");
 
+    const cashPaymentResponse = await requestJson(`/api/sales/${saleId}/payments`, cookie, {
+      method: "POST",
+      body: {
+        method: "CASH",
+        status: "PAID",
+        amount: "10.00"
+      }
+    });
+    assert.equal(cashPaymentResponse.status, 201);
+    const cashResult = (await cashPaymentResponse.json()).result;
+    assert.equal(cashResult.sale.stage, "ORDER");
+    assert.equal(cashResult.payment.method, "CASH");
+    assert.equal(cashResult.payment.dueDate, null, "Dinheiro não deve possuir vencimento.");
+    assert.ok(cashResult.payment.settledAt, "Pagamento em dinheiro quitado deve registrar liquidação.");
+
     const paidPaymentResponse = await requestJson(`/api/sales/${saleId}/payments`, cookie, {
       method: "POST",
       body: {
         method: "PIX",
         status: "PAID",
-        amount: "59.70"
+        amount: "49.70"
       }
     });
     assert.equal(paidPaymentResponse.status, 201);
@@ -226,7 +256,8 @@ async function main() {
     assert.equal(purchases.length, 1);
     assert.equal(purchases[0].id, saleId);
     assert.equal(purchases[0].stage, "PAID");
-    assert.equal(purchases[0].payments.length, 2);
+    assert.equal(purchases[0].payments.length, 3);
+    assert.ok(purchases[0].payments.some((payment: { method: string }) => payment.method === "CASH"));
 
     const saleCount = await db.sale.count({ where: { id: saleId!, organizationId: organization.id } });
     assert.equal(saleCount, 1, "Orçamento, pedido e pagamento devem permanecer no mesmo registro de venda.");
@@ -251,8 +282,8 @@ async function main() {
     console.log("✓ vínculo cliente-vendedora validado");
     console.log("✓ orçamento -> pedido -> pagamento no mesmo registro validado");
     console.log("✓ itens, quantidade, canal, valores e vendedora preservados");
-    console.log("✓ boleto pré-datado, Pix à vista e quitação final validados");
-    console.log("✓ vencimento indevido em Pix bloqueado pela API");
+    console.log("✓ boleto pré-datado, Pix e dinheiro à vista validados");
+    console.log("✓ vencimento indevido em Pix/dinheiro bloqueado pela API");
     console.log("✓ histórico de compras real do cliente validado");
     console.log("✓ isolamento multiempresa do fluxo comercial validado");
   } finally {
