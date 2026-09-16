@@ -86,7 +86,10 @@ O marco vira ✅ quando shell global, sidebar, cabeçalho e componentes comparti
 - [x] Segmento atual exposto nas consultas.
 - [x] Vendedora responsável exposta nas consultas.
 - [x] Histórico real de compras conectado às vendas pagas.
-- [x] Perfil comercial central com compras e relacionamento.
+- [x] Perfil comercial com compras e relacionamento.
+- [x] Perfil central do cliente reúne cadastro, dados comerciais, histórico de compras, crédito, vale, CRM e suporte no mesmo retorno.
+- [x] Perfil central reutiliza as estruturas reais dos módulos, sem duplicar saldos ou histórico comercial.
+- [x] Perfil central bloqueia consulta cruzada entre empresas.
 - [x] Auditoria de criação e atualização.
 - [x] Permissões `clients:read` e `clients:write` aplicadas.
 - [x] API bloqueia acesso cruzado entre empresas.
@@ -94,6 +97,10 @@ O marco vira ✅ quando shell global, sidebar, cabeçalho e componentes comparti
 - [ ] Tela de listagem conforme Stitch.
 - [ ] Tela/formulário de cadastro conforme Stitch.
 - [ ] Tela de detalhe/perfil conforme Stitch.
+
+### Evidência
+
+O run 166 (`35038451808`) concluiu migrations, seed, isolamento, typecheck, build e todos os smoke tests em sucesso. A suíte valida o perfil central reunindo cadastro, vendedora responsável, compras pagas, crédito/limite disponível, vale, CRM e atendimento, além de retornar 404 quando o mesmo ID é consultado a partir de outro tenant.
 
 ### Critério de fechamento do Progresso 3
 
@@ -224,7 +231,7 @@ O documento exige comissões, mas não define fórmula, percentual, base de cál
 
 ## Progresso 10 — Relatórios e dashboards 🟡
 
-Backend de indicadores comerciais já iniciado:
+Backend de indicadores e dashboard já iniciado:
 
 - [x] Vendas pagas por período.
 - [x] Faturamento por período.
@@ -234,19 +241,26 @@ Backend de indicadores comerciais já iniciado:
 - [x] Performance por vendedora.
 - [x] Quantidade de clientes únicos atendidos por vendedora.
 - [x] Perfil do cliente com total comprado, quantidade de compras, primeira e última compra.
-- [x] Cliente identificado como novo, recorrente ou sem compra registrada a partir do histórico efetivo.
+- [x] Classificação factual de cliente sem compra, novo e recorrente a partir do histórico real.
+- [x] Identificação de cliente que parou de comprar reaproveita o `X dias` configurado no módulo de clientes.
+- [x] Quando `X dias` não está configurado, o sistema não fabrica classificação de cliente parado.
 - [x] Ranking factual de clientes por valor comprado, com quantidade de compras, primeira e última compra.
 - [x] Formas de pagamento utilizadas por cliente.
 - [x] Categorias predominantes por cliente.
 - [x] Filtro de período por data inicial/final na API comercial.
+- [x] Endpoint de Dashboard Geral agrega dados comerciais, top compradores, inatividade, estoque baixo e financeiro a partir dos módulos reais.
+- [x] Dashboard Geral respeita permissões: se o papel não possuir acesso financeiro, a seção financeira não é retornada.
+- [x] Dashboard Geral permanece tenant-scoped e não mistura indicadores entre empresas.
 - [ ] Dashboard visual conforme Stitch.
 - [ ] Metas no dashboard.
 - [ ] Comissões no dashboard.
 - [ ] Indicador de redução de compra após definição do critério de comparação.
 
+A classificação “reduziu compras” continua explicitamente pendente porque o documento não define período comparativo, métrica nem limiar. Ela não foi inferida a partir da regra de inatividade.
+
 ### Evidência
 
-O run 138 (`35036847098`) concluiu migrations, seed, isolamento, typecheck, build e todos os smoke tests em sucesso. Além dos indicadores anteriores, a suíte agora valida métricas factuais de produto e o ranking de clientes por valor efetivamente comprado.
+O run 170 (`35038674059`) concluiu migrations, seed, isolamento, typecheck, build e toda a suíte de smoke tests em sucesso. O teste do Dashboard Geral valida receita/canal, ranking de cliente, alerta de inatividade, estoque baixo, resumo financeiro, omissão do financeiro para papel sem permissão e isolamento entre dois tenants. O perfil central do cliente já havia sido validado pelo run 166 (`35038451808`).
 
 ## Progresso 11 — Financeiro 🟡
 
@@ -333,16 +347,22 @@ A arquitetura já incorpora parte da preparação comercial prevista no document
 - [x] Provisionamento técnico controlado cria nova empresa, primeiro usuário `OWNER`, membership e auditoria de forma transacional.
 - [x] Empresa provisionada pode autenticar e operar isoladamente sem reutilizar o tenant original.
 - [x] Comando interno `pnpm db:provision` documentado para provisionamento controlado.
+- [x] Estrutura de container de produção preparada com aplicação e PostgreSQL persistente em rede interna.
+- [x] Aplicação de produção preparada para executar migrations versionadas antes da inicialização.
+- [x] Porta do PostgreSQL não é publicada pela stack de produção; aplicação fica em loopback para uso atrás de proxy/TLS.
+- [x] Template de variáveis de produção e procedimento controlado de VPS documentados sem inserir segredos reais no repositório.
+- [ ] VPS real configurada e homologada.
 - [ ] Provisionamento acionado automaticamente por compra/assinatura.
 - [ ] Fluxo de contratação/assinatura.
 - [ ] Domínio próprio de produção configurado.
+- [ ] DNS/TLS final configurado.
 - [ ] Acesso adicional de compra/assinatura quando comercializado.
 
-O provisionamento técnico já existe, mas não é tratado como assinatura automática. Planos, cobrança, gatilho comercial, suspensão/cancelamento e domínio final continuam dependendo de definição própria.
+O provisionamento técnico já existe, mas não é tratado como assinatura automática. Da mesma forma, a stack de produção está preparada no repositório, mas não equivale a uma VPS já implantada. Planos, cobrança, gatilho comercial, suspensão/cancelamento, provedor da VPS e domínio final continuam dependendo de definição própria.
 
 ### Evidência
 
-O run 153 (`35037627507`) concluiu migrations, seed, isolamento, typecheck, build e toda a suíte de smoke tests em sucesso. A suíte valida gestão tenant-scoped de usuários, bloqueio de privilégios indevidos, isolamento cross-tenant, auditoria, revogação de acesso, criação transacional de nova organização + `OWNER`, autenticação do tenant provisionado e rejeição de provisionamento duplicado sem deixar estado parcial.
+O run 153 (`35037627507`) validou gestão tenant-scoped de usuários e provisionamento técnico de novas empresas. A configuração de produção está versionada em `Dockerfile`, `docker-compose.production.yml`, `.env.production.example` e `docs/PRODUCTION_DEPLOYMENT.md`; sua validação de Compose também foi adicionada ao pipeline de CI e deve permanecer obrigatória antes de homologação de produção.
 
 ## Regras de negócio ainda não definidas no documento-fonte
 
@@ -353,6 +373,7 @@ Para preservar o escopo sem criar comportamento silencioso, continuam aguardando
 - fórmula, percentual e base das comissões;
 - métrica e unidade exata das metas por vendedora;
 - gatilho exato da regra de auto-atacado além da referência a recompra em até 3 meses;
-- momento exato em que uma venda deve baixar fisicamente o estoque.
+- momento exato em que uma venda deve baixar fisicamente o estoque;
+- fórmula/prioridade/vigência das promoções e descontos progressivos.
 
 Esses pontos não impedem os cadastros e dados-base já implementados, mas não serão preenchidos com suposições.
