@@ -60,7 +60,8 @@ async function main() {
     assert.equal(profile.performance.averageTicket.toFixed(2), "75.00");
     assert.equal(profile.performance.uniqueClients, 1);
     assert.equal(profile.performance.channels.WHATSAPP.sales, 1);
-    assert.equal(profile.goals.status, "PENDING_RULE_DEFINITION");
+    assert.ok(Array.isArray(profile.goals));
+    assert.equal(profile.goals.length, 0);
     assert.equal(profile.commissions.status, "PENDING_RULE_DEFINITION");
 
     const future = await getSellerProfile(context, seller.id, {
@@ -80,7 +81,8 @@ async function main() {
 
     console.log("✓ perfil da vendedora reúne carteira e performance factual");
     console.log("✓ filtros de período preservam o histórico original");
-    console.log("✓ metas e comissões permanecem pendentes sem fórmula inventada");
+    console.log("✓ perfil expõe metas configuradas sem inventar recorrência");
+    console.log("✓ comissões permanecem pendentes sem fórmula inventada");
     console.log("✓ perfil da vendedora permanece isolado entre empresas");
   } finally {
     if (secondOrganizationId) await db.organization.deleteMany({ where: { id: secondOrganizationId } });
