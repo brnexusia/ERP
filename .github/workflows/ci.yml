@@ -95,14 +95,7 @@ jobs:
           COMPOSE=(docker compose --env-file .env.production -f docker-compose.production.yml --profile ops)
           trap '"${COMPOSE[@]}" down -v --remove-orphans >/dev/null 2>&1 || true; rm -f .env.production; rm -rf backups' EXIT
 
-          "${COMPOSE[@]}" up -d postgres
-
-          for i in {1..30}; do
-            if "${COMPOSE[@]}" exec -T postgres pg_isready -U erp -d erp_pedro >/dev/null 2>&1; then
-              break
-            fi
-            sleep 1
-          done
+          "${COMPOSE[@]}" up -d --wait postgres
 
           "${COMPOSE[@]}" exec -T postgres psql -U erp -d erp_pedro -v ON_ERROR_STOP=1 -c \
             "CREATE TABLE ci_backup_probe (value text NOT NULL); INSERT INTO ci_backup_probe(value) VALUES ('before-backup');"
