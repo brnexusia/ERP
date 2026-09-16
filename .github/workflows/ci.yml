@@ -69,6 +69,14 @@ jobs:
       - name: Build application
         run: pnpm build
 
+      - name: Validate production compose configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .env.production.example .env.production
+          trap 'rm -f .env.production' EXIT
+          docker compose --env-file .env.production -f docker-compose.production.yml config --quiet
+
       - name: Smoke test application flows
         shell: bash
         run: |
