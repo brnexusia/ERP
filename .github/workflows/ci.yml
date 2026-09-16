@@ -28,6 +28,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://erp:erp@localhost:5432/erp_pedro?schema=public
       APP_URL: http://127.0.0.1:3000
+      FILE_TOKEN_SECRET: ci-file-token-secret-with-at-least-32-characters
       SEED_ADMIN_EMAIL: ci-admin@example.test
       SEED_ADMIN_PASSWORD: ci-password-123
       SEED_ORG_NAME: Pedro CI
