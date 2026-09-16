@@ -20,7 +20,7 @@ Estados permitidos:
 | 5 | Produtos e estrutura de estoque | 🟠 Funcional |
 | 6 | Estoque inteligente | 🟡 Em construção |
 | 7 | Fluxo comercial | 🟠 Funcional |
-| 8 | Pagamentos e entrega | 🟡 Em construção |
+| 8 | Pagamentos e entrega | 🟠 Funcional |
 | 9 | Vendedoras, metas e comissões | 🟡 Em construção |
 | 10 | Relatórios e dashboards | 🟡 Em construção |
 | 11 | Financeiro | 🟠 Funcional |
@@ -45,7 +45,8 @@ Fechado e continuamente validado:
 - healthcheck de banco e armazenamento persistente;
 - scripts de backup/restore do PostgreSQL;
 - build/typecheck/CI reproduzíveis;
-- cabeçalhos HTTP básicos de endurecimento.
+- cabeçalhos HTTP básicos de endurecimento;
+- mutações `/api` bloqueiam origem cross-site explícita e `Origin` divergente da origem da aplicação.
 
 O fechamento da fundação não implica fechamento visual. A interface definitiva continua subordinada ao Stitch.
 
@@ -139,29 +140,33 @@ Fluxo central funcional:
 - orçamento editável antes da confirmação;
 - orçamento vira pedido no mesmo registro;
 - pedido vira pago no mesmo `sale.id` quando o total quitado alcança o total;
+- timeline unificada preserva transições, pagamentos, suporte e entrega no mesmo histórico comercial;
 - canais WhatsApp, Site e Loja Física;
 - histórico de compras usa somente vendas pagas;
 - auditoria e isolamento multiempresa.
 
 **Pendente para ✅:** interface comercial fiel ao Stitch e decisão formal sobre baixa física do estoque.
 
-## Progresso 8 — Pagamentos e entrega 🟡
+## Progresso 8 — Pagamentos e entrega 🟠
 
-Já implementado:
+Funcional no backend:
 - cartão, Pix, boleto e cheque;
-- pagamento pendente/quitado e vencimento;
+- pagamento pendente/quitado;
+- cartão e Pix não aceitam vencimento;
+- boleto e cheque aceitam vencimento opcional, representando a condição à vista/pré-datada prevista no documento-fonte;
+- API rejeita vencimento indevido em Pix/cartão;
 - pagamentos parciais sem ultrapassar o total;
 - atendimento, pós-venda, reclamações e SAC;
 - retirada;
 - Correios + código de rastreio;
 - transportadora;
-- comprovantes de envio/entrega;
+- upload de comprovantes de envio/entrega diretamente no ERP;
 - armazenamento privado de comprovantes;
 - arquivo privado exige autenticação, tenant correto e permissão adequada;
 - comprovante de entrega não pode ser publicado anonimamente;
-- suporte/logística auditados.
+- suporte/logística auditados e isolados por empresa.
 
-Ainda pendente:
+Ainda pendente para ✅:
 - envio real do rastreio por e-mail;
 - envio real do rastreio por WhatsApp;
 - provedores/templates/gatilhos correspondentes;
@@ -253,7 +258,7 @@ Camada de configuração tenant-scoped pronta para:
 
 Existe habilitação/desabilitação, referência de segredo sem exposição pela API, auditoria e isolamento.
 
-As integrações **não são marcadas como conectadas** apenas por possuírem configuração. Chamadas reais, webhooks e sincronizações aguardam documentação/API, URLs, autenticação, credenciais e contrato de eventos de cada provedor.
+As integrações **não são marcadas como conectadas** apenas por possuírem configuração. Chamadas reais, webhooks e sincronizações aguardam documentação/API, URLs, autenticação, credenciais e contrato de eventos de cada provedor. Webhooks futuros devem possuir autenticação/assinatura própria e exceção explícita, nunca desativar silenciosamente a proteção cross-site global.
 
 ## Progresso 14 — Preparação como produto 🟡
 
@@ -308,7 +313,9 @@ Só começa quando as dependências necessárias para o produto final estiverem 
 - Run 170 (`35038674059`): Dashboard Geral agregado e permission-aware.
 - Run 176 (`35038885199`): configuração de produção/Compose validada.
 - Run 213 (`35041806933`): perfil factual da vendedora + suíte completa verde.
-- Run 216 (`35041950612`): segurança de leitura de arquivos privados + migrations, typecheck, scripts, build, Compose e smoke tests verdes.
+- Run 216 (`35041950612`): segurança de leitura de arquivos privados + suíte completa verde.
+- Run 233 (`35042735654`): comprovantes privados de transportadora + suíte completa verde.
+- Run 237 (`35048022891`): proteção cross-site e regra à vista/pré-datada de pagamento + migrations, isolamento, typecheck, build, Compose e smoke tests verdes.
 
 A matriz detalhada requisito oficial → implementação → progresso está em `docs/SCOPE_TRACEABILITY.md`.
 
