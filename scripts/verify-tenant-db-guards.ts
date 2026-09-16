@@ -29,6 +29,9 @@ async function main() {
   let clientId: string | null = null;
   let categoryId: string | null = null;
   let productId: string | null = null;
+  let saleId: string | null = null;
+  let bankEntryAId: string | null = null;
+  let payableAId: string | null = null;
 
   try {
     const organizationB = await db.organization.create({
@@ -89,13 +92,76 @@ async function main() {
     });
     productId = product.id;
 
+    const sale = await db.sale.create({
+      data: {
+        organizationId: organizationA.id,
+        clientId: client.id,
+        sellerMembershipId: sellerMembership.id,
+        stage: "ORDER",
+        channel: "WHATSAPP",
+        totalAmount: new Prisma.Decimal("25.00"),
+        orderedAt: new Date(),
+      },
+    });
+    saleId = sale.id;
+
+    const salePaymentA = await db.salePayment.create({
+      data: {
+        organizationId: organizationA.id,
+        saleId: sale.id,
+        method: "PIX",
+        status: "PENDING",
+        amount: new Prisma.Decimal("25.00"),
+      },
+    });
+
+    const bankEntryA = await db.bankStatementEntry.create({
+      data: {
+        organizationId: organizationA.id,
+        direction: "CREDIT",
+        amount: new Prisma.Decimal("25.00"),
+        occurredAt: new Date(),
+        description: "Tenant guard bank A",
+      },
+    });
+    bankEntryAId = bankEntryA.id;
+
+    const payableA = await db.accountPayable.create({
+      data: {
+        organizationId: organizationA.id,
+        description: "Tenant guard payable A",
+        amount: new Prisma.Decimal("25.00"),
+        dueDate: new Date(Date.now() + 86_400_000),
+      },
+    });
+    payableAId = payableA.id;
+
+    const bankEntryB = await db.bankStatementEntry.create({
+      data: {
+        organizationId: organizationB.id,
+        direction: "CREDIT",
+        amount: new Prisma.Decimal("25.00"),
+        occurredAt: new Date(),
+        description: "Tenant guard bank B",
+      },
+    });
+
+    const payableB = await db.accountPayable.create({
+      data: {
+        organizationId: organizationB.id,
+        description: "Tenant guard payable B",
+        amount: new Prisma.Decimal("25.00"),
+        dueDate: new Date(Date.now() + 86_400_000),
+      },
+    });
+
     const triggerCount = await db.$queryRaw<Array<{ count: bigint }>>`
       SELECT COUNT(*)::bigint AS count
       FROM pg_trigger
       WHERE NOT tgisinternal
         AND tgname LIKE 'tenant_guard_%'
     `;
-    assert.ok(Number(triggerCount[0]?.count ?? 0) >= 20, "Guards de tenant não foram instalados no PostgreSQL.");
+    assert.ok(Number(triggerCount[0]?.count ?? 0) >= 23, "Guards de tenant não foram instalados no PostgreSQL.");
 
     await expectBlocked("sessão sem membership", () =>
       db.session.create({
@@ -177,12 +243,49 @@ async function main() {
       }),
     );
 
+    await expectBlocked("conciliação com extrato de outro tenant", () =>
+      db.bankReconciliation.create({
+        data: {
+          organizationId: organizationB.id,
+          bankEntryId: bankEntryA.id,
+          accountPayableId: payableB.id,
+          amount: new Prisma.Decimal("5.00"),
+        },
+      }),
+    );
+
+    await expectBlocked("conciliação com conta a pagar de outro tenant", () =>
+      db.bankReconciliation.create({
+        data: {
+          organizationId: organizationB.id,
+          bankEntryId: bankEntryB.id,
+          accountPayableId: payableA.id,
+          amount: new Prisma.Decimal("5.00"),
+        },
+      }),
+    );
+
+    await expectBlocked("conciliação com recebimento de outro tenant", () =>
+      db.bankReconciliation.create({
+        data: {
+          organizationId: organizationB.id,
+          bankEntryId: bankEntryB.id,
+          salePaymentId: salePaymentA.id,
+          amount: new Prisma.Decimal("5.00"),
+        },
+      }),
+    );
+
     console.log("✓ guards de tenant instalados no PostgreSQL");
     console.log("✓ sessão sem membership bloqueada no banco");
     console.log("✓ relações cliente/segmento/endereço cross-tenant bloqueadas");
     console.log("✓ relações produto/categoria/estoque cross-tenant bloqueadas");
     console.log("✓ venda cross-tenant bloqueada antes da persistência");
+    console.log("✓ conciliação financeira cross-tenant bloqueada em todas as origens");
   } finally {
+    if (saleId) await db.sale.deleteMany({ where: { id: saleId } });
+    if (bankEntryAId) await db.bankStatementEntry.deleteMany({ where: { id: bankEntryAId } });
+    if (payableAId) await db.accountPayable.deleteMany({ where: { id: payableAId } });
     if (productId) await db.product.deleteMany({ where: { id: productId } });
     if (categoryId) await db.productCategory.deleteMany({ where: { id: categoryId } });
     if (clientId) await db.client.deleteMany({ where: { id: clientId } });
