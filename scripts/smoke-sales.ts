@@ -159,6 +159,21 @@ async function main() {
     });
     assert.equal(mutateOrderResponse.status, 422, "Pedido não deve voltar a ser orçamento editável.");
 
+    const invalidPixDueDate = await requestJson(`/api/sales/${saleId}/payments`, cookie, {
+      method: "POST",
+      body: {
+        method: "PIX",
+        status: "PAID",
+        amount: "1.00",
+        dueDate: "2026-10-15T15:00:00.000Z"
+      }
+    });
+    assert.equal(
+      invalidPixDueDate.status,
+      400,
+      "Pix não deve aceitar vencimento; à vista/pré-datado pertence a boleto/cheque no escopo oficial.",
+    );
+
     const pendingPaymentResponse = await requestJson(`/api/sales/${saleId}/payments`, cookie, {
       method: "POST",
       body: {
@@ -173,6 +188,7 @@ async function main() {
     const pendingPaymentId = pendingResult.payment.id as string;
     assert.equal(pendingResult.sale.stage, "ORDER");
     assert.equal(pendingResult.payment.settledAt, null);
+    assert.ok(pendingResult.payment.dueDate, "Boleto pré-datado deve preservar vencimento.");
 
     const paidPaymentResponse = await requestJson(`/api/sales/${saleId}/payments`, cookie, {
       method: "POST",
@@ -185,6 +201,7 @@ async function main() {
     assert.equal(paidPaymentResponse.status, 201);
     const partialResult = (await paidPaymentResponse.json()).result;
     assert.equal(partialResult.sale.stage, "ORDER");
+    assert.equal(partialResult.payment.dueDate, null, "Pix à vista não deve possuir vencimento.");
 
     const overpaymentResponse = await requestJson(`/api/sales/${saleId}/payments`, cookie, {
       method: "POST",
@@ -234,7 +251,8 @@ async function main() {
     console.log("✓ vínculo cliente-vendedora validado");
     console.log("✓ orçamento -> pedido -> pagamento no mesmo registro validado");
     console.log("✓ itens, quantidade, canal, valores e vendedora preservados");
-    console.log("✓ boleto pendente, Pix pago e quitação final validados");
+    console.log("✓ boleto pré-datado, Pix à vista e quitação final validados");
+    console.log("✓ vencimento indevido em Pix bloqueado pela API");
     console.log("✓ histórico de compras real do cliente validado");
     console.log("✓ isolamento multiempresa do fluxo comercial validado");
   } finally {
