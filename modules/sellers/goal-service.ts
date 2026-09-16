@@ -2,6 +2,7 @@ import { Prisma, type SellerGoalMetric } from "@prisma/client";
 import { db } from "@/lib/db";
 import { assertPermission } from "@/lib/auth/permissions";
 import type { ClientAccessContext } from "@/modules/clients/service";
+import type { ReportPeriod } from "@/modules/reports/schema";
 import type { CreateSellerGoalInput, UpdateSellerGoalInput } from "@/modules/sellers/goal-schema";
 
 export class SellerGoalNotFoundError extends Error {
@@ -116,6 +117,59 @@ export async function listSellerGoalsWithProgress(
   });
 
   return Promise.all(goals.map((goal) => withProgress(context, goal)));
+}
+
+export async function getSellerGoalsDashboard(
+  context: ClientAccessContext,
+  period: ReportPeriod,
+) {
+  assertPermission(context.role, "sales:read");
+
+  const overlap = period.start || period.end
+    ? {
+        AND: [
+          ...(period.end ? [{ startAt: { lte: period.end } }] : []),
+          ...(period.start ? [{ endAt: { gte: period.start } }] : []),
+        ],
+      }
+    : {};
+
+  const goals = await db.sellerGoal.findMany({
+    where: {
+      organizationId: context.organizationId,
+      ...overlap,
+    },
+    include: {
+      seller: {
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+        },
+      },
+    },
+    orderBy: [{ startAt: "desc" }, { createdAt: "desc" }],
+  });
+
+  const tracked = await Promise.all(goals.map(async (goal) => {
+    const progress = await withProgress(context, goal);
+    return {
+      ...progress,
+      seller: {
+        membershipId: goal.seller.id,
+        user: goal.seller.user,
+      },
+    };
+  }));
+
+  return {
+    summary: {
+      total: tracked.length,
+      achieved: tracked.filter((goal) => goal.achieved).length,
+      active: tracked.filter((goal) => goal.status === "ACTIVE").length,
+      upcoming: tracked.filter((goal) => goal.status === "UPCOMING").length,
+      ended: tracked.filter((goal) => goal.status === "ENDED").length,
+    },
+    goals: tracked,
+  };
 }
 
 export async function createSellerGoal(
