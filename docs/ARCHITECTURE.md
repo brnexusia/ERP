@@ -78,6 +78,14 @@ Banco e armazenamento fazem parte do mesmo estado recuperável do produto. Backu
 ### Segurança HTTP e saúde
 A aplicação define cabeçalhos HTTP básicos de endurecimento (`nosniff`, frame deny, referrer policy, permissions policy e COOP). HSTS/TLS permanecem responsabilidade do ambiente HTTPS definitivo para não serem ativados incorretamente em desenvolvimento.
 
+Mutações nas rotas `/api` também passam por proteção de origem no middleware:
+- métodos seguros (`GET`, `HEAD`, `OPTIONS`) não são bloqueados por essa regra;
+- requisições explicitamente identificadas como `Sec-Fetch-Site: cross-site` são rejeitadas;
+- quando o navegador envia `Origin`, ela precisa corresponder à origem de `APP_URL` ou, na ausência de configuração válida, à origem observada da própria requisição;
+- a proteção não substitui autenticação, RBAC ou isolamento de tenant; ela é uma camada adicional contra mutações cross-site com sessão de navegador.
+
+Integrações externas futuras que precisem receber webhooks não devem simplesmente desativar essa proteção global. Cada endpoint externo deve ser explicitamente desenhado para entrada server-to-server e exigir autenticação/assinatura do provedor, idempotência e validação do contrato correspondente antes de ser liberado.
+
 O healthcheck verifica não apenas o PostgreSQL, mas também se o diretório de armazenamento persistente está acessível para leitura/escrita.
 
 ### Integrações
