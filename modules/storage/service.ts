@@ -79,7 +79,7 @@ function fileTokenSecret(): string {
   return "erp-pedro-development-file-token-secret-only";
 }
 
-function assertPurposePermission(role: MembershipRole, purpose: FilePurpose): void {
+function assertPurposeWritePermission(role: MembershipRole, purpose: FilePurpose): void {
   if (purpose === "PRODUCT_IMAGE") {
     assertPermission(role, "inventory:write");
     return;
@@ -93,6 +93,22 @@ function assertPurposePermission(role: MembershipRole, purpose: FilePurpose): vo
     return;
   }
   assertAnyPermission(role, ["organization:manage", "inventory:write", "sales:write", "clients:write"]);
+}
+
+export function assertStoredFileReadPermission(role: MembershipRole, purpose: FilePurpose): void {
+  if (purpose === "PRODUCT_IMAGE") {
+    assertPermission(role, "inventory:read");
+    return;
+  }
+  if (purpose === "DELIVERY_PROOF") {
+    assertPermission(role, "sales:read");
+    return;
+  }
+  if (purpose === "CLIENT_FILE") {
+    assertPermission(role, "clients:read");
+    return;
+  }
+  assertAnyPermission(role, ["organization:manage", "inventory:read", "sales:read", "clients:read"]);
 }
 
 type FileTokenPayload = {
@@ -178,12 +194,36 @@ function sanitizeOriginalName(name: string): string {
   return basename.slice(0, 200) || "arquivo";
 }
 
+function hasPrefix(buffer: Buffer, expected: number[]): boolean {
+  return expected.every((value, index) => buffer[index] === value);
+}
+
+function validateKnownContentSignature(buffer: Buffer, mimeType: string): void {
+  let valid = true;
+  if (mimeType === "image/png") {
+    valid = buffer.length >= 8 && hasPrefix(buffer, [137, 80, 78, 71, 13, 10, 26, 10]);
+  } else if (mimeType === "image/jpeg") {
+    valid = buffer.length >= 3 && hasPrefix(buffer, [255, 216, 255]);
+  } else if (mimeType === "image/gif") {
+    const header = buffer.subarray(0, 6).toString("ascii");
+    valid = header === "GIF87a" || header === "GIF89a";
+  } else if (mimeType === "image/webp") {
+    valid = buffer.length >= 12 && buffer.subarray(0, 4).toString("ascii") === "RIFF" && buffer.subarray(8, 12).toString("ascii") === "WEBP";
+  } else if (mimeType === "application/pdf") {
+    valid = buffer.length >= 5 && buffer.subarray(0, 5).toString("ascii") === "%PDF-";
+  }
+
+  if (!valid) {
+    throw new FileStorageRuleError("O conteúdo do arquivo não corresponde ao tipo informado.");
+  }
+}
+
 export async function storeFile(
   context: FileStorageAccessContext,
   file: File,
   metadata: FileUploadMetadata,
 ) {
-  assertPurposePermission(context.role, metadata.purpose);
+  assertPurposeWritePermission(context.role, metadata.purpose);
 
   const mimeConfig = MIME_TYPES[file.type];
   if (!mimeConfig) throw new FileStorageUnsupportedTypeError();
@@ -194,33 +234,46 @@ export async function storeFile(
   if (metadata.purpose === "PRODUCT_IMAGE" && !file.type.startsWith("image/")) {
     throw new FileStorageRuleError("Imagem de produto precisa ser enviada em formato de imagem suportado.");
   }
+  if (
+    (metadata.purpose === "DELIVERY_PROOF" || metadata.purpose === "CLIENT_FILE") &&
+    metadata.visibility !== "private"
+  ) {
+    throw new FileStorageRuleError("Comprovantes de entrega e arquivos de cliente devem permanecer privados.");
+  }
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  validateKnownContentSignature(buffer, file.type);
 
   const storedName = `${randomUUID()}.${mimeConfig.extension}`;
   const key = `${context.organizationId}/${metadata.visibility}/${storedName}`;
   const absolutePath = absolutePathForKey(key);
   await mkdir(path.dirname(absolutePath), { recursive: true });
-  const buffer = Buffer.from(await file.arrayBuffer());
   await writeFile(absolutePath, buffer, { flag: "wx" });
 
   const token = encodeFileToken({ key, purpose: metadata.purpose });
   const originalName = sanitizeOriginalName(file.name);
 
-  await db.auditLog.create({
-    data: {
-      organizationId: context.organizationId,
-      userId: context.userId,
-      action: "FILE_UPLOAD",
-      entityType: "StoredFile",
-      entityId: key,
-      metadata: {
-        purpose: metadata.purpose,
-        visibility: metadata.visibility,
-        originalName,
-        mimeType: file.type,
-        sizeBytes: file.size,
+  try {
+    await db.auditLog.create({
+      data: {
+        organizationId: context.organizationId,
+        userId: context.userId,
+        action: "FILE_UPLOAD",
+        entityType: "StoredFile",
+        entityId: key,
+        metadata: {
+          purpose: metadata.purpose,
+          visibility: metadata.visibility,
+          originalName,
+          mimeType: file.type,
+          sizeBytes: file.size,
+        },
       },
-    },
-  });
+    });
+  } catch (error) {
+    await unlink(absolutePath).catch(() => undefined);
+    throw error;
+  }
 
   return {
     token,
@@ -263,7 +316,7 @@ export async function removeStoredFile(
   const decoded = decodeFileToken(token);
   const validated = validateStorageKey(decoded.key);
   if (validated.organizationId !== context.organizationId) throw new FileStorageNotFoundError();
-  assertPurposePermission(context.role, decoded.purpose);
+  assertPurposeWritePermission(context.role, decoded.purpose);
 
   try {
     await unlink(absolutePathForKey(decoded.key));
