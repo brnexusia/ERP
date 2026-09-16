@@ -43,19 +43,8 @@ services:
     volumes:
       - file_storage:/data:ro
       - ./backups:/backups
-    entrypoint: ["/bin/sh", "-ec"]
-    command: |
-      timestamp="$$(date -u +%Y%m%dT%H%M%SZ)"
-      archive_name="erp-pedro-files-$${timestamp}.tar.gz"
-      checksum_name="$${archive_name}.sha256"
-      archive="/backups/$${archive_name}"
-      tar -czf "$${archive}" -C /data .
-      cd /backups
-      sha256sum "$${archive_name}" > "$${checksum_name}"
-      find /backups -type f -name 'erp-pedro-files-*.tar.gz' -mtime "+$${RETENTION_DAYS}" -delete
-      find /backups -type f -name 'erp-pedro-files-*.tar.gz.sha256' -mtime "+$${RETENTION_DAYS}" -delete
-      printf 'Backup de arquivos concluído: %s\n' "$${archive}"
-      printf 'Checksum SHA-256: /backups/%s\n' "$${checksum_name}"
+      - ./ops:/ops:ro
+    entrypoint: ["/bin/sh", "/ops/storage-backup-container.sh"]
 
   storage-restore:
     image: alpine:3.20
@@ -66,28 +55,8 @@ services:
     volumes:
       - file_storage:/data
       - ./backups:/backups:ro
-    entrypoint: ["/bin/sh", "-ec"]
-    command: |
-      test -n "$${RESTORE_ARCHIVE}" || { echo 'RESTORE_ARCHIVE não definido' >&2; exit 1; }
-      case "$${RESTORE_ARCHIVE}" in
-        */*|*..*) echo 'Nome de arquivo de restore inválido' >&2; exit 1 ;;
-      esac
-      archive="/backups/$${RESTORE_ARCHIVE}"
-      checksum_name="$${RESTORE_ARCHIVE}.sha256"
-      checksum="/backups/$${checksum_name}"
-      test -f "$${archive}" || { echo "Backup não encontrado: $${archive}" >&2; exit 1; }
-      if test -f "$${checksum}"; then
-        cd /backups
-        sha256sum -c "$${checksum_name}"
-      elif test "$${ALLOW_UNVERIFIED_BACKUP}" != "YES"; then
-        echo "Checksum não encontrado: $${checksum}" >&2
-        echo 'Restore bloqueado. Para backup legado revisado, use ALLOW_UNVERIFIED_BACKUP=YES explicitamente.' >&2
-        exit 1
-      fi
-      tar -tzf "$${archive}" >/dev/null
-      find /data -mindepth 1 -maxdepth 1 -exec rm -rf {} +
-      tar -xzf "$${archive}" -C /data
-      printf 'Restauração de arquivos concluída: %s\n' "$${archive}"
+      - ./ops:/ops:ro
+    entrypoint: ["/bin/sh", "/ops/storage-restore-container.sh"]
 
 volumes:
   postgres_data:
