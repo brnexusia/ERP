@@ -1,211 +1,106 @@
 # Decisões necessárias — ERP Pedro
 
-Este arquivo registra pontos exigidos pelo documento-fonte que ainda não possuem regra objetiva suficiente para uma implementação definitiva. A finalidade é impedir que o desenvolvimento transforme suposições em regra de negócio sem aprovação.
+Este arquivo registra requisitos do documento-fonte que ainda não possuem critério, fórmula, prioridade ou momento de aplicação suficientemente objetivos. A finalidade é impedir que o desenvolvimento transforme suposições em regra de negócio.
 
 ## Princípio
 
-Quando o escopo determina **o que** deve existir, mas não define critério, fórmula, prioridade ou momento de aplicação, a base técnica pode ser preparada, porém o comportamento final permanece pendente até a decisão ser registrada.
+Quando o escopo define **o que** deve existir, mas não define a regra necessária para automatizá-lo, a base técnica pode avançar; o comportamento final permanece pendente até existir decisão rastreável.
 
 ## 1. Clientes que reduziram compras
 
-**Fonte funcional:** classificação comercial deve identificar clientes que reduziram compras.
+**Já existe:** histórico de compras pagas, faturamento, número de compras, primeira/última compra, ranking e filtros. Sem compra/novo/recorrente e “parou de comprar” já são factuais.
 
-**Já existe:** histórico real de compras pagas, faturamento, quantidade de compras, primeira/última compra, ranking e filtros por período. Clientes sem compra, novos e recorrentes já são classificados factualmente; “parou de comprar” reaproveita o `X dias` de inatividade configurado pela própria empresa. Quando esse limite não existe, o sistema não inventa a classificação.
-
-**Falta definir apenas para “reduziu compras”:**
-- quais períodos devem ser comparados;
-- se a redução é medida por faturamento, quantidade de pedidos, quantidade de itens ou combinação;
-- percentual/valor mínimo de queda para classificar como redução relevante;
-- tratamento de sazonalidade ou clientes sem período anterior completo.
+**Falta definir:** períodos de comparação; métrica da queda; limiar mínimo; tratamento de sazonalidade e de cliente sem período anterior completo.
 
 ## 2. Produtos com baixa saída
 
-**Fonte funcional:** identificar produtos vendendo pouco e gerar alertas/indicadores.
+**Já existe:** quantidade vendida, faturamento, vendas pagas, última venda e estoque, com filtro por período.
 
-**Já existe:** quantidade vendida, faturamento, quantidade de vendas pagas, última venda e estoque atual por produto, com filtro por período.
-
-**Falta definir:**
-- janela de análise;
-- limite de vendas/quantidade/faturamento considerado baixa saída;
-- se produto sem nenhuma venda entra automaticamente;
-- tratamento de produto novo;
-- frequência de geração do alerta.
+**Falta definir:** janela; limiar; tratamento de item sem venda ou novo; frequência do alerta.
 
 ## 3. Curva ABC
 
-**Fonte funcional:** classificar produtos por importância, faturamento e giro.
+**Já existe:** faturamento, quantidade vendida e estoque por produto.
 
-**Já existe:** dados reais de faturamento e quantidade vendida por produto; dados de estoque também estão disponíveis.
-
-**Falta definir:**
-- faixas A/B/C;
-- peso de faturamento, quantidade/giro e demais fatores;
-- período de cálculo;
-- critério de desempate;
-- frequência de recálculo.
-
-Nenhum padrão convencional de mercado será adotado silenciosamente.
+**Falta definir:** faixas A/B/C; pesos; período; desempate; frequência de recálculo. Nenhum padrão de mercado será adotado silenciosamente.
 
 ## 4. Comissões
 
-**Fonte funcional:** página de comissões e desempenho/comissionamento por vendedora.
+**Já existe:** venda/pagamento ligados à vendedora, performance, metas e faturamento factual por vendedora.
 
-**Já existe:** venda e pagamento ligados à vendedora, faturamento e performance por vendedora.
+**Falta definir:** percentual/fórmula; base; diferenças por produto/categoria/vendedora; momento de reconhecimento; cancelamento/devolução/desconto/pagamento parcial; competência e fechamento.
 
-**Falta definir:**
-- percentual ou fórmula;
-- base de cálculo;
-- regras diferentes por produto/categoria/vendedora, se existirem;
-- momento de reconhecimento: pedido, pagamento, entrega ou outro evento;
-- tratamento de cancelamento, devolução, desconto e pagamento parcial;
-- competência e fechamento.
+## 5. Metas por vendedora — decisão estrutural resolvida
 
-## 5. Metas por vendedora
+O documento exige definição/acompanhamento de metas e cita vendas, faturamento, clientes, metas e indicadores individuais, mas não fixa periodicidade.
 
-**Fonte funcional:** definição/acompanhamento de metas e indicadores de performance.
+A implementação adotada exige que cada meta informe:
+- vendedora;
+- métrica entre `REVENUE`, `SALES` ou `CLIENTS`, todas expressamente suportadas pela fonte;
+- valor-alvo;
+- `startAt` e `endAt` explícitos;
+- observação opcional.
 
-**Já existe:** vendas, faturamento, clientes únicos e ticket médio por vendedora.
+O realizado usa somente vendas `PAID`. O ERP calcula realizado, percentual de atingimento, atingida/não atingida e estado temporal. Não existe recorrência mensal/semanal/diária automática por suposição.
 
-**Falta definir:**
-- métrica da meta: faturamento, quantidade de vendas, clientes, produtos ou outra;
-- periodicidade;
-- possibilidade de múltiplas metas simultâneas;
-- regra de atingimento/parcial;
-- tratamento de troca de vendedora durante o período.
+**Continua fora desta decisão:** outras métricas, recorrência automática e qualquer regra de comissão. A decisão detalhada está em `docs/decisions/seller-goals.md`.
 
 ## 6. Auto-atacado
 
-**Fonte funcional:** classificação/regra baseada em recompra dentro de período de até 3 meses.
-
 **Já existe:** histórico real de compras e datas por cliente.
 
-**Falta definir:**
-- quantas recompras qualificam o cliente;
-- se qualquer recompra em até 3 meses basta;
-- se o período é contado da primeira, última ou de cada compra;
-- quando a classificação expira;
-- qual efeito comercial a classificação produz.
+**Falta definir:** quantas recompras qualificam; como contar o período de até 3 meses; expiração; efeito comercial da classificação.
 
 ## 7. Baixa física de estoque
 
-**Fonte funcional relacionada:** estoque deve refletir a operação de produtos e vendas.
+**Já existe:** estoque atual/mínimo/máximo, orçamento, pedido e venda paga.
 
-**Já existe:** estoque atual, mínimo/máximo, itens de orçamento/pedido e venda paga.
-
-**Falta definir:** momento oficial da baixa física:
-- ao confirmar o pedido;
-- ao receber pagamento;
-- ao separar/expedir;
-- ou outro evento.
-
-Também falta definir cancelamento/estorno e eventual reserva de estoque durante o orçamento/pedido.
+**Falta definir:** momento da baixa física (pedido, pagamento, separação/expedição ou outro), reserva durante orçamento/pedido e reversões por cancelamento/estorno.
 
 ## 8. Promoções e descontos progressivos
 
-**Fonte funcional:** promoções por categoria/produto e progressivas por valor/quantidade; descontos progressivos por quantidade, categoria ou volume, incluindo exemplo de dúzia fechada.
+**Falta definir:** fórmula (percentual, valor fixo, preço especial etc.); combinação e prioridade; arredondamento; vigência; aplicação automática/manual; interação com vale, crédito e demais condições.
 
-**Falta definir:**
-- efeito da promoção: percentual, valor fixo, preço unitário especial ou outra fórmula;
-- possibilidade de combinar promoções;
-- prioridade quando duas regras forem válidas;
-- arredondamento;
-- datas de vigência;
-- aplicação automática ou aprovação manual;
-- tratamento de vale, crédito e outras condições comerciais.
-
-A tabela/engine definitivo de promoções deve refletir essa decisão, e não uma fórmula escolhida pelo desenvolvimento.
+A engine definitiva só será construída após essa decisão.
 
 ## 9. Integrações externas
 
-**Fonte funcional:** VaxChat, VaxLab, GoPage, ShopVax, WhatsApp, gateways de pagamento e e-commerce.
+**Escopo:** VaxChat, VaxLab, GoPage, ShopVax, WhatsApp, gateways e e-commerce.
 
-**Já existe:** registro seguro de configuração por empresa, estados de integração, referência de segredo sem exposição pela API, auditoria e isolamento multiempresa.
+**Já existe:** configuração tenant-scoped, estado da integração, referência de segredo sem exposição, auditoria e isolamento.
 
-**Falta para operação real de cada provedor:**
-- documentação/API oficial;
-- URL/base URL;
-- método de autenticação;
-- credenciais/referências de segredo;
-- webhooks e eventos;
-- mapeamento de IDs externos para entidades do ERP;
-- política de retry/idempotência específica do contrato;
-- ambiente de homologação/produção.
-
-Uma integração não será marcada como conectada apenas por possuir configuração cadastrada.
+**Falta para cada provedor:** documentação/API oficial; URL; autenticação; credenciais/secret refs; webhooks/eventos; IDs externos; retry/idempotência; ambientes de homologação/produção. Uma configuração não é marcada como conexão real.
 
 ## 10. Envio de rastreio por e-mail/WhatsApp
 
-**Fonte funcional:** código de rastreio dos Correios com envio por e-mail/WhatsApp.
+**Já existe:** código de rastreio e estrutura logística.
 
-**Já existe:** registro do código de rastreio e estrutura logística da venda.
-
-**Falta definir/conectar:**
-- provedor de e-mail;
-- integração WhatsApp operacional;
-- remetente/número;
-- template/conteúdo aprovado;
-- gatilho de envio e regra de reenvio.
+**Falta:** provedor de e-mail; integração WhatsApp; remetente/número; template aprovado; gatilho/reenvio.
 
 ## 11. Conciliação bancária automática
 
-**Fonte funcional:** conciliação bancária.
+**Já existe:** conciliação manual funcional e protegida contra cross-tenant no PostgreSQL.
 
-**Já existe:** conciliação manual funcional entre lançamentos bancários e recebimentos/pagamentos, com limites, direção crédito/débito, auditoria e isolamento.
-
-**Se houver automação/importação**, falta definir:
-- banco/provedor;
-- formato de extrato/API;
-- identificadores disponíveis;
-- regra de matching;
-- tolerância de valores/datas;
-- tratamento de múltiplas correspondências.
+**Se houver automação/importação**, falta: banco/provedor, formato/API, identificadores, matching, tolerâncias e múltiplas correspondências.
 
 ## 12. Interface final / Stitch
 
 **Fonte visual obrigatória:** Stitch aprovado.
 
-**Já existe:** backend funcional, endpoint agregado do Dashboard Geral e telas provisórias suficientes para desenvolvimento/validação técnica.
+**Já existe:** backend e telas provisórias de desenvolvimento.
 
-**Falta para fechamento visual:** referência detalhada/exportável das telas e do design system do Stitch para implementar e comparar:
-- shell/sidebar;
-- tipografia;
-- cores/tokens;
-- espaçamentos;
-- cards;
-- tabelas;
-- filtros;
-- campos;
-- botões/ícones;
-- modais/estados;
-- responsividade;
-- Dashboard Geral;
-- Clientes & CRM;
-- Produtos & Estoque;
-- demais telas novas derivadas do mesmo design system.
+**Falta para fechamento:** referência detalhada/exportável de shell/sidebar, tipografia, tokens, espaçamentos, cards, tabelas, filtros, campos, botões/ícones, modais/estados, responsividade, Dashboard Geral, Clientes & CRM, Produtos & Estoque e padrões para novas telas.
 
 ## 13. Produção, domínio e comercialização
 
-**Fonte funcional:** domínio próprio e preparação para acesso adicional de compra/assinatura quando comercializado.
+**Já existe:** multiempresa, autenticação/permissões, provisionamento técnico de empresa + primeiro `OWNER`, Docker/Compose, PostgreSQL/arquivos persistentes, backup/restore e validação de recuperação.
 
-**Já existe:** arquitetura multiempresa, isolamento, autenticação, permissões, configuração por empresa, backup/restore, gestão tenant-scoped de usuários e provisionamento técnico controlado de nova organização + primeiro `OWNER`. O provisionamento é transacional, auditado e possui teste de isolamento/autenticação. Também já existe estrutura versionada de container/Compose para aplicação + PostgreSQL, template de variáveis sem segredos e procedimento controlado de deploy em VPS.
+**Falta definir/fornecer:** VPS definitiva; domínio; DNS/TLS; conta/e-mail empresarial; contratação; planos; cobrança; gatilho comercial de provisionamento; suspensão/cancelamento; política de usuários existentes; retenção/offsite final dos backups.
 
-**Continua faltando definir/fornecer:**
-- provedor e acesso à VPS definitiva;
-- domínio final;
-- DNS/TLS definitivo;
-- conta/e-mail empresarial apropriado;
-- modelo de contratação;
-- planos/assinaturas;
-- cobrança;
-- gatilho comercial que chamará o provisionamento após compra/assinatura;
-- suspensão/cancelamento e ciclo de vida da assinatura;
-- política para vincular automaticamente usuários já existentes em contratações futuras;
-- política operacional final de retenção/offsite dos backups.
-
-A presença da stack de deploy não significa que produção já foi implantada. O provisionamento técnico também não deve ser confundido com contratação automática. Enquanto planos, cobrança e ciclo de vida não forem aprovados, nenhuma rota pública de auto-cadastro/checkout será criada por suposição.
+A stack de deploy não significa que produção já está implantada, e provisionamento técnico não equivale a contratação automática.
 
 ---
 
 ## Regra de fechamento
 
-Quando uma decisão acima for aprovada, ela deve ser registrada no repositório antes ou junto da implementação correspondente. Alterações futuras devem preservar rastreabilidade e não modificar silenciosamente regras já aprovadas.
+Quando uma decisão pendente for aprovada, ela deve ser registrada antes ou junto da implementação. Alterações futuras devem preservar rastreabilidade e não modificar silenciosamente regras já aprovadas.
