@@ -82,6 +82,36 @@ jobs:
           trap 'rm -f .env.production' EXIT
           docker compose --env-file .env.production -f docker-compose.production.yml config --quiet
 
+      - name: Verify storage backup integrity and restore path
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .env.production.example .env.production
+          mkdir -p backups
+          trap 'rm -f .env.production; rm -rf backups' EXIT
+
+          docker compose \
+            --env-file .env.production \
+            -f docker-compose.production.yml \
+            --profile ops \
+            run --rm storage-backup
+
+          ARCHIVE_PATH="$(find backups -maxdepth 1 -type f -name 'erp-pedro-files-*.tar.gz' -print -quit)"
+          test -n "$ARCHIVE_PATH"
+          ARCHIVE="$(basename "$ARCHIVE_PATH")"
+          test -f "backups/${ARCHIVE}.sha256"
+
+          (
+            cd backups
+            sha256sum -c "${ARCHIVE}.sha256"
+          )
+
+          RESTORE_ARCHIVE="$ARCHIVE" docker compose \
+            --env-file .env.production \
+            -f docker-compose.production.yml \
+            --profile ops \
+            run --rm storage-restore
+
       - name: Smoke test application flows
         shell: bash
         run: |
