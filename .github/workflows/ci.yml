@@ -67,6 +67,10 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Validate operational shell scripts
+        shell: bash
+        run: bash -n ops/*.sh
+
       - name: Build application
         run: pnpm build
 
