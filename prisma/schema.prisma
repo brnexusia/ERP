@@ -57,6 +57,7 @@ enum PaymentMethod {
   PIX
   BOLETO
   CHEQUE
+  CASH
 }
 
 enum PaymentStatus {
