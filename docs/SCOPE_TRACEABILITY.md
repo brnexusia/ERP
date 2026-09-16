@@ -39,7 +39,7 @@ Quando o documento exige uma função mas não fornece fórmula, limiar, priorid
 | Perfil da vendedora | Carteira atribuída + vendas, faturamento, clientes únicos, ticket e canais | 9 |
 | Orçamento → pedido → pagamento | Mesmo `Sale.id`, sem recadastro | 7 |
 | Cartão, Pix, boleto e cheque | Modelados no pagamento | 8 |
-| Condição à vista/pré-datada | Vencimento opcional em boleto/cheque | 8 |
+| Condição à vista/pré-datada | Vencimento opcional restrito a boleto/cheque; Pix/cartão rejeitam vencimento | 8 |
 | Relatórios de venda/faturamento | API comercial por período | 10 |
 | Ticket médio geral/novos/antigos | Calculado sobre vendas pagas | 10 |
 | Canais WhatsApp/site/loja | `SaleChannel` | 7/10 |
@@ -49,7 +49,7 @@ Quando o documento exige uma função mas não fornece fórmula, limiar, priorid
 | Retirada | Registro logístico | 8 |
 | Correios e rastreio | Código de rastreio registrado | 8 |
 | Envio de rastreio e-mail/WhatsApp | Depende de integração/provedor/template | 8/13 |
-| Transportadora e comprovantes | Registro de transportadora + URLs de comprovantes | 8 |
+| Transportadora e comprovantes | Registro de transportadora + arquivo privado de envio/entrega | 8 |
 | Arquivo privado de comprovante | Storage tenant-scoped, privado e protegido por permissão | 8/14 |
 | Dashboard comercial | Backend agregado e permission-aware | 10 |
 
@@ -104,7 +104,7 @@ Quando o documento exige uma função mas não fornece fórmula, limiar, priorid
 | VPS/produção | Dockerfile + Compose + procedimento documentado | 14 |
 | Banco persistente | PostgreSQL em volume próprio | 1/14 |
 | Armazenamento de arquivos | Volume `file_storage`, público/privado por finalidade | 14 |
-| Segurança de acesso | RBAC, sessão segura, isolamento, cabeçalhos HTTP, tokens HMAC de arquivo | 1/14 |
+| Segurança de acesso | RBAC, sessão segura, isolamento, proteção de mutações cross-site, cabeçalhos HTTP e tokens HMAC de arquivo | 1/14 |
 | Auditoria | `AuditLog` + consulta administrativa tenant-scoped | 1/14 |
 | Backup de banco | Script versionado | 1/14 |
 | Backup de arquivos | Serviço/script versionado com retenção configurável | 14 |
