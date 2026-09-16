@@ -150,11 +150,11 @@ Fluxo central funcional:
 ## Progresso 8 — Pagamentos e entrega 🟠
 
 Funcional no backend:
-- cartão, Pix, boleto e cheque;
+- cartão, Pix, boleto, cheque e dinheiro;
 - pagamento pendente/quitado;
-- cartão e Pix não aceitam vencimento;
+- cartão, Pix e dinheiro não aceitam vencimento;
 - boleto e cheque aceitam vencimento opcional, representando a condição à vista/pré-datada prevista no documento-fonte;
-- API rejeita vencimento indevido em Pix/cartão;
+- API rejeita vencimento indevido em Pix/cartão/dinheiro;
 - pagamentos parciais sem ultrapassar o total;
 - atendimento, pós-venda, reclamações e SAC;
 - retirada;
@@ -278,11 +278,12 @@ Já implementado:
 - tipos executáveis não previstos bloqueados;
 - validação de assinatura para PNG/JPEG/GIF/WebP/PDF;
 - consulta de auditoria administrativa por tenant;
-- backup/restore de PostgreSQL;
-- backup/restore do volume de arquivos;
-- restore de arquivos protegido por confirmação explícita;
+- backup/restore de PostgreSQL com checksum;
+- backup/restore do volume de arquivos com checksum;
+- round-trip de recuperação real de banco e arquivos validado no CI;
+- restore destrutivo protegido por confirmação explícita;
 - validação de scripts operacionais e Compose no CI;
-- healthcheck de banco + armazenamento.
+- healthcheck de PostgreSQL por TCP + armazenamento.
 
 Ainda pendente:
 - VPS real e homologada;
@@ -316,6 +317,7 @@ Só começa quando as dependências necessárias para o produto final estiverem 
 - Run 216 (`35041950612`): segurança de leitura de arquivos privados + suíte completa verde.
 - Run 233 (`35042735654`): comprovantes privados de transportadora + suíte completa verde.
 - Run 237 (`35048022891`): proteção cross-site e regra à vista/pré-datada de pagamento + migrations, isolamento, typecheck, build, Compose e smoke tests verdes.
+- Run 258 (`35049646523`): migrations, isolamento, build, Compose, restore real do PostgreSQL, restore real do volume de arquivos e suíte de smoke tests verdes.
 
 A matriz detalhada requisito oficial → implementação → progresso está em `docs/SCOPE_TRACEABILITY.md`.
 
