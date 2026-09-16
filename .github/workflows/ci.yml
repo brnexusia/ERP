@@ -90,11 +90,12 @@ jobs:
           mkdir -p backups
           trap 'rm -f .env.production; rm -rf backups' EXIT
 
-          docker compose \
-            --env-file .env.production \
-            -f docker-compose.production.yml \
-            --profile ops \
-            run --rm storage-backup
+          COMPOSE=(docker compose --env-file .env.production -f docker-compose.production.yml --profile ops)
+
+          "${COMPOSE[@]}" run --rm --entrypoint /bin/sh storage-restore -ec \
+            'printf %s "erp-storage-roundtrip-v1" > /data/ci-roundtrip.txt'
+
+          "${COMPOSE[@]}" run --rm storage-backup
 
           ARCHIVE_PATH="$(find backups -maxdepth 1 -type f -name 'erp-pedro-files-*.tar.gz' -print -quit)"
           test -n "$ARCHIVE_PATH"
@@ -106,11 +107,13 @@ jobs:
             sha256sum -c "${ARCHIVE}.sha256"
           )
 
-          RESTORE_ARCHIVE="$ARCHIVE" docker compose \
-            --env-file .env.production \
-            -f docker-compose.production.yml \
-            --profile ops \
-            run --rm storage-restore
+          "${COMPOSE[@]}" run --rm --entrypoint /bin/sh storage-restore -ec \
+            'printf %s "corrupted-after-backup" > /data/ci-roundtrip.txt'
+
+          RESTORE_ARCHIVE="$ARCHIVE" "${COMPOSE[@]}" run --rm storage-restore
+
+          RESTORED_VALUE="$("${COMPOSE[@]}" run --rm --entrypoint /bin/sh storage-restore -ec 'cat /data/ci-roundtrip.txt')"
+          test "$RESTORED_VALUE" = "erp-storage-roundtrip-v1"
 
       - name: Smoke test application flows
         shell: bash
