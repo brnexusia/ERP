@@ -92,6 +92,15 @@ async function main() {
     );
     assert.equal(tamperedPublic.status, 404, "Token adulterado precisa ser rejeitado.");
 
+    const disguisedImage = await upload(cookie, {
+      name: "conteudo-falso.png",
+      type: "image/png",
+      bytes: new TextEncoder().encode("<html>não é uma imagem</html>"),
+      purpose: "PRODUCT_IMAGE",
+      visibility: "public",
+    });
+    assert.equal(disguisedImage.status, 422, "Conteúdo incompatível com o MIME informado deve ser rejeitado.");
+
     const pdfBytes = new TextEncoder().encode("%PDF-1.4\nERP PEDRO STORAGE SMOKE\n%%EOF");
     const privateUpload = await upload(cookie, {
       name: "comprovante.pdf",
@@ -105,6 +114,15 @@ async function main() {
     const privateTokenValue = String(privateFile.token);
     privateToken = privateTokenValue;
     assert.ok(privateFile.url.includes("/api/files/"));
+
+    const publicProof = await upload(cookie, {
+      name: "comprovante-publico.pdf",
+      type: "application/pdf",
+      bytes: pdfBytes,
+      purpose: "DELIVERY_PROOF",
+      visibility: "public",
+    });
+    assert.equal(publicProof.status, 422, "Comprovante de entrega não pode ser publicado anonimamente.");
 
     const anonymousPrivate = await fetch(privateFile.url, { redirect: "manual" });
     assert.equal(anonymousPrivate.status, 401, "Arquivo privado não pode ser lido sem sessão.");
@@ -205,8 +223,9 @@ async function main() {
     assert.ok(audit.some((entry) => entry.action === "FILE_DELETE"));
 
     console.log("✓ imagens públicas podem alimentar catálogo sem expor arquivos privados");
-    console.log("✓ comprovantes privados exigem sessão e tenant correto");
+    console.log("✓ comprovantes privados exigem sessão, tenant correto e não podem ser publicados");
     console.log("✓ token assinado rejeita adulteração de caminho/purpose");
+    console.log("✓ MIME permitido também precisa corresponder à assinatura conhecida do arquivo");
     console.log("✓ tipos executáveis não autorizados são rejeitados");
     console.log("✓ upload e remoção deixam trilha de auditoria");
   } finally {
