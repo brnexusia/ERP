@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { MembershipRole } from "@prisma/client";
@@ -70,6 +70,15 @@ function maxUploadBytes(): number {
   return Number.isFinite(configured) && configured > 0 ? Math.floor(configured) : 25 * 1024 * 1024;
 }
 
+function fileTokenSecret(): string {
+  const configured = process.env.FILE_TOKEN_SECRET?.trim();
+  if (configured && configured.length >= 32) return configured;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("FILE_TOKEN_SECRET deve possuir pelo menos 32 caracteres em produção.");
+  }
+  return "erp-pedro-development-file-token-secret-only";
+}
+
 function assertPurposePermission(role: MembershipRole, purpose: FilePurpose): void {
   if (purpose === "PRODUCT_IMAGE") {
     assertPermission(role, "inventory:write");
@@ -91,13 +100,31 @@ type FileTokenPayload = {
   purpose: FilePurpose;
 };
 
+function signatureFor(encodedPayload: string): string {
+  return createHmac("sha256", fileTokenSecret()).update(encodedPayload).digest("base64url");
+}
+
 export function encodeFileToken(payload: FileTokenPayload): string {
-  return Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+  const encodedPayload = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+  return `${encodedPayload}.${signatureFor(encodedPayload)}`;
 }
 
 export function decodeFileToken(token: string): FileTokenPayload {
   try {
-    const parsed = JSON.parse(Buffer.from(token, "base64url").toString("utf8")) as Partial<FileTokenPayload>;
+    const [encodedPayload, signature, extra] = token.split(".");
+    if (!encodedPayload || !signature || extra !== undefined) throw new Error("invalid");
+
+    const expectedSignature = signatureFor(encodedPayload);
+    const actualBuffer = Buffer.from(signature, "utf8");
+    const expectedBuffer = Buffer.from(expectedSignature, "utf8");
+    if (
+      actualBuffer.byteLength !== expectedBuffer.byteLength ||
+      !timingSafeEqual(actualBuffer, expectedBuffer)
+    ) {
+      throw new Error("invalid");
+    }
+
+    const parsed = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8")) as Partial<FileTokenPayload>;
     if (typeof parsed.key !== "string" || typeof parsed.purpose !== "string") {
       throw new Error("invalid");
     }
@@ -106,7 +133,8 @@ export function decodeFileToken(token: string): FileTokenPayload {
     }
     validateStorageKey(parsed.key);
     return parsed as FileTokenPayload;
-  } catch {
+  } catch (error) {
+    if (error instanceof FileStorageNotFoundError) throw error;
     throw new FileStorageNotFoundError();
   }
 }
