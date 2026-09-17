@@ -147,11 +147,23 @@ export async function switchActiveOrganization(organizationId: string) {
     throw new Error("Acesso não autorizado para esta empresa.");
   }
 
+  const rotatedToken = randomBytes(32).toString("base64url");
+  const rotatedTokenHash = hashSessionToken(rotatedToken);
+
   await db.session.update({
     where: { id: session.id },
     data: {
+      tokenHash: rotatedTokenHash,
       activeOrganizationId: organizationId,
       lastSeenAt: new Date(),
     },
+  });
+
+  cookieStore.set(SESSION_COOKIE, rotatedToken, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    expires: session.expiresAt,
   });
 }
