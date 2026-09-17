@@ -21,7 +21,7 @@ Quando o documento exige uma função mas não fornece fórmula, limiar, priorid
 | Segmentação por grupo/perfil | `ClientSegment` por empresa | 4 |
 | Aviso por X dias sem compra | Configuração por empresa + cálculo pela última compra paga | 4/10 |
 | CRM integrado | Atividades, histórico, follow-up e conclusão | 4 |
-| Gestão central do cliente | `/api/clients/:id/central-profile` agrega cadastro, comercial, crédito, vale, CRM e suporte | 3/4 |
+| Gestão central do cliente | `/api/clients/:id/central-profile` agrega cadastro, comercial, crédito, vale, CRM, suporte e histórico de pagamentos | 3/4/8 |
 | Login e senha | Sessão persistida + autenticação | 1 |
 | Controle de acesso | Membership + RBAC + autorização no servidor | 1/14 |
 | VaxChat | Configuração preparada; operação real depende de contrato técnico | 13 |
@@ -34,16 +34,16 @@ Quando o documento exige uma função mas não fornece fórmula, limiar, priorid
 | Maiores compradores | Ranking factual por valor pago | 10 |
 | Clientes novos/recorrentes | Classificação a partir do histórico pago | 10 |
 | Clientes que pararam de comprar | Usa o X dias configurado | 10 |
-| Clientes que reduziram compras | Base factual pronta; critério pendente | 10 |
+| Clientes que reduziram compras | Base factual pronta; critério comparativo pendente | 10 |
 | Direcionamento para vendedora | Cliente possui vendedora responsável | 7/9 |
-| Perfil da vendedora | Carteira atribuída + vendas, faturamento, clientes únicos, ticket e canais | 9 |
+| Perfil da vendedora | Carteira atribuída + vendas, faturamento, clientes únicos, ticket, canais e metas | 9 |
 | Orçamento → pedido → pagamento | Mesmo `Sale.id`, sem recadastro | 7 |
 | Cartão, Pix, boleto e cheque | Modelados no pagamento | 8 |
 | Condição à vista/pré-datada | Vencimento opcional restrito a boleto/cheque; Pix/cartão rejeitam vencimento | 8 |
 | Relatórios de venda/faturamento | API comercial por período | 10 |
 | Ticket médio geral/novos/antigos | Calculado sobre vendas pagas | 10 |
 | Canais WhatsApp/site/loja | `SaleChannel` | 7/10 |
-| Metas | Dados-base de performance prontos; regra pendente | 9/10 |
+| Metas | CRUD tenant-scoped com período explícito, métricas `REVENUE`/`SALES`/`CLIENTS`, realizado factual, percentual e atingimento | 9/10 |
 | Comissões | Dados-base de venda/pagamento/vendedora prontos; fórmula pendente | 9/10 |
 | Atendimento/pós-venda/reclamações/SAC | Histórico de suporte por cliente/venda | 8 |
 | Retirada | Registro logístico | 8 |
@@ -51,7 +51,7 @@ Quando o documento exige uma função mas não fornece fórmula, limiar, priorid
 | Envio de rastreio e-mail/WhatsApp | Depende de integração/provedor/template | 8/13 |
 | Transportadora e comprovantes | Registro de transportadora + arquivo privado de envio/entrega | 8 |
 | Arquivo privado de comprovante | Storage tenant-scoped, privado e protegido por permissão | 8/14 |
-| Dashboard comercial | Backend agregado e permission-aware | 10 |
+| Dashboard comercial | Backend agregado, permission-aware, com metas por vendedora | 10 |
 
 ## Etapa 3 — Estoque e Produtos
 
@@ -72,8 +72,8 @@ Quando o documento exige uma função mas não fornece fórmula, limiar, priorid
 | Curva ABC | Faturamento/quantidade disponíveis; faixas/pesos pendentes | 6 |
 | Categorias por cliente | Calculadas a partir de compras pagas | 6/10 |
 | Desconto progressivo | Regra/fórmula pendente | 12 |
-| Auto-atacado em até 3 meses | Histórico de recompra disponível; gatilho exato pendente | 12 |
-| Histórico de formas de pagamento | Disponível no perfil comercial | 8/10 |
+| Auto-atacado em até 3 meses | Perfil comercial detecta recompra factual em até 3 meses-calendário sobre vendas `PAID`; efeito comercial ainda pendente | 12 |
+| Histórico de formas de pagamento | Endpoint explícito + perfil central com registros pagos/pendentes, valores, vencimento/liquidação e venda/vendedora de origem | 3/8/10 |
 
 ## Etapa 4 — Integrações, Promoções e Financeiro
 
