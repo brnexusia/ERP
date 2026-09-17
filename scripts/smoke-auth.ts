@@ -6,7 +6,7 @@ const TEST_DOCUMENT = "52998224725";
 
 function cookiePair(setCookie: string | null): string {
   if (!setCookie) {
-    throw new Error("Login não retornou cookie de sessão.");
+    throw new Error("Login/troca de empresa não retornou cookie de sessão.");
   }
 
   return setCookie.split(";", 1)[0];
@@ -78,7 +78,7 @@ async function main() {
     });
 
     assert.equal(login.status, 200, `Login falhou com status ${login.status}.`);
-    const sessionCookie = cookiePair(login.headers.get("set-cookie"));
+    let sessionCookie = cookiePair(login.headers.get("set-cookie"));
 
     const firstHome = await fetch(`${BASE_URL}/`, {
       headers: { Cookie: sessionCookie },
@@ -117,6 +117,7 @@ async function main() {
     });
     assert.equal(getFirstClient.status, 200, "Cliente do tenant ativo não pôde ser consultado.");
 
+    const previousSessionCookie = sessionCookie;
     const switchAllowed = await fetch(`${BASE_URL}/api/auth/organization`, {
       method: "POST",
       headers: {
@@ -127,6 +128,22 @@ async function main() {
       redirect: "manual",
     });
     assert.equal(switchAllowed.status, 200, `Troca autorizada falhou com status ${switchAllowed.status}.`);
+
+    sessionCookie = cookiePair(switchAllowed.headers.get("set-cookie"));
+    assert.notEqual(
+      sessionCookie,
+      previousSessionCookie,
+      "Troca de tenant deve rotacionar o token de sessão.",
+    );
+
+    const staleCookieHome = await fetch(`${BASE_URL}/`, {
+      headers: { Cookie: previousSessionCookie },
+      redirect: "manual",
+    });
+    assert.ok(
+      [302, 303, 307, 308].includes(staleCookieHome.status),
+      `Cookie anterior deveria ser invalidado após rotação; status ${staleCookieHome.status}.`,
+    );
 
     const secondHome = await fetch(`${BASE_URL}/`, {
       headers: { Cookie: sessionCookie },
@@ -203,6 +220,11 @@ async function main() {
       403,
       `Troca para tenant sem vínculo deveria retornar 403; retornou ${switchForbidden.status}.`,
     );
+    assert.equal(
+      switchForbidden.headers.get("set-cookie"),
+      null,
+      "Troca não autorizada não deve emitir novo token de sessão.",
+    );
 
     const crossSiteLogout = await fetch(`${BASE_URL}/api/auth/logout`, {
       method: "POST",
@@ -255,8 +277,8 @@ async function main() {
     console.log("✓ cadastro, consulta, edição e listagem de clientes validados");
     console.log("✓ CPF duplicado bloqueado dentro do tenant e permitido entre tenants");
     console.log("✓ cliente de outro tenant invisível pela API");
-    console.log("✓ troca autorizada de empresa validada");
-    console.log("✓ troca sem membership bloqueada com 403");
+    console.log("✓ troca autorizada de empresa rotaciona o token e invalida o cookie anterior");
+    console.log("✓ troca sem membership bloqueada com 403 sem rotacionar a sessão");
     console.log("✓ mutações API cross-site bloqueadas sem derrubar a sessão legítima");
     console.log("✓ logout e invalidação de sessão validados");
   } finally {
