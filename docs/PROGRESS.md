@@ -38,7 +38,7 @@ O Stitch aprovado é a fonte visual obrigatória para shell/sidebar, cabeçalhos
 
 ## 3 — Gestão de Clientes 🟠
 
-Cadastro/consulta/edição tenant-scoped, nome/razão, CPF/CNPJ, endereço, WhatsApp, e-mail, segmento, vendedora responsável, histórico real de compras pagas, perfil comercial e perfil central estão funcionais. Auditoria, permissões e bloqueio cross-tenant também estão validados.
+Cadastro/consulta/edição tenant-scoped, nome/razão, CPF/CNPJ, endereço, WhatsApp, e-mail, segmento, vendedora responsável, histórico real de compras pagas, perfil comercial e perfil central estão funcionais. O perfil central também reúne crédito, vale, CRM, suporte e histórico explícito de pagamentos, incluindo registros pagos/pendentes, valor, vencimento/liquidação e venda/vendedora de origem. Auditoria, permissões e bloqueio cross-tenant também estão validados.
 
 **Pendente para ✅:** interface final conforme Stitch.
 
@@ -68,7 +68,7 @@ Já existem alerta de estoque baixo, mínimo/máximo, quantidade vendida, fatura
 
 ## 8 — Pagamentos e entrega 🟠
 
-Cartão, Pix, boleto e cheque; pagamento pendente/quitado; boleto/cheque com vencimento opcional; pagamentos parciais; atendimento/pós-venda/reclamações/SAC; retirada; Correios; transportadora e comprovantes privados estão funcionais e isolados por empresa.
+Cartão, Pix, boleto e cheque; pagamento pendente/quitado; boleto/cheque com vencimento opcional; pagamentos parciais; atendimento/pós-venda/reclamações/SAC; retirada; Correios; transportadora e comprovantes privados estão funcionais e isolados por empresa. O histórico explícito por cliente registra também as formas utilizadas e seus estados.
 
 **Pendente para ✅:** envio real de rastreio por e-mail/WhatsApp, provedores/templates/gatilhos e interface final.
 
@@ -76,7 +76,7 @@ Cartão, Pix, boleto e cheque; pagamento pendente/quitado; boleto/cheque com ven
 
 Já implementado: carteira da vendedora, venda vinculada à responsável, vendas pagas, faturamento, clientes únicos, ticket médio, canais e filtro por período.
 
-Metas agora são funcionais sem presumir periodicidade: cada meta escolhe uma métrica explicitamente prevista no escopo (`REVENUE`, `SALES` ou `CLIENTS`) e informa `startAt`/`endAt`. O realizado usa somente vendas `PAID`; o ERP calcula realizado, percentual, atingimento e estado `UPCOMING`/`ACTIVE`/`ENDED`. Criação/edição/exclusão são auditadas e o PostgreSQL impede vínculo com vendedora de outro tenant. O perfil da vendedora expõe metas reais.
+Metas são funcionais sem presumir periodicidade: cada meta escolhe uma métrica prevista no escopo (`REVENUE`, `SALES` ou `CLIENTS`) e informa `startAt`/`endAt`. O realizado usa somente vendas `PAID`; o ERP calcula realizado, percentual, atingimento e estado `UPCOMING`/`ACTIVE`/`ENDED`. Criação/edição/exclusão são auditadas e o PostgreSQL impede vínculo com vendedora de outro tenant. O perfil da vendedora expõe metas reais.
 
 **Ainda pendente:** fórmula/base/momento das comissões, tratamento de estornos/devoluções, eventual fluxo específico de treinamento/desenvolvimento além dos indicadores já disponíveis e interface final. Comissões continuam explicitamente sem cálculo automático enquanto não houver regra aprovada.
 
@@ -84,7 +84,7 @@ Metas agora são funcionais sem presumir periodicidade: cada meta escolhe uma m�
 
 Já existem vendas/faturamento por período, ticket médio geral/novos/antigos, canais, performance por vendedora, ranking de compradores, classificação sem compra/novo/recorrente, inatividade por `X dias`, formas de pagamento, categorias predominantes e métricas de produto.
 
-O Dashboard Geral agrega comercial, clientes, inatividade, estoque baixo e financeiro e agora também inclui metas por vendedora com identidade, alvo, realizado, percentual, atingimento e estado temporal. O filtro do dashboard seleciona metas por sobreposição de período sem alterar o período próprio de cálculo da meta. O dashboard é permission-aware e tenant-scoped.
+O Dashboard Geral agrega comercial, clientes, inatividade, estoque baixo e financeiro e inclui metas por vendedora com identidade, alvo, realizado, percentual, atingimento e estado temporal. O filtro do dashboard seleciona metas por sobreposição de período sem alterar o período próprio de cálculo da meta. O dashboard é permission-aware e tenant-scoped.
 
 **Pendente:** visual conforme Stitch, comissões após definição de regra e “reduziu compras” após definição de período/métrica/limiar.
 
@@ -98,7 +98,9 @@ Contas a receber derivadas de pagamentos reais, contas a pagar, fluxo de caixa r
 
 Catálogo automático compartilhável por link, imagens públicas de produto, custo oculto e histórico de formas de pagamento já existem.
 
-**Aguardando regra:** descontos progressivos, dúzia fechada, promoções, prioridade/empilhamento/vigência/arredondamento e auto-atacado. Falta também página visual pública segundo o design system aprovado.
+A base da regra de auto-atacado avançou sem inventar efeito comercial: o perfil comercial detecta factual e exclusivamente sobre vendas `PAID` se houve recompra em até três meses-calendário, preservando os intervalos entre compras. O ERP não aplica automaticamente preço, desconto ou mudança de segmento enquanto esse efeito não estiver definido.
+
+**Aguardando regra:** descontos progressivos, dúzia fechada, promoções, prioridade/empilhamento/vigência/arredondamento e efeito comercial final do auto-atacado. Falta também página visual pública segundo o design system aprovado.
 
 ## 13 — Integrações 🟡
 
@@ -126,11 +128,12 @@ Só começa quando as dependências necessárias estiverem resolvidas. Deve cobr
 - Run 273 (`35059990237`): definição/acompanhamento de metas por vendedora + suíte completa verde.
 - Run 276 (`35060420308`): metas integradas ao Dashboard Geral + concorrência de CI corrigida + suíte completa verde.
 - Run 277 (`35060600021`): mesma cabeça funcional incorporada ao `main`, com migrations, isolamento, typecheck, build, recuperação e smoke tests verdes.
+- Run 279 (`35061202048`): histórico explícito de formas de pagamento por cliente, perfil central e isolamento + suíte completa verde.
 
 A matriz requisito oficial → implementação → progresso está em `docs/SCOPE_TRACEABILITY.md`.
 
 ## Regras ainda pendentes
 
-Permanecem sem implementação automática final até aprovação objetiva: “reduziu compras”, baixa saída, Curva ABC, comissões, auto-atacado, baixa/reserva de estoque, promoções/descontos progressivos e integrações externas cujo contrato técnico ainda não foi fornecido.
+Permanecem sem implementação automática final até aprovação objetiva: “reduziu compras”, baixa saída, Curva ABC, comissões, efeito comercial do auto-atacado, baixa/reserva de estoque, promoções/descontos progressivos e integrações externas cujo contrato técnico ainda não foi fornecido.
 
-Metas não estão mais nessa lista: a empresa escolhe por meta uma métrica suportada pela fonte e informa explicitamente o período, sem recorrência presumida.
+Metas não estão mais nessa lista: a empresa escolhe por meta uma métrica suportada pela fonte e informa explicitamente o período, sem recorrência presumida. A janela factual de recompra do auto-atacado também já é detectada; somente seu efeito comercial permanece pendente.
