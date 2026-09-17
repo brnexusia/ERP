@@ -9,6 +9,7 @@ import {
   getClientVale,
 } from "@/modules/client-management/service";
 import { getClientCommercialProfile } from "@/modules/reports/service";
+import { getClientPaymentHistory } from "@/modules/reports/payment-history";
 import { listClientSupportRecords } from "@/modules/customer-service/service";
 
 export async function getClientCentralProfile(
@@ -21,10 +22,11 @@ export async function getClientCentralProfile(
   const client = await getClient(context, clientId);
   if (!client) throw new ClientNotFoundError();
 
-  const [credit, vale, commercialProfile, support] = await Promise.all([
+  const [credit, vale, commercialProfile, paymentHistory, support] = await Promise.all([
     getClientCredit(context, clientId),
     getClientVale(context, clientId),
     getClientCommercialProfile(context, clientId),
+    getClientPaymentHistory(context, clientId),
     listClientSupportRecords(context, clientId),
   ]);
 
@@ -35,6 +37,7 @@ export async function getClientCentralProfile(
     financial: {
       credit,
       vale,
+      paymentHistory,
     },
     relationship: commercialProfile.relationship,
     support,
