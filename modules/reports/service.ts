@@ -24,6 +24,46 @@ function decimalAverage(total: Prisma.Decimal, count: number) {
   return count === 0 ? new Prisma.Decimal(0) : total.div(count).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
 }
 
+function addUtcMonths(date: Date, months: number) {
+  const result = new Date(date.getTime());
+  result.setUTCMonth(result.getUTCMonth() + months);
+  return result;
+}
+
+function getRepurchaseWithinThreeMonthsSignal(paidPurchaseDates: Date[]) {
+  const dates = [...paidPurchaseDates].sort((a, b) => a.getTime() - b.getTime());
+  const intervals = [] as Array<{
+    previousPurchaseAt: Date;
+    repurchaseAt: Date;
+    daysBetween: number;
+    withinThreeMonths: boolean;
+  }>;
+
+  for (let index = 1; index < dates.length; index += 1) {
+    const previousPurchaseAt = dates[index - 1];
+    const repurchaseAt = dates[index];
+    const daysBetween = Math.floor((repurchaseAt.getTime() - previousPurchaseAt.getTime()) / 86_400_000);
+    intervals.push({
+      previousPurchaseAt,
+      repurchaseAt,
+      daysBetween,
+      withinThreeMonths: repurchaseAt <= addUtcMonths(previousPurchaseAt, 3),
+    });
+  }
+
+  const qualifying = intervals.filter((entry) => entry.withinThreeMonths);
+  return {
+    detected: qualifying.length > 0,
+    qualifyingRepurchases: qualifying.length,
+    firstQualifyingRepurchaseAt: qualifying[0]?.repurchaseAt ?? null,
+    latestQualifyingRepurchaseAt: qualifying[qualifying.length - 1]?.repurchaseAt ?? null,
+    intervals,
+    basis: "PAID_PURCHASES" as const,
+    window: "UP_TO_3_CALENDAR_MONTHS" as const,
+    commercialEffect: "PENDING_RULE_DEFINITION" as const,
+  };
+}
+
 export async function getCommercialDashboard(context: ClientAccessContext, period: ReportPeriod) {
   assertPermission(context.role, "sales:read");
 
@@ -178,6 +218,10 @@ export async function getClientCommercialProfile(context: ClientAccessContext, c
   const totalSpent = purchases.reduce((sum, sale) => sum.add(sale.totalAmount), new Prisma.Decimal(0));
   const firstPurchaseAt = purchases.length ? purchases[purchases.length - 1].paidAt : null;
   const lastPurchaseAt = purchases.length ? purchases[0].paidAt : null;
+  const paidPurchaseDates = purchases
+    .map((purchase) => purchase.paidAt)
+    .filter((paidAt): paidAt is Date => paidAt instanceof Date);
+  const repurchaseWithinThreeMonths = getRepurchaseWithinThreeMonthsSignal(paidPurchaseDates);
 
   const categoryMap = new Map<
     string,
@@ -236,6 +280,7 @@ export async function getClientCommercialProfile(context: ClientAccessContext, c
       inactivityDaysConfigured: settings?.inactivityDays ?? null,
       daysWithoutPurchase,
       inactivityAlert,
+      repurchaseWithinThreeMonths,
       predominantCategories: [...categoryMap.values()].sort((a, b) => b.revenue.comparedTo(a.revenue)),
       paymentMethods: [...paymentMap.values()].sort((a, b) => b.amount.comparedTo(a.amount)),
     },
