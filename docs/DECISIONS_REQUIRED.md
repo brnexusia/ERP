@@ -8,9 +8,9 @@ Quando o escopo define **o que** deve existir, mas não define a regra necessár
 
 ## 1. Clientes que reduziram compras
 
-**Já existe:** histórico de compras pagas, faturamento, número de compras, primeira/última compra, ranking e filtros. Sem compra/novo/recorrente e “parou de comprar” já são factuais.
+**Já existe:** histórico de compras pagas, faturamento, número de compras, primeira/última compra, ranking e filtros. Sem compra/novo/recorrente e “parou de comprar” já são factuais. Também existe comparação explícita entre dois períodos escolhidos pelo usuário, com métrica `REVENUE` ou `PURCHASES`, indicando factual e matematicamente redução/aumento/estabilidade.
 
-**Falta definir:** períodos de comparação; métrica da queda; limiar mínimo; tratamento de sazonalidade e de cliente sem período anterior completo.
+**Falta definir para uma regra automática padrão:** períodos padrão; métrica padrão; eventual limiar mínimo; tratamento de sazonalidade e de cliente sem período anterior completo.
 
 ## 2. Produtos com baixa saída
 
@@ -20,9 +20,9 @@ Quando o escopo define **o que** deve existir, mas não define a regra necessár
 
 ## 3. Curva ABC
 
-**Já existe:** faturamento, quantidade vendida e estoque por produto.
+**Já existe:** faturamento, quantidade vendida e estoque por produto. Também existe distribuição factual por período explícito com ranking, participação e participação acumulada, usando `REVENUE` ou `SOLD_QUANTITY` conforme escolha do usuário.
 
-**Falta definir:** faixas A/B/C; pesos; período; desempate; frequência de recálculo. Nenhum padrão de mercado será adotado silenciosamente.
+**Falta definir:** faixas A/B/C e qualquer regra final de classificação, incluindo eventual peso combinado, frequência/padrão de período e política de recálculo. Nenhum padrão de mercado será adotado silenciosamente.
 
 ## 4. Comissões
 
@@ -47,9 +47,9 @@ O realizado usa somente vendas `PAID`. O ERP calcula realizado, percentual de at
 
 ## 6. Auto-atacado
 
-**Já existe:** histórico real de compras e datas por cliente.
+**Já existe:** histórico real de compras e datas por cliente, além do sinal factual de recompra em até três meses-calendário baseado somente em vendas `PAID`, com intervalos preservados.
 
-**Falta definir:** quantas recompras qualificam; como contar o período de até 3 meses; expiração; efeito comercial da classificação.
+**Falta definir:** efeito comercial da classificação, eventual quantidade mínima de recompras, duração/expiração da condição e interação com preços, descontos e promoções.
 
 ## 7. Baixa física de estoque
 

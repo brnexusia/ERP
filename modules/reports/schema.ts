@@ -41,5 +41,17 @@ export const purchaseComparisonSchema = z
     }
   });
 
+export const abcDistributionSchema = z
+  .object({
+    metric: z.enum(["REVENUE", "SOLD_QUANTITY"]),
+    start: requiredDateSchema,
+    end: requiredDateSchema,
+  })
+  .refine(
+    (value) => value.end >= value.start,
+    { message: "A data final deve ser posterior ou igual à inicial.", path: ["end"] },
+  );
+
 export type ReportPeriod = z.infer<typeof reportPeriodSchema>;
 export type PurchaseComparisonInput = z.infer<typeof purchaseComparisonSchema>;
+export type AbcDistributionInput = z.infer<typeof abcDistributionSchema>;
