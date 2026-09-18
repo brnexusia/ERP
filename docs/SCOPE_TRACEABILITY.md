@@ -34,7 +34,7 @@ Quando o documento exige uma função mas não fornece fórmula, limiar, priorid
 | Maiores compradores | Ranking factual por valor pago | 10 |
 | Clientes novos/recorrentes | Classificação a partir do histórico pago | 10 |
 | Clientes que pararam de comprar | Usa o X dias configurado | 10 |
-| Clientes que reduziram compras | Base factual pronta; critério comparativo pendente | 10 |
+| Clientes que reduziram compras | Comparação factual tenant-scoped por dois períodos explícitos e métrica `REVENUE`/`PURCHASES`; regra automática/padrão continua pendente | 10 |
 | Direcionamento para vendedora | Cliente possui vendedora responsável | 7/9 |
 | Perfil da vendedora | Carteira atribuída + vendas, faturamento, clientes únicos, ticket, canais e metas | 9 |
 | Orçamento → pedido → pagamento | Mesmo `Sale.id`, sem recadastro | 7 |
