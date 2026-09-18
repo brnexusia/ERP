@@ -82,11 +82,11 @@ Metas são funcionais sem presumir periodicidade: cada meta escolhe uma métrica
 
 ## 10 — Relatórios e dashboards 🟡
 
-Já existem vendas/faturamento por período, ticket médio geral/novos/antigos, canais, performance por vendedora, ranking de compradores, classificação sem compra/novo/recorrente, inatividade por `X dias`, formas de pagamento, categorias predominantes e métricas de produto.
+Já existem vendas/faturamento por período, ticket médio geral/novos/antigos, canais, performance por vendedora, ranking de compradores, classificação sem compra/novo/recorrente, inatividade por `X dias`, formas de pagamento, categorias predominantes e métricas de produto. A comparação de redução de compras também está disponível de forma factual quando o usuário informa dois períodos explícitos e escolhe a métrica `REVENUE` ou `PURCHASES`; o sistema compara somente vendas `PAID` e não presume janela ou limiar padrão.
 
 O Dashboard Geral agrega comercial, clientes, inatividade, estoque baixo e financeiro e inclui metas por vendedora com identidade, alvo, realizado, percentual, atingimento e estado temporal. O filtro do dashboard seleciona metas por sobreposição de período sem alterar o período próprio de cálculo da meta. O dashboard é permission-aware e tenant-scoped.
 
-**Pendente:** visual conforme Stitch, comissões após definição de regra e “reduziu compras” após definição de período/métrica/limiar.
+**Pendente:** visual conforme Stitch, comissões após definição de regra e eventual regra automática/padrão de “reduziu compras”. A comparação explícita já funciona, mas o ERP não escolhe sozinho períodos, métrica ou limiar sem aprovação.
 
 ## 11 — Financeiro 🟠
 
@@ -135,6 +135,6 @@ A matriz requisito oficial → implementação → progresso está em `docs/SCOP
 
 ## Regras ainda pendentes
 
-Permanecem sem implementação automática final até aprovação objetiva: “reduziu compras”, baixa saída, Curva ABC, comissões, efeito comercial do auto-atacado, baixa/reserva de estoque, promoções/descontos progressivos e integrações externas cujo contrato técnico ainda não foi fornecido.
+Permanecem sem implementação automática final até aprovação objetiva: regra padrão de “reduziu compras”, baixa saída, Curva ABC, comissões, efeito comercial do auto-atacado, baixa/reserva de estoque, promoções/descontos progressivos e integrações externas cujo contrato técnico ainda não foi fornecido. A comparação factual de compras já pode ser executada com períodos e métrica escolhidos explicitamente.
 
 Metas não estão mais nessa lista: a empresa escolhe por meta uma métrica suportada pela fonte e informa explicitamente o período, sem recorrência presumida. A janela factual de recompra do auto-atacado também já é detectada; somente seu efeito comercial permanece pendente.
