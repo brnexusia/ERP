@@ -26,7 +26,7 @@ Estados: ⬜ Não iniciado · 🟡 Em construção · 🟠 Funcional · 🔵 Em 
 
 ## 1 — Fundação ✅
 
-Next.js/TypeScript/PostgreSQL/Prisma, migrations, autenticação e sessão persistida, `Organization`/`User`/`Membership`, RBAC, auditoria, healthchecks, backup/restore e CI estão operacionais. O isolamento multiempresa existe na aplicação e possui defesa em profundidade no PostgreSQL: relações operacionais críticas, sessões e conciliação financeira não podem misturar tenants mesmo em escrita direta no banco.
+Next.js/TypeScript/PostgreSQL/Prisma, migrations, autenticação e sessão persistida, troca autenticada de senha com verificação da senha atual e revogação das sessões paralelas, `Organization`/`User`/`Membership`, RBAC, auditoria, healthchecks, backup/restore e CI estão operacionais. O isolamento multiempresa existe na aplicação e possui defesa em profundidade no PostgreSQL: relações operacionais críticas, sessões e conciliação financeira não podem misturar tenants mesmo em escrita direta no banco.
 
 O fechamento da fundação não implica fechamento visual; a interface final continua subordinada ao Stitch.
 
@@ -129,6 +129,7 @@ Só começa quando as dependências necessárias estiverem resolvidas. Deve cobr
 - Run 276 (`35060420308`): metas integradas ao Dashboard Geral + concorrência de CI corrigida + suíte completa verde.
 - Run 277 (`35060600021`): mesma cabeça funcional incorporada ao `main`, com migrations, isolamento, typecheck, build, recuperação e smoke tests verdes.
 - Run 279 (`35061202048`): histórico explícito de formas de pagamento por cliente, perfil central e isolamento + suíte completa verde.
+- PR #9: troca autenticada de senha incorporada ao `main`, com senha atual obrigatória, bloqueio de reutilização, revogação das demais sessões e auditoria sem exposição de credenciais.
 
 A matriz requisito oficial → implementação → progresso está em `docs/SCOPE_TRACEABILITY.md`.
 
