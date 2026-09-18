@@ -56,9 +56,9 @@ Produto possui nome, SKU, código de barras, categoria/subcategoria, marca/fabri
 
 ## 6 — Estoque inteligente 🟡
 
-Já existem alerta de estoque baixo, mínimo/máximo, quantidade vendida, faturamento, vendas pagas, última venda, estoque e categorias predominantes por cliente. A base factual da Curva ABC também calcula ranking, participação e participação acumulada por período explícito, usando `REVENUE` ou `SOLD_QUANTITY` conforme escolha do usuário.
+Já existem alerta de estoque baixo, mínimo/máximo, quantidade vendida, faturamento, vendas pagas, última venda, estoque e categorias predominantes por cliente. A base factual da Curva ABC calcula ranking, participação e participação acumulada por período explícito, usando `REVENUE` ou `SOLD_QUANTITY`. Produtos com baixa saída também podem ser identificados quando o usuário informa explicitamente período, métrica (`REVENUE`, `SOLD_QUANTITY` ou `PAID_SALES`) e limiar; nenhum valor padrão é presumido.
 
-**Aguardando regra objetiva:** baixa saída, faixas A/B/C e momento da baixa/reserva física. Nenhum critério será presumido; a distribuição ABC não atribui classes enquanto as faixas não forem aprovadas.
+**Aguardando regra objetiva:** regra automática/padrão de baixa saída, faixas A/B/C e momento da baixa/reserva física. A distribuição ABC não atribui classes enquanto as faixas não forem aprovadas.
 
 ## 7 — Fluxo comercial 🟠
 
@@ -135,6 +135,6 @@ A matriz requisito oficial → implementação → progresso está em `docs/SCOP
 
 ## Regras ainda pendentes
 
-Permanecem sem implementação automática final até aprovação objetiva: regra padrão de “reduziu compras”, baixa saída, faixas/classificação final da Curva ABC, comissões, efeito comercial do auto-atacado, baixa/reserva de estoque, promoções/descontos progressivos e integrações externas cujo contrato técnico ainda não foi fornecido. A comparação factual de compras já pode ser executada com períodos e métrica escolhidos explicitamente.
+Permanecem sem implementação automática final até aprovação objetiva: regra padrão de “reduziu compras”, regra padrão de baixa saída, faixas/classificação final da Curva ABC, comissões, efeito comercial do auto-atacado, baixa/reserva de estoque, promoções/descontos progressivos e integrações externas cujo contrato técnico ainda não foi fornecido. A comparação factual de compras já pode ser executada com períodos e métrica escolhidos explicitamente.
 
 Metas não estão mais nessa lista: a empresa escolhe por meta uma métrica suportada pela fonte e informa explicitamente o período, sem recorrência presumida. A janela factual de recompra do auto-atacado também já é detectada; somente seu efeito comercial permanece pendente.

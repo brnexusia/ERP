@@ -14,9 +14,9 @@ Quando o escopo define **o que** deve existir, mas não define a regra necessár
 
 ## 2. Produtos com baixa saída
 
-**Já existe:** quantidade vendida, faturamento, vendas pagas, última venda e estoque, com filtro por período.
+**Já existe:** quantidade vendida, faturamento, vendas pagas, última venda e estoque, com filtro por período. Também existe relatório explícito em que o usuário informa período, métrica (`REVENUE`, `SOLD_QUANTITY` ou `PAID_SALES`) e limiar máximo; o sistema identifica factual e somente nesse contexto os itens iguais ou abaixo do limiar.
 
-**Falta definir:** janela; limiar; tratamento de item sem venda ou novo; frequência do alerta.
+**Falta definir para uma regra automática padrão:** janela padrão; métrica padrão; limiar padrão; tratamento especial de item novo/sem venda; frequência e comportamento do alerta.
 
 ## 3. Curva ABC
 
