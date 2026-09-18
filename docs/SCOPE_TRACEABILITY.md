@@ -22,7 +22,7 @@ Quando o documento exige uma função mas não fornece fórmula, limiar, priorid
 | Aviso por X dias sem compra | Configuração por empresa + cálculo pela última compra paga | 4/10 |
 | CRM integrado | Atividades, histórico, follow-up e conclusão | 4 |
 | Gestão central do cliente | `/api/clients/:id/central-profile` agrega cadastro, comercial, crédito, vale, CRM, suporte e histórico de pagamentos | 3/4/8 |
-| Login e senha | Sessão persistida + autenticação | 1 |
+| Login e senha | Sessão persistida + autenticação + troca autenticada de senha com verificação da senha atual, revogação das sessões paralelas e auditoria | 1 |
 | Controle de acesso | Membership + RBAC + autorização no servidor | 1/14 |
 | VaxChat | Configuração preparada; operação real depende de contrato técnico | 13 |
 | VaxLab | Configuração preparada; operação real depende de contrato técnico | 13 |
