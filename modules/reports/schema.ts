@@ -1,13 +1,45 @@
 import { z } from "zod";
 
+const requiredDateSchema = z
+  .string()
+  .datetime({ offset: true })
+  .transform((value) => new Date(value));
+
 export const reportPeriodSchema = z
   .object({
-    start: z.string().datetime({ offset: true }).transform((value) => new Date(value)).optional(),
-    end: z.string().datetime({ offset: true }).transform((value) => new Date(value)).optional(),
+    start: requiredDateSchema.optional(),
+    end: requiredDateSchema.optional(),
   })
   .refine(
     (value) => !value.start || !value.end || value.end >= value.start,
     { message: "A data final deve ser posterior ou igual à inicial." },
   );
 
+export const purchaseComparisonSchema = z
+  .object({
+    metric: z.enum(["REVENUE", "PURCHASES"]),
+    previousStart: requiredDateSchema,
+    previousEnd: requiredDateSchema,
+    currentStart: requiredDateSchema,
+    currentEnd: requiredDateSchema,
+  })
+  .superRefine((value, context) => {
+    if (value.previousEnd < value.previousStart) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["previousEnd"],
+        message: "A data final do período anterior deve ser posterior ou igual à inicial.",
+      });
+    }
+
+    if (value.currentEnd < value.currentStart) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["currentEnd"],
+        message: "A data final do período atual deve ser posterior ou igual à inicial.",
+      });
+    }
+  });
+
 export type ReportPeriod = z.infer<typeof reportPeriodSchema>;
+export type PurchaseComparisonInput = z.infer<typeof purchaseComparisonSchema>;
