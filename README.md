@@ -21,6 +21,7 @@ O ERP não transforma essas lacunas em regra de negócio por suposição.
 - tenant ativo resolvido no servidor;
 - consultas operacionais escopadas por empresa;
 - RBAC por membership/papel;
+- troca autenticada de senha com verificação da senha atual, revogação das sessões paralelas e auditoria;
 - gestão de usuários tenant-scoped;
 - auditoria administrativa;
 - PostgreSQL não exposto pela stack de produção;
