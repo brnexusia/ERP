@@ -68,7 +68,7 @@ Quando o documento exige uma função mas não fornece fórmula, limiar, priorid
 | Link compartilhável | Token público de catálogo | 12 |
 | Estoque mínimo/máximo | `ProductStock` | 5/6 |
 | Alerta de estoque baixo | Derivado quando quantidade <= mínimo | 6 |
-| Produtos com baixa saída | Métricas factuais prontas; limiar/janela pendentes | 6 |
+| Produtos com baixa saída | Relatório factual por período, métrica e limiar explicitamente informados; regra automática/padrão continua pendente | 6 |
 | Curva ABC | Distribuição factual por período explícito com ranking, participação e acumulado em `REVENUE` ou `SOLD_QUANTITY`; faixas A/B/C ainda pendentes | 6 |
 | Categorias por cliente | Calculadas a partir de compras pagas | 6/10 |
 | Desconto progressivo | Regra/fórmula pendente | 12 |
