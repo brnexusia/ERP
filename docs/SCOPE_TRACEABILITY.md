@@ -69,7 +69,7 @@ Quando o documento exige uma função mas não fornece fórmula, limiar, priorid
 | Estoque mínimo/máximo | `ProductStock` | 5/6 |
 | Alerta de estoque baixo | Derivado quando quantidade <= mínimo | 6 |
 | Produtos com baixa saída | Métricas factuais prontas; limiar/janela pendentes | 6 |
-| Curva ABC | Faturamento/quantidade disponíveis; faixas/pesos pendentes | 6 |
+| Curva ABC | Distribuição factual por período explícito com ranking, participação e acumulado em `REVENUE` ou `SOLD_QUANTITY`; faixas A/B/C ainda pendentes | 6 |
 | Categorias por cliente | Calculadas a partir de compras pagas | 6/10 |
 | Desconto progressivo | Regra/fórmula pendente | 12 |
 | Auto-atacado em até 3 meses | Perfil comercial detecta recompra factual em até 3 meses-calendário sobre vendas `PAID`; efeito comercial ainda pendente | 12 |
