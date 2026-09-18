@@ -206,12 +206,12 @@ async function main() {
     productId = (await productResponse.json()).product.id;
 
     saleIds.push(
-      await createPaidSale(cookie, reducedClient, productId, 2, new Date(now - 50 * DAY_MS)),
-      await createPaidSale(cookie, reducedClient, productId, 2, new Date(now - 40 * DAY_MS)),
-      await createPaidSale(cookie, reducedClient, productId, 1, new Date(now - 10 * DAY_MS)),
-      await createPaidSale(cookie, increasedClient, productId, 1, new Date(now - 45 * DAY_MS)),
-      await createPaidSale(cookie, increasedClient, productId, 1, new Date(now - 20 * DAY_MS)),
-      await createPaidSale(cookie, increasedClient, productId, 1, new Date(now - 5 * DAY_MS)),
+      await createPaidSale(cookie, reducedClient, productId!, 2, new Date(now - 50 * DAY_MS)),
+      await createPaidSale(cookie, reducedClient, productId!, 2, new Date(now - 40 * DAY_MS)),
+      await createPaidSale(cookie, reducedClient, productId!, 1, new Date(now - 10 * DAY_MS)),
+      await createPaidSale(cookie, increasedClient, productId!, 1, new Date(now - 45 * DAY_MS)),
+      await createPaidSale(cookie, increasedClient, productId!, 1, new Date(now - 20 * DAY_MS)),
+      await createPaidSale(cookie, increasedClient, productId!, 1, new Date(now - 5 * DAY_MS)),
     );
 
     const revenueResponse = await requestJson(
