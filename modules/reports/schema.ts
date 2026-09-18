@@ -52,6 +52,19 @@ export const abcDistributionSchema = z
     { message: "A data final deve ser posterior ou igual à inicial.", path: ["end"] },
   );
 
+export const lowOutputSchema = z
+  .object({
+    metric: z.enum(["REVENUE", "SOLD_QUANTITY", "PAID_SALES"]),
+    threshold: z.coerce.number().finite().nonnegative(),
+    start: requiredDateSchema,
+    end: requiredDateSchema,
+  })
+  .refine(
+    (value) => value.end >= value.start,
+    { message: "A data final deve ser posterior ou igual à inicial.", path: ["end"] },
+  );
+
 export type ReportPeriod = z.infer<typeof reportPeriodSchema>;
 export type PurchaseComparisonInput = z.infer<typeof purchaseComparisonSchema>;
 export type AbcDistributionInput = z.infer<typeof abcDistributionSchema>;
+export type LowOutputInput = z.infer<typeof lowOutputSchema>;
