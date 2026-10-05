@@ -44,7 +44,8 @@
     "test:smoke-audit": "tsx scripts/smoke-audit.ts",
     "test:smoke-seller-profile": "tsx scripts/smoke-seller-profile.ts",
     "test:smoke-seller-goals": "tsx scripts/smoke-seller-goals.ts",
-    "test:smoke-password-change": "tsx scripts/smoke-password-change.ts"
+    "test:smoke-password-change": "tsx scripts/smoke-password-change.ts",
+    "test:module-1": "tsx scripts/smoke-auth.ts && tsx scripts/smoke-client-management.ts && tsx scripts/smoke-central-client-profile.ts && tsx scripts/smoke-client-payment-history.ts && tsx scripts/smoke-integrations.ts && tsx scripts/smoke-password-change.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",

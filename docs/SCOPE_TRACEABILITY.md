@@ -14,18 +14,23 @@ Quando o documento exige uma função mas não fornece fórmula, limiar, priorid
 
 | Requisito oficial | Implementação atual | Progresso |
 |---|---|---|
-| Cadastro completo do cliente | `Client`, endereço, CPF/CNPJ, WhatsApp, e-mail, APIs de cadastro/edição/consulta | 3 |
+| Cadastro completo do cliente | `Client`, endereço, CPF/CNPJ, WhatsApp, e-mail, APIs + operação em `/clients` | 3 |
 | Histórico de compras | Perfil comercial/central baseado somente em vendas pagas | 3 |
-| Linha de crédito | Limite, utilizado, disponível e movimentos tenant-scoped | 4 |
-| Vale do cliente | Saldo e movimentos tenant-scoped | 4 |
-| Segmentação por grupo/perfil | `ClientSegment` por empresa | 4 |
-| Aviso por X dias sem compra | Configuração por empresa + cálculo pela última compra paga | 4/10 |
-| CRM integrado | Atividades, histórico, follow-up e conclusão | 4 |
-| Gestão central do cliente | `/api/clients/:id/central-profile` agrega cadastro, comercial, crédito, vale, CRM, suporte e histórico de pagamentos | 3/4/8 |
+| Linha de crédito | Limite, utilizado, disponível e movimentos tenant-scoped + operação no perfil central | 4 |
+| Vale do cliente | Saldo e movimentos tenant-scoped + operação no perfil central | 4 |
+| Segmentação por grupo/perfil | `ClientSegment` por empresa + atribuição no perfil e gestão em `/clients/settings` | 4 |
+| Aviso por X dias sem compra | Configuração por empresa + cálculo pela última compra paga + alertas em `/clients` | 4/10 |
+| CRM integrado | Atividades, histórico, follow-up e conclusão + timeline operacional no perfil do cliente | 4 |
+| Gestão central do cliente | `/api/clients/:id/central-profile` agrega cadastro, comercial, crédito, vale, CRM, suporte e histórico de pagamentos; `/clients` expõe o perfil operacional | 3/4/8 |
 | Login e senha | Sessão persistida + autenticação + troca autenticada de senha com verificação da senha atual, revogação das sessões paralelas e auditoria | 1 |
 | Controle de acesso | Membership + RBAC + autorização no servidor | 1/14 |
 | VaxChat | Configuração preparada; operação real depende de contrato técnico | 13 |
 | VaxLab | Configuração preparada; operação real depende de contrato técnico | 13 |
+
+
+### Gate atual da Etapa 1
+
+A camada funcional e a interface operacional da Etapa 1 estão em homologação. O gate automatizado é `pnpm test:module-1`. O status final não é marcado como fechado enquanto faltarem (a) comparação fiel com a fonte completa do Stitch e (b) chamadas/sincronizações reais de VaxChat e VaxLab com contrato técnico e credenciais válidas.
 
 ## Etapa 2 — Vendas, Relatórios e Comissões
 

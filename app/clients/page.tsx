@@ -1,8 +1,8 @@
 import { ModuleShell } from "@/app/module-shell";
-import { ClientsWorkspace } from "@/app/clients/clients-workspace";
 import { requireTenantContext } from "@/lib/tenant";
+import { ClientsWorkspace } from "./clients-workspace";
 
-export default async function HomePage() {
+export default async function ClientsPage() {
   const session = await requireTenantContext();
 
   return (
