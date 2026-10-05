@@ -932,3 +932,45 @@ a {
     grid-template-columns: 1fr;
   }
 }
+
+.edit-details {
+  margin: 0 0 16px;
+  border: 1px solid var(--erp-line);
+  border-radius: 9px;
+  background: var(--erp-surface-soft);
+}
+
+.edit-details summary {
+  cursor: pointer;
+  padding: 11px 12px;
+  color: #555b64;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.compact-client-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 0 12px 12px;
+}
+
+.read-only-setting {
+  border: 1px solid var(--erp-line);
+  border-radius: 9px;
+  padding: 11px 12px;
+  background: var(--erp-surface-soft);
+  color: var(--erp-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.crm-complete {
+  display: block;
+  margin-top: 7px;
+  font-size: 10px;
+}
+
+@media (max-width: 760px) {
+  .compact-client-form {
+    grid-template-columns: 1fr;
+  }
+}
