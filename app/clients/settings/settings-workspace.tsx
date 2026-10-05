@@ -58,7 +58,9 @@ export function ClientSettingsWorkspace({ role }: { role: string }) {
     }
   }, [canManage]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   async function run(action: () => Promise<void>, success: string) {
     setBusy(true);
@@ -93,99 +95,151 @@ export function ClientSettingsWorkspace({ role }: { role: string }) {
 
       <div className="settings-grid">
         <section className="erp-panel">
-          <div className="panel-heading"><div><p className="erp-kicker">Inatividade</p><h2>Alerta sem compra</h2></div></div>
+          <div className="panel-heading">
+            <div>
+              <p className="erp-kicker">Inatividade</p>
+              <h2>Alerta sem compra</h2>
+            </div>
+          </div>
           <p className="panel-description">
             Defina quantos dias sem compra paga devem gerar um alerta automático para a equipe.
           </p>
           {canManage ? (
-          {canManage && (
-          <form
-            className="action-form"
-            onSubmit={(event: FormEvent<HTMLFormElement>) => {
-              event.preventDefault();
-              const form = new FormData(event.currentTarget);
-              const raw = String(form.get("inactivityDays") ?? "").trim();
-              void run(
-                async () => {
-                  await requestJson("/api/client-settings", {
-                    method: "PATCH",
-                    body: JSON.stringify({ inactivityDays: raw ? Number(raw) : null }),
-                  });
-                },
-                "Regra de inatividade atualizada.",
-              );
-            }}
-          >
-            <label>Dias sem compra<input name="inactivityDays" type="number" min={1} defaultValue={inactivityDays ?? ""} placeholder="Ex.: 30" /></label>
-            <button className="primary-button" disabled={busy}>Salvar regra</button>
-          </form>
+            <form
+              className="action-form"
+              onSubmit={(event: FormEvent<HTMLFormElement>) => {
+                event.preventDefault();
+                const form = new FormData(event.currentTarget);
+                const raw = String(form.get("inactivityDays") ?? "").trim();
+                void run(
+                  async () => {
+                    await requestJson("/api/client-settings", {
+                      method: "PATCH",
+                      body: JSON.stringify({ inactivityDays: raw ? Number(raw) : null }),
+                    });
+                  },
+                  "Regra de inatividade atualizada.",
+                );
+              }}
+            >
+              <label>
+                Dias sem compra
+                <input
+                  name="inactivityDays"
+                  type="number"
+                  min={1}
+                  defaultValue={inactivityDays ?? ""}
+                  placeholder="Ex.: 30"
+                />
+              </label>
+              <button className="primary-button" disabled={busy}>Salvar regra</button>
+            </form>
           ) : (
-            <div className="read-only-setting">Regra atual: {inactivityDays ? `${inactivityDays} dias` : "não configurada"} · somente administradores podem alterar.</div>
+            <div className="read-only-setting">
+              Regra atual: {inactivityDays ? `${inactivityDays} dias` : "não configurada"} · somente administradores podem alterar.
+            </div>
           )}
         </section>
 
         <section className="erp-panel">
-          <div className="panel-heading"><div><p className="erp-kicker">Segmentação</p><h2>Grupos de clientes</h2></div></div>
-          <p className="panel-description">Crie os grupos/perfis usados para classificar a carteira comercial.</p>
-          <form
-            className="action-form"
-            onSubmit={(event: FormEvent<HTMLFormElement>) => {
-              event.preventDefault();
-              const form = new FormData(event.currentTarget);
-              void run(
-                async () => {
-                  await requestJson("/api/client-segments", {
-                    method: "POST",
-                    body: JSON.stringify({ name: String(form.get("name") ?? "") }),
-                  });
-                  event.currentTarget.reset();
-                },
-                "Grupo criado.",
-              );
-            }}
-          >
-            <label>Novo grupo<input name="name" required maxLength={80} placeholder="Ex.: Grupo A" /></label>
-            <button className="primary-button" disabled={busy}>Adicionar grupo</button>
-          </form>
+          <div className="panel-heading">
+            <div>
+              <p className="erp-kicker">Segmentação</p>
+              <h2>Grupos de clientes</h2>
+            </div>
+          </div>
+          <p className="panel-description">
+            Crie os grupos/perfis usados para classificar a carteira comercial.
+          </p>
+          {canManage && (
+            <form
+              className="action-form"
+              onSubmit={(event: FormEvent<HTMLFormElement>) => {
+                event.preventDefault();
+                const formElement = event.currentTarget;
+                const form = new FormData(formElement);
+                void run(
+                  async () => {
+                    await requestJson("/api/client-segments", {
+                      method: "POST",
+                      body: JSON.stringify({ name: String(form.get("name") ?? "") }),
+                    });
+                    formElement.reset();
+                  },
+                  "Grupo criado.",
+                );
+              }}
+            >
+              <label>
+                Novo grupo
+                <input name="name" required maxLength={80} placeholder="Ex.: Grupo A" />
+              </label>
+              <button className="primary-button" disabled={busy}>Adicionar grupo</button>
+            </form>
           )}
           <div className="chip-list">
-            {segments.length ? segments.map((segment) => <span className="status-chip" key={segment.id}>{segment.name}</span>) : <span className="empty-state">Nenhum grupo cadastrado.</span>}
+            {segments.length
+              ? segments.map((segment) => (
+                  <span className="status-chip" key={segment.id}>{segment.name}</span>
+                ))
+              : <span className="empty-state">Nenhum grupo cadastrado.</span>}
           </div>
         </section>
       </div>
 
       <section className="erp-panel">
         <div className="panel-heading">
-          <div><p className="erp-kicker">Integrações iniciais do escopo</p><h2>VaxChat e VaxLab</h2></div>
+          <div>
+            <p className="erp-kicker">Integrações iniciais do escopo</p>
+            <h2>VaxChat e VaxLab</h2>
+          </div>
           <span className="status-chip">Etapa 1</span>
         </div>
         <p className="panel-description">
           O ERP já possui o registro seguro e isolado por empresa para as duas integrações. A conexão real só pode ser homologada quando URL, autenticação, credenciais e contrato de eventos das APIs forem fornecidos.
         </p>
-        {!canManage && <div className="read-only-setting">O estado técnico das integrações é visível apenas para OWNER/ADMIN.</div>}
-        {canManage && <div className="integration-grid">
-          {[["VaxChat", vaxChat], ["VaxLab", vaxLab]].map(([name, item]) => {
-            const integration = item as Integration | undefined;
-            return (
-              <article className="integration-card" key={String(name)}>
-                <div className="integration-icon">{String(name).slice(0, 2).toUpperCase()}</div>
-                <div>
-                  <strong>{String(name)}</strong>
-                  <p>{integration ? integrationText(integration.status) : "Configuração ainda não cadastrada"}</p>
-                  <small>{integration?.secretConfigured ? "Referência de credencial configurada" : "Sem referência de credencial"}</small>
-                </div>
-                <span className={integration?.status === "CONNECTED" ? "status-dot connected" : "status-dot"} />
-              </article>
-            );
-          })}
-        </div>}
+
+        {!canManage && (
+          <div className="read-only-setting">
+            O estado técnico das integrações é visível apenas para OWNER/ADMIN.
+          </div>
+        )}
+
+        {canManage && (
+          <div className="integration-grid">
+            {[["VaxChat", vaxChat], ["VaxLab", vaxLab]].map(([name, item]) => {
+              const integration = item as Integration | undefined;
+              return (
+                <article className="integration-card" key={String(name)}>
+                  <div className="integration-icon">{String(name).slice(0, 2).toUpperCase()}</div>
+                  <div>
+                    <strong>{String(name)}</strong>
+                    <p>{integration ? integrationText(integration.status) : "Configuração ainda não cadastrada"}</p>
+                    <small>
+                      {integration?.secretConfigured
+                        ? "Referência de credencial configurada"
+                        : "Sem referência de credencial"}
+                    </small>
+                  </div>
+                  <span className={integration?.status === "CONNECTED" ? "status-dot connected" : "status-dot"} />
+                </article>
+              );
+            })}
+          </div>
+        )}
+
         <div className="erp-alert neutral">
           Não marcamos estas integrações como “conectadas” apenas por existir configuração: o fechamento exige chamada real, retorno válido e sincronização homologada.
         </div>
       </section>
 
       <section className="erp-panel">
-        <div className="panel-heading"><div><p className="erp-kicker">Gate de fechamento</p><h2>Estado do Módulo 1</h2></div></div>
+        <div className="panel-heading">
+          <div>
+            <p className="erp-kicker">Gate de fechamento</p>
+            <h2>Estado do Módulo 1</h2>
+          </div>
+        </div>
         <div className="module-checklist">
           <span className="done">✓ Cadastro completo de clientes</span>
           <span className="done">✓ Linha de crédito e histórico</span>
