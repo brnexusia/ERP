@@ -101,7 +101,26 @@ function documentLabel(client: Client) {
   return client.documentType === "CNPJ" ? "CNPJ" : "CPF";
 }
 
-export function ClientsWorkspace() {
+function purchaseSummary(purchase: Record<string, unknown>) {
+  const items = Array.isArray(purchase.items)
+    ? (purchase.items as Array<Record<string, unknown>>)
+    : [];
+  const seller = purchase.seller as { user?: { name?: string } } | undefined;
+
+  return {
+    id: String(purchase.id ?? ""),
+    paidAt: purchase.paidAt,
+    totalAmount: purchase.totalAmount,
+    sellerName: seller?.user?.name ?? "—",
+    items: items.map((item) => ({
+      name: String(item.productName ?? item.sku ?? "Produto"),
+      quantity: String(item.quantity ?? "0"),
+      lineTotal: item.lineTotal,
+    })),
+  };
+}
+
+export function ClientsWorkspace({ role }: { role: string }) {
   const [clients, setClients] = useState<Client[]>([]);
   const [segments, setSegments] = useState<Segment[]>([]);
   const [alerts, setAlerts] = useState<InactivityAlert[]>([]);
@@ -116,6 +135,10 @@ export function ClientsWorkspace() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const canWriteClients = ["OWNER", "ADMIN", "MANAGER", "SELLER", "SUPPORT"].includes(role);
+  const canManageCreditLimit = ["OWNER", "ADMIN", "FINANCE"].includes(role);
+  const canMoveFinancial = canWriteClients || role === "FINANCE";
 
   const loadSummary = useCallback(async () => {
     setLoading(true);
@@ -234,6 +257,7 @@ export function ClientsWorkspace() {
     const credit = profile.financial?.credit;
     const vale = profile.financial?.vale;
     const selected = profile.client;
+    const purchases = (profile.purchases ?? []).map(purchaseSummary);
 
     return (
       <div className="erp-page">
@@ -303,6 +327,57 @@ export function ClientsWorkspace() {
                   <div><dt>Dias sem comprar</dt><dd>{profile.commercial?.daysWithoutPurchase ?? "—"}</dd></div>
                 </dl>
 
+                {canWriteClients && (
+                  <details className="edit-details">
+                    <summary>Editar dados cadastrais</summary>
+                    <form
+                      className="client-form compact-client-form"
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        const form = new FormData(event.currentTarget);
+                        void runAction(
+                          async () => {
+                            await requestJson(`/api/clients/${selectedId}`, {
+                              method: "PATCH",
+                              body: JSON.stringify({
+                                name: String(form.get("name") ?? ""),
+                                document: String(form.get("document") ?? ""),
+                                whatsapp: String(form.get("whatsapp") ?? ""),
+                                email: String(form.get("email") ?? ""),
+                                address: {
+                                  postalCode: String(form.get("postalCode") ?? ""),
+                                  street: String(form.get("street") ?? ""),
+                                  number: String(form.get("number") ?? ""),
+                                  complement: String(form.get("complement") ?? "") || null,
+                                  district: String(form.get("district") ?? ""),
+                                  city: String(form.get("city") ?? ""),
+                                  state: String(form.get("state") ?? ""),
+                                  country: selected.address?.country ?? "BR",
+                                },
+                              }),
+                            });
+                          },
+                          "Cadastro atualizado.",
+                        );
+                      }}
+                    >
+                      <label>Nome / razão social<input name="name" defaultValue={selected.name} required /></label>
+                      <label>CPF / CNPJ<input name="document" defaultValue={selected.document} required /></label>
+                      <label>WhatsApp<input name="whatsapp" defaultValue={selected.whatsapp} required /></label>
+                      <label>E-mail<input name="email" defaultValue={selected.email} type="email" required /></label>
+                      <label>CEP<input name="postalCode" defaultValue={selected.address?.postalCode ?? ""} required /></label>
+                      <label>Rua<input name="street" defaultValue={selected.address?.street ?? ""} required /></label>
+                      <label>Número<input name="number" defaultValue={selected.address?.number ?? ""} required /></label>
+                      <label>Complemento<input name="complement" defaultValue={selected.address?.complement ?? ""} /></label>
+                      <label>Bairro<input name="district" defaultValue={selected.address?.district ?? ""} required /></label>
+                      <label>Cidade<input name="city" defaultValue={selected.address?.city ?? ""} required /></label>
+                      <label>UF<input name="state" defaultValue={selected.address?.state ?? ""} minLength={2} maxLength={2} required /></label>
+                      <div className="form-actions"><button className="primary-button" disabled={busy}>Salvar cadastro</button></div>
+                    </form>
+                  </details>
+                )}
+
+                {canWriteClients && (
                 <form
                   className="inline-form"
                   onSubmit={(event) => {
@@ -328,6 +403,7 @@ export function ClientsWorkspace() {
                   </label>
                   <button className="secondary-button" disabled={busy}>Salvar grupo</button>
                 </form>
+                )}
               </section>
 
               <section className="erp-panel">
@@ -344,6 +420,7 @@ export function ClientsWorkspace() {
                   <div><span>Vale</span><strong>{money(vale?.balance)}</strong></div>
                 </div>
 
+                {canManageCreditLimit && (
                 <form
                   className="action-form compact"
                   onSubmit={(event) => {
@@ -363,7 +440,9 @@ export function ClientsWorkspace() {
                   <label>Limite de crédito<input name="creditLimit" inputMode="decimal" defaultValue={String(credit?.creditLimit ?? "0")} /></label>
                   <button className="secondary-button" disabled={busy}>Atualizar limite</button>
                 </form>
+                )}
 
+                {canMoveFinancial && (
                 <div className="split-actions">
                   <form
                     className="action-form compact"
@@ -417,8 +496,44 @@ export function ClientsWorkspace() {
                     <button className="secondary-button" disabled={busy}>Registrar</button>
                   </form>
                 </div>
+                )}
               </section>
             </div>
+
+            <section className="erp-panel">
+              <div className="panel-heading">
+                <div>
+                  <p className="erp-kicker">Histórico real</p>
+                  <h2>Compras do cliente</h2>
+                </div>
+                <span className="status-chip">{purchases.length} compra(s) paga(s)</span>
+              </div>
+              {purchases.length === 0 ? (
+                <p className="empty-state">Este cliente ainda não possui compras pagas.</p>
+              ) : (
+                <div className="client-table-wrap">
+                  <table className="client-table">
+                    <thead><tr><th>Data</th><th>Itens</th><th>Vendedora</th><th>Total</th></tr></thead>
+                    <tbody>
+                      {purchases.map((purchase) => (
+                        <tr key={purchase.id}>
+                          <td>{date(purchase.paidAt)}</td>
+                          <td>
+                            {purchase.items.map((item, index) => (
+                              <small key={`${purchase.id}-${index}`}>
+                                {item.quantity}× {item.name} · {money(item.lineTotal)}
+                              </small>
+                            ))}
+                          </td>
+                          <td>{purchase.sellerName}</td>
+                          <td><strong>{money(purchase.totalAmount)}</strong></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
 
             <section className="erp-panel">
               <div className="panel-heading">
@@ -428,6 +543,7 @@ export function ClientsWorkspace() {
                 </div>
                 <span className="status-chip">{crm.length} atividade(s)</span>
               </div>
+              {canWriteClients && (
               <form
                 className="crm-form"
                 onSubmit={(event) => {
@@ -456,6 +572,7 @@ export function ClientsWorkspace() {
                 <label>Follow-up<input name="followUpAt" type="datetime-local" /></label>
                 <button className="primary-button" disabled={busy}>Adicionar atividade</button>
               </form>
+              )}
               <div className="timeline">
                 {crm.length === 0 && <p className="empty-state">Nenhuma atividade de relacionamento registrada.</p>}
                 {crm.map((entry) => (
@@ -472,6 +589,26 @@ export function ClientsWorkspace() {
                         {entry.followUpAt ? ` · Follow-up: ${date(entry.followUpAt)}` : ""}
                         {entry.completedAt ? " · Concluído" : ""}
                       </small>
+                      {canWriteClients && !entry.completedAt && (
+                        <button
+                          className="text-button crm-complete"
+                          type="button"
+                          disabled={busy}
+                          onClick={() => {
+                            void runAction(
+                              async () => {
+                                await requestJson(`/api/clients/${selectedId}/crm/${entry.id}`, {
+                                  method: "PATCH",
+                                  body: JSON.stringify({ completedAt: new Date().toISOString() }),
+                                });
+                              },
+                              "Atividade concluída.",
+                            );
+                          }}
+                        >
+                          Marcar como concluída
+                        </button>
+                      )}
                     </div>
                   </article>
                 ))}
@@ -491,9 +628,11 @@ export function ClientsWorkspace() {
           <h1>Clientes & CRM</h1>
           <p>Cadastro, relacionamento, crédito, vale, segmentação e inatividade em um só lugar.</p>
         </div>
-        <button className="primary-button" type="button" onClick={() => setCreateOpen((value) => !value)}>
-          {createOpen ? "Fechar cadastro" : "+ Novo cliente"}
-        </button>
+        {canWriteClients && (
+          <button className="primary-button" type="button" onClick={() => setCreateOpen((value) => !value)}>
+            {createOpen ? "Fechar cadastro" : "+ Novo cliente"}
+          </button>
+        )}
       </header>
 
       {error && <div className="erp-alert error">{error}</div>}
@@ -506,7 +645,7 @@ export function ClientsWorkspace() {
         <article className="metric-card"><span>Módulo</span><strong>Operacional</strong><small>Dados isolados por empresa</small></article>
       </section>
 
-      {createOpen && (
+      {canWriteClients && createOpen && (
         <section className="erp-panel">
           <div className="panel-heading">
             <div><p className="erp-kicker">Novo cadastro</p><h2>Dados completos do cliente</h2></div>
