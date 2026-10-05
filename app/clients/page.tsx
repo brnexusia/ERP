@@ -12,7 +12,7 @@ export default async function ClientsPage() {
       userName={session.userName}
       role={session.role}
     >
-      <ClientsWorkspace />
+      <ClientsWorkspace role={session.role} />
     </ModuleShell>
   );
 }
