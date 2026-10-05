@@ -10,8 +10,8 @@ Estados: ⬜ Não iniciado · 🟡 Em construção · 🟠 Funcional · 🔵 Em 
 |---|---|---|
 | 1 | Fundação do sistema | ✅ Fechado |
 | 2 | Design system + estrutura visual | 🟡 Em construção |
-| 3 | Gestão de Clientes | 🟠 Funcional |
-| 4 | Crédito, Vale e CRM | 🟠 Funcional |
+| 3 | Gestão de Clientes | 🔵 Em homologação |
+| 4 | Crédito, Vale e CRM | 🔵 Em homologação |
 | 5 | Produtos e estrutura de estoque | 🟠 Funcional |
 | 6 | Estoque inteligente | 🟡 Em construção |
 | 7 | Fluxo comercial | 🟠 Funcional |
@@ -36,17 +36,27 @@ O Stitch aprovado é a fonte visual obrigatória para shell/sidebar, cabeçalhos
 
 **Bloqueio:** a referência disponível no PDF não possui detalhe suficiente para declarar fidelidade tela/estado/responsividade. Nenhum visual provisório será marcado como final.
 
-## 3 — Gestão de Clientes 🟠
+## 3 — Gestão de Clientes 🔵
 
 Cadastro/consulta/edição tenant-scoped, nome/razão, CPF/CNPJ, endereço, WhatsApp, e-mail, segmento, vendedora responsável, histórico real de compras pagas, perfil comercial e perfil central estão funcionais. O perfil central também reúne crédito, vale, CRM, suporte e histórico explícito de pagamentos, incluindo registros pagos/pendentes, valor, vencimento/liquidação e venda/vendedora de origem. Auditoria, permissões e bloqueio cross-tenant também estão validados.
 
-**Pendente para ✅:** interface final conforme Stitch.
+A interface operacional da Etapa 1 está disponível em `/clients`, com busca/listagem, cadastro completo, alertas de inatividade e acesso ao perfil central. Ela entrou em homologação funcional, sem substituir a obrigação de comparação final com o Stitch.
 
-## 4 — Crédito, Vale e CRM 🟠
+**Pendente para ✅:** homologação visual tela a tela conforme Stitch completo e integração real VaxChat/VaxLab.
+
+## 4 — Crédito, Vale e CRM 🔵
 
 Linha de crédito com limite/utilizado/disponível/movimentos, vale com saldo/movimentos, CRM com histórico/follow-up/conclusão, segmentos e `X dias` de inatividade configurável estão funcionais. Constraints críticas, auditoria e isolamento multiempresa estão ativos.
 
-**Pendente para ✅:** interface final conforme Stitch.
+A interface de cliente expõe segmentação, crédito, vale e CRM; `/clients/settings` expõe configuração de inatividade, grupos e a prontidão de VaxChat/VaxLab.
+
+**Pendente para ✅:** homologação visual final conforme Stitch completo e chamadas/sincronizações reais de VaxChat/VaxLab.
+
+## Gate da Etapa 1 — Gestão de Clientes 🔵
+
+O fechamento controlado da primeira etapa está documentado em `docs/MODULE_1_CLOSEOUT.md`. O comando `pnpm test:module-1` concentra autenticação, gestão de clientes, crédito, vale, CRM, inatividade, perfil central, histórico de pagamentos, registry de VaxChat/VaxLab e troca autenticada de senha.
+
+**Regra de ordem:** a Etapa 2 não deve ser tratada como novo foco de construção enquanto a Etapa 1 não tiver os bloqueios externos resolvidos. O código já existente de etapas posteriores é preservado, mas não justifica declarar a Etapa 1 como ✅ antes do Stitch completo e das integrações Vax reais.
 
 ## 5 — Produtos e estrutura de estoque 🟠
 
