@@ -31,13 +31,14 @@ function integrationText(status: Integration["status"] | undefined) {
   return "Não conectado";
 }
 
-export function ClientSettingsWorkspace() {
+export function ClientSettingsWorkspace({ role }: { role: string }) {
   const [segments, setSegments] = useState<Segment[]>([]);
   const [inactivityDays, setInactivityDays] = useState<number | null>(null);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const canManage = ["OWNER", "ADMIN"].includes(role);
 
   const load = useCallback(async () => {
     setError(null);
@@ -45,7 +46,9 @@ export function ClientSettingsWorkspace() {
       const [segmentData, settingData, integrationData] = await Promise.all([
         requestJson<{ segments: Segment[] }>("/api/client-segments"),
         requestJson<{ settings: { inactivityDays?: number | null } | null }>("/api/client-settings"),
-        requestJson<{ integrations: Integration[] }>("/api/integrations"),
+        canManage
+          ? requestJson<{ integrations: Integration[] }>("/api/integrations")
+          : Promise.resolve({ integrations: [] as Integration[] }),
       ]);
       setSegments(segmentData.segments);
       setInactivityDays(settingData.settings?.inactivityDays ?? null);
@@ -53,7 +56,7 @@ export function ClientSettingsWorkspace() {
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Falha ao carregar configurações.");
     }
-  }, []);
+  }, [canManage]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -94,6 +97,8 @@ export function ClientSettingsWorkspace() {
           <p className="panel-description">
             Defina quantos dias sem compra paga devem gerar um alerta automático para a equipe.
           </p>
+          {canManage ? (
+          {canManage && (
           <form
             className="action-form"
             onSubmit={(event: FormEvent<HTMLFormElement>) => {
@@ -114,6 +119,9 @@ export function ClientSettingsWorkspace() {
             <label>Dias sem compra<input name="inactivityDays" type="number" min={1} defaultValue={inactivityDays ?? ""} placeholder="Ex.: 30" /></label>
             <button className="primary-button" disabled={busy}>Salvar regra</button>
           </form>
+          ) : (
+            <div className="read-only-setting">Regra atual: {inactivityDays ? `${inactivityDays} dias` : "não configurada"} · somente administradores podem alterar.</div>
+          )}
         </section>
 
         <section className="erp-panel">
@@ -139,6 +147,7 @@ export function ClientSettingsWorkspace() {
             <label>Novo grupo<input name="name" required maxLength={80} placeholder="Ex.: Grupo A" /></label>
             <button className="primary-button" disabled={busy}>Adicionar grupo</button>
           </form>
+          )}
           <div className="chip-list">
             {segments.length ? segments.map((segment) => <span className="status-chip" key={segment.id}>{segment.name}</span>) : <span className="empty-state">Nenhum grupo cadastrado.</span>}
           </div>
@@ -153,7 +162,8 @@ export function ClientSettingsWorkspace() {
         <p className="panel-description">
           O ERP já possui o registro seguro e isolado por empresa para as duas integrações. A conexão real só pode ser homologada quando URL, autenticação, credenciais e contrato de eventos das APIs forem fornecidos.
         </p>
-        <div className="integration-grid">
+        {!canManage && <div className="read-only-setting">O estado técnico das integrações é visível apenas para OWNER/ADMIN.</div>}
+        {canManage && <div className="integration-grid">
           {[["VaxChat", vaxChat], ["VaxLab", vaxLab]].map(([name, item]) => {
             const integration = item as Integration | undefined;
             return (
@@ -168,7 +178,7 @@ export function ClientSettingsWorkspace() {
               </article>
             );
           })}
-        </div>
+        </div>}
         <div className="erp-alert neutral">
           Não marcamos estas integrações como “conectadas” apenas por existir configuração: o fechamento exige chamada real, retorno válido e sincronização homologada.
         </div>
