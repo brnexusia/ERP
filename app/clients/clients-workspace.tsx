@@ -225,7 +225,8 @@ export function ClientsWorkspace({ role }: { role: string }) {
 
   async function createClient(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     await runAction(async () => {
       const payload = {
         name: String(form.get("name") ?? ""),
@@ -249,7 +250,7 @@ export function ClientsWorkspace({ role }: { role: string }) {
       });
       setCreateOpen(false);
       setSelectedId(created.client.id);
-      event.currentTarget.reset();
+      formElement.reset();
     }, "Cliente cadastrado com sucesso.");
   }
 
@@ -448,7 +449,8 @@ export function ClientsWorkspace({ role }: { role: string }) {
                     className="action-form compact"
                     onSubmit={(event) => {
                       event.preventDefault();
-                      const form = new FormData(event.currentTarget);
+                      const formElement = event.currentTarget;
+                      const form = new FormData(formElement);
                       void runAction(
                         async () => {
                           await requestJson(`/api/clients/${selectedId}/credit/movements`, {
@@ -458,7 +460,7 @@ export function ClientsWorkspace({ role }: { role: string }) {
                               note: String(form.get("note") ?? "") || null,
                             }),
                           });
-                          event.currentTarget.reset();
+                          formElement.reset();
                         },
                         "Movimentação de crédito registrada.",
                       );
@@ -474,7 +476,8 @@ export function ClientsWorkspace({ role }: { role: string }) {
                     className="action-form compact"
                     onSubmit={(event) => {
                       event.preventDefault();
-                      const form = new FormData(event.currentTarget);
+                      const formElement = event.currentTarget;
+                      const form = new FormData(formElement);
                       void runAction(
                         async () => {
                           await requestJson(`/api/clients/${selectedId}/vale/movements`, {
@@ -484,7 +487,7 @@ export function ClientsWorkspace({ role }: { role: string }) {
                               note: String(form.get("note") ?? "") || null,
                             }),
                           });
-                          event.currentTarget.reset();
+                          formElement.reset();
                         },
                         "Movimentação de vale registrada.",
                       );
@@ -548,7 +551,8 @@ export function ClientsWorkspace({ role }: { role: string }) {
                 className="crm-form"
                 onSubmit={(event) => {
                   event.preventDefault();
-                  const form = new FormData(event.currentTarget);
+                  const formElement = event.currentTarget;
+                  const form = new FormData(formElement);
                   void runAction(
                     async () => {
                       await requestJson(`/api/clients/${selectedId}/crm`, {
@@ -561,7 +565,7 @@ export function ClientsWorkspace({ role }: { role: string }) {
                             : null,
                         }),
                       });
-                      event.currentTarget.reset();
+                      formElement.reset();
                     },
                     "Atividade adicionada ao CRM.",
                   );
