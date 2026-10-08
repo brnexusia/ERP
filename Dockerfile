@@ -13,7 +13,7 @@ RUN pnpm install --no-frozen-lockfile
 
 COPY . .
 
-RUN DATABASE_URL="postgresql://build:build@127.0.0.1:5432/build?schema=public" pnpm db:generate && \\\n    DATABASE_URL="postgresql://build:build@127.0.0.1:5432/build?schema=public" pnpm build
+RUN DATABASE_URL="postgresql://build:build@127.0.0.1:5432/build?schema=public" pnpm db:generate && DATABASE_URL="postgresql://build:build@127.0.0.1:5432/build?schema=public" pnpm build
 
 ENV NODE_ENV=production
 ENV PORT=3000
