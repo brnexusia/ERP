@@ -84,9 +84,9 @@ export function ClientSettingsWorkspace({ role }: { role: string }) {
     <div className="erp-page">
       <header className="erp-page-header">
         <div>
-          <p className="erp-kicker">Etapa 1 · Configuração</p>
+          <p className="erp-kicker">Configurações</p>
           <h1>Clientes & CRM</h1>
-          <p>Parâmetros da gestão de clientes e prontidão das integrações iniciais.</p>
+          <p>Defina parâmetros da carteira, segmentação e integrações ligadas ao relacionamento com clientes.</p>
         </div>
       </header>
 
