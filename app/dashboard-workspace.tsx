@@ -53,9 +53,13 @@ type DashboardData = {
   inventory?: {
     lowStockCount?: number;
     lowStock?: Array<{
-      product?: { id?: string; name?: string; sku?: string };
-      quantity?: DecimalLike;
-      minimumStock?: DecimalLike;
+      id?: string;
+      name?: string;
+      sku?: string;
+      stock?: {
+        quantity?: DecimalLike;
+        minimum?: DecimalLike;
+      } | null;
     }>;
   } | null;
   finance?: {
@@ -357,11 +361,11 @@ export function DashboardWorkspace({ userName }: { userName: string }) {
                   <thead><tr><th>Produto</th><th>SKU</th><th>Saldo atual</th><th>Mínimo</th><th>Status</th></tr></thead>
                   <tbody>
                     {lowStock.slice(0, 6).map((entry, index) => (
-                      <tr key={entry.product?.id ?? index}>
-                        <td><strong>{entry.product?.name ?? "Produto"}</strong></td>
-                        <td>{entry.product?.sku ?? "—"}</td>
-                        <td>{String(entry.quantity ?? 0)}</td>
-                        <td>{String(entry.minimumStock ?? 0)}</td>
+                      <tr key={entry.id ?? index}>
+                        <td><strong>{entry.name ?? "Produto"}</strong></td>
+                        <td>{entry.sku ?? "—"}</td>
+                        <td>{String(entry.stock?.quantity ?? 0)}</td>
+                        <td>{String(entry.stock?.minimum ?? 0)}</td>
                         <td><span className="status-chip warning">Repor</span></td>
                       </tr>
                     ))}
