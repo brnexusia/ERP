@@ -32,20 +32,20 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12, marginTop: 24 }}>
-      <label style={{ display: "grid", gap: 6 }}>
-        E-mail
-        <input name="email" type="email" autoComplete="email" required />
+    <form className="login-form" onSubmit={handleSubmit}>
+      <label>
+        <span>E-mail</span>
+        <input name="email" type="email" autoComplete="email" placeholder="seu@email.com" required />
       </label>
 
-      <label style={{ display: "grid", gap: 6 }}>
-        Senha
-        <input name="password" type="password" autoComplete="current-password" required />
+      <label>
+        <span>Senha</span>
+        <input name="password" type="password" autoComplete="current-password" placeholder="••••••••••" required />
       </label>
 
-      {error ? <p role="alert">{error}</p> : null}
+      {error ? <div className="login-error" role="alert">{error}</div> : null}
 
-      <button type="submit" disabled={loading}>
+      <button className="login-submit" type="submit" disabled={loading}>
         {loading ? "Entrando..." : "Entrar"}
       </button>
     </form>
