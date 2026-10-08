@@ -10,11 +10,21 @@ export default async function LoginPage() {
   }
 
   return (
-    <main className="foundation-shell">
-      <section className="foundation-card">
-        <p className="eyebrow">ERP PEDRO</p>
-        <h1>Acesso ao sistema</h1>
-        <p>Interface provisória da fundação. O visual definitivo seguirá o Stitch aprovado.</p>
+    <main className="login-shell">
+      <section className="login-card">
+        <div className="login-brand">
+          <span className="login-brand-mark">P</span>
+          <div>
+            <strong>Pedro ERP</strong>
+            <small>Gestão comercial</small>
+          </div>
+        </div>
+
+        <div className="login-heading">
+          <p className="erp-kicker">Acesso seguro</p>
+          <h1>Entrar no sistema</h1>
+        </div>
+
         <LoginForm />
       </section>
     </main>
