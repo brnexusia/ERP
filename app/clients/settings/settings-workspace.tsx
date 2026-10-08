@@ -196,7 +196,7 @@ export function ClientSettingsWorkspace({ role }: { role: string }) {
           <span className="status-chip">Etapa 1</span>
         </div>
         <p className="panel-description">
-          O ERP já possui o registro seguro e isolado por empresa para as duas integrações. A conexão real só pode ser homologada quando URL, autenticação, credenciais e contrato de eventos das APIs forem fornecidos.
+          Acompanhe o estado das integrações ligadas ao módulo de clientes.
         </p>
 
         {!canManage && (
@@ -229,28 +229,7 @@ export function ClientSettingsWorkspace({ role }: { role: string }) {
         )}
 
         <div className="erp-alert neutral">
-          Não marcamos estas integrações como “conectadas” apenas por existir configuração: o fechamento exige chamada real, retorno válido e sincronização homologada.
-        </div>
-      </section>
-
-      <section className="erp-panel">
-        <div className="panel-heading">
-          <div>
-            <p className="erp-kicker">Gate de fechamento</p>
-            <h2>Estado do Módulo 1</h2>
-          </div>
-        </div>
-        <div className="module-checklist">
-          <span className="done">✓ Cadastro completo de clientes</span>
-          <span className="done">✓ Linha de crédito e histórico</span>
-          <span className="done">✓ Vale e movimentações</span>
-          <span className="done">✓ Segmentação por grupo/perfil</span>
-          <span className="done">✓ Alerta configurável de inatividade</span>
-          <span className="done">✓ CRM e follow-up</span>
-          <span className="done">✓ Perfil central do cliente</span>
-          <span className="done">✓ Login e controle de acesso</span>
-          <span className="pending">• Fidelidade final ao Stitch: aguardando fonte visual completa</span>
-          <span className="pending">• VaxChat/VaxLab reais: aguardando contrato técnico/credenciais</span>
+          O status conectado só aparece após configuração válida da integração.
         </div>
       </section>
     </div>
