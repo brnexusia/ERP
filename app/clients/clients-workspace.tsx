@@ -628,9 +628,9 @@ export function ClientsWorkspace({ role }: { role: string }) {
     <div className="erp-page">
       <header className="erp-page-header">
         <div>
-          <p className="erp-kicker">Etapa 1 · Gestão de Clientes</p>
-          <h1>Clientes & CRM</h1>
-          <p>Cadastro, relacionamento, crédito, vale, segmentação e inatividade em um só lugar.</p>
+          <p className="erp-kicker">Clientes & CRM</p>
+          <h1>Gestão de Clientes & CRM Comercial</h1>
+          <p>Centralize cadastro, relacionamento, crédito, vale, segmentação e acompanhamento da carteira.</p>
         </div>
         {canWriteClients && (
           <button className="primary-button" type="button" onClick={() => setCreateOpen((value) => !value)}>
