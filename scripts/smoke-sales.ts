@@ -187,6 +187,33 @@ async function main() {
       "Pix não deve aceitar vencimento; à vista/pré-datado pertence a boleto/cheque no escopo oficial.",
     );
 
+    // Every new instalment needs manager approval and an available credit limit.
+    const unauthorizedCredit = await requestJson(`/api/sales/${saleId}/payments`, cookie, {
+      method: "POST",
+      body: { method: "BOLETO", status: "PENDING", amount: "30.00",
+        dueDate: "2026-10-15T15:00:00.000Z" },
+    });
+    assert.equal(unauthorizedCredit.status, 422, "Compra a prazo exige autorização do gestor.");
+    const authorizeCredit = await requestJson(`/api/clients/${clientId}/credit-policy`, cookie, {
+      method: "PATCH",
+      body: { creditAllowed: true, creditMethods: ["BOLETO", "CHEQUE"] },
+    });
+    assert.equal(authorizeCredit.status, 200);
+    const insufficientCreditLimit = await requestJson(`/api/clients/${clientId}/credit`, cookie, {
+      method: "PATCH", body: { creditLimit: "20.00" },
+    });
+    assert.equal(insufficientCreditLimit.status, 200);
+    const exceededCredit = await requestJson(`/api/sales/${saleId}/payments`, cookie, {
+      method: "POST",
+      body: { method: "BOLETO", status: "PENDING", amount: "30.00",
+        dueDate: "2026-10-15T15:00:00.000Z" },
+    });
+    assert.equal(exceededCredit.status, 422, "Limite insuficiente deve impedir a venda a prazo.");
+    const creditLimit = await requestJson(`/api/clients/${clientId}/credit`, cookie, {
+      method: "PATCH", body: { creditLimit: "50.00" },
+    });
+    assert.equal(creditLimit.status, 200);
+
     const pendingPaymentResponse = await requestJson(`/api/sales/${saleId}/payments`, cookie, {
       method: "POST",
       body: {
@@ -202,6 +229,12 @@ async function main() {
     assert.equal(pendingResult.sale.stage, "ORDER");
     assert.equal(pendingResult.payment.settledAt, null);
     assert.ok(pendingResult.payment.dueDate, "Boleto pré-datado deve preservar vencimento.");
+    const creditReserved = await db.clientCreditAccount.findFirstOrThrow({
+      where: { clientId: clientId!, organizationId: organization.id },
+    });
+    assert.equal(creditReserved.usedAmount.toFixed(2), "30.00",
+      "Parcela a prazo deve reservar exatamente seu valor.");
+
 
     const paidPaymentResponse = await requestJson(`/api/sales/${saleId}/payments`, cookie, {
       method: "POST",
@@ -232,6 +265,12 @@ async function main() {
     assert.equal(settled.sale.id, saleId);
     assert.equal(settled.sale.stage, "PAID");
     assert.ok(settled.sale.paidAt);
+    const creditReleased = await db.clientCreditAccount.findFirstOrThrow({
+      where: { clientId: clientId!, organizationId: organization.id },
+    });
+    assert.equal(creditReleased.usedAmount.toFixed(2), "0.00",
+      "Quitar boleto reservado deve liberar o limite.");
+
 
     const purchaseHistoryResponse = await requestJson(`/api/clients/${clientId}/purchases`, cookie);
     assert.equal(purchaseHistoryResponse.status, 200);
@@ -262,11 +301,36 @@ async function main() {
     assert.equal(cashPayment.status, 201);
     const cashBody = (await cashPayment.json()).result;
     assert.equal(cashBody.sale.stage, "ORDER");
+    const valeWithoutFunds = await requestJson(`/api/sales/${secondSaleId}/payments/${valePaymentId}`, cookie, {
+      method: "PATCH", body: { status: "PAID" },
+    });
+    assert.equal(valeWithoutFunds.status, 422, "Vale sem saldo não pode quitar pedido.");
+    const addValeFunds = await requestJson(`/api/clients/${clientId}/vale/movements`, cookie, {
+      method: "POST", body: { amountDelta: "25.00", note: "Crédito para teste de resgate" },
+    });
+    assert.equal(addValeFunds.status, 201);
     const settleVale = await requestJson(`/api/sales/${secondSaleId}/payments/${valePaymentId}`, cookie, {
       method: "PATCH", body: { status: "PAID" },
     });
     assert.equal(settleVale.status, 200);
     assert.equal((await settleVale.json()).result.sale.stage, "PAID");
+    const valeAccount = await db.clientValeAccount.findFirstOrThrow({
+      where: { clientId: clientId!, organizationId: organization.id },
+    });
+    assert.equal(valeAccount.balance.toFixed(2), "5.00");
+    const valeDebitCount = await db.clientValeMovement.count({
+      where: { clientId: clientId!, organizationId: organization.id, amountDelta: "-20" },
+    });
+    assert.equal(valeDebitCount, 1, "Resgate de vale deve gerar apenas uma baixa.");
+    const duplicateValeSettlement = await requestJson(
+      `/api/sales/${secondSaleId}/payments/${valePaymentId}`, cookie,
+      { method: "PATCH", body: { status: "PAID" } },
+    );
+    assert.equal(duplicateValeSettlement.status, 422, "Pedido quitado não deve ser debitado novamente.");
+    const stableValeAccount = await db.clientValeAccount.findFirstOrThrow({
+      where: { clientId: clientId!, organizationId: organization.id },
+    });
+    assert.equal(stableValeAccount.balance.toFixed(2), "5.00");
     console.log("✓ representante por venda, percentual negociado e pagamentos cash/vale validados");
 
     const saleCount = await db.sale.count({ where: { id: saleId!, organizationId: organization.id } });
