@@ -91,7 +91,7 @@ async function main() {
 
     const forbidden = await updateClientCreditPolicy(
       { organizationId: organization.id, userId: organization.id, role: "SELLER" },
-      clientId,
+      clientId!,
       { creditAllowed: true, creditMethods: ["CHEQUE"] },
     ).then(() => false).catch(() => true);
     assert.equal(forbidden, true, "Vendedora não pode liberar crédito.");
@@ -99,7 +99,7 @@ async function main() {
   } finally {
     if (clientId) await db.client.deleteMany({ where: { id: clientId, organizationId: organization.id } });
     if (representativeId) await db.representative.deleteMany({ where: { id: representativeId, organizationId: organization.id } });
-    await db.session.deleteMany({ where: { user: { email: process.env.SEED_ADMIN_EMAIL } } });
+    await db.session.deleteMany({ where: { user: { email: process.env.SEED_ADMIN_EMAIL ?? "" } } });
     await db.$disconnect();
   }
 }
