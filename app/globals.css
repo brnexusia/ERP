@@ -2350,3 +2350,58 @@ a {
     grid-template-columns: 1fr;
   }
 }
+
+/* Módulo 2 — prévia gerencial de comissões (mesmo sistema visual Stitch). */
+.commission-month-label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: #67635b;
+  font-size: 10px;
+  font-weight: 700;
+}
+.commission-month-label input,
+.commission-seller-settings input {
+  min-height: 35px;
+  border: 1px solid var(--erp-line-strong);
+  border-radius: 6px;
+  padding: 0 10px;
+  background: #fff;
+  color: var(--erp-text);
+}
+.commission-seller-settings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.commission-seller-settings form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px auto;
+  align-items: end;
+  gap: 10px;
+  border: 1px solid var(--erp-line);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--erp-surface-soft);
+}
+.commission-seller-settings form > strong {
+  padding-bottom: 10px;
+  font-size: 10px;
+}
+.commission-seller-settings label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--erp-muted);
+  font-size: 9px;
+}
+.commission-seller-settings input {
+  width: 100%;
+  min-width: 0;
+}
+@media (max-width: 1100px) {
+  .commission-seller-settings { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .commission-seller-settings form { grid-template-columns: 1fr; }
+}

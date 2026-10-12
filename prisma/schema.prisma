@@ -153,6 +153,7 @@ model Membership {
   organizationId String
   userId         String
   role           MembershipRole
+  commissionPercent Decimal? @db.Decimal(5, 2)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
@@ -536,6 +537,7 @@ model Sale {
   sellerMembershipId String
   representativeId   String?
   representativeRate Decimal?     @db.Decimal(5, 2)
+  sellerCommissionRate Decimal? @db.Decimal(5, 2)
   stage              SaleStage    @default(QUOTE)
   channel            SalesChannel
   totalAmount        Decimal      @default(0) @db.Decimal(14, 2)
