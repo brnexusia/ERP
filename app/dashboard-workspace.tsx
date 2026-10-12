@@ -131,6 +131,16 @@ export function DashboardWorkspace({ userName }: { userName: string }) {
 
   const sellers = dashboard?.commercial?.sellers ?? [];
   const maxSellerRevenue = Math.max(1, ...sellers.map((seller) => numeric(seller.revenue)));
+  const sellerSeries = sellers.slice(0, 5);
+  const sellerLinePoints = sellerSeries.length <= 1
+    ? "50,50"
+    : sellerSeries
+        .map((seller, index) => {
+          const x = 8 + (index / Math.max(1, sellerSeries.length - 1)) * 84;
+          const y = 88 - (numeric(seller.revenue) / maxSellerRevenue) * 64;
+          return `${x.toFixed(2)},${y.toFixed(2)}`;
+        })
+        .join(" ");
   const channels = dashboard?.commercial?.channels ?? {};
   const channelRows = [
     ["WhatsApp", channels.WHATSAPP],
@@ -176,34 +186,34 @@ export function DashboardWorkspace({ userName }: { userName: string }) {
         <>
           <section className="dashboard-metrics">
             <article className="stitch-metric-card">
-              <span>Faturamento</span>
+              <div className="metric-card-head"><span>Faturamento</span><i>R$</i></div>
               <strong>{money(dashboard.commercial?.revenue)}</strong>
-              <small>Vendas efetivamente pagas</small>
+              <div className="metric-card-foot"><small>Vendas efetivamente pagas</small><b>Atual</b></div>
             </article>
             <article className="stitch-metric-card">
-              <span>Vendas</span>
+              <div className="metric-card-head"><span>Vendas</span><i>↗</i></div>
               <strong>{dashboard.commercial?.sales ?? 0}</strong>
-              <small>Pedidos concluídos</small>
+              <div className="metric-card-foot"><small>Pedidos concluídos</small><b>Período</b></div>
             </article>
             <article className="stitch-metric-card">
-              <span>Clientes atendidos</span>
+              <div className="metric-card-head"><span>Clientes atendidos</span><i>◉</i></div>
               <strong>{dashboard.commercial?.clients ?? 0}</strong>
-              <small>No período atual</small>
+              <div className="metric-card-foot"><small>Clientes únicos</small><b>Ativos</b></div>
             </article>
             <article className="stitch-metric-card">
-              <span>Ticket médio</span>
+              <div className="metric-card-head"><span>Ticket médio</span><i>◇</i></div>
               <strong>{money(dashboard.commercial?.averageTicket)}</strong>
-              <small>Por venda concluída</small>
+              <div className="metric-card-foot"><small>Por venda concluída</small><b>Média</b></div>
             </article>
             <article className="stitch-metric-card">
-              <span>Estoque baixo</span>
+              <div className="metric-card-head"><span>Estoque baixo</span><i>!</i></div>
               <strong>{dashboard.inventory?.lowStockCount ?? 0}</strong>
-              <small>Produtos pedindo atenção</small>
+              <div className="metric-card-foot"><small>Produtos pedindo atenção</small><b>Atenção</b></div>
             </article>
             <article className="stitch-metric-card">
-              <span>Saldo realizado</span>
+              <div className="metric-card-head"><span>Saldo realizado</span><i>↕</i></div>
               <strong>{money(dashboard.finance?.cashFlow?.net)}</strong>
-              <small>Entradas menos saídas</small>
+              <div className="metric-card-foot"><small>Entradas menos saídas</small><b>Caixa</b></div>
             </article>
           </section>
 
@@ -232,23 +242,35 @@ export function DashboardWorkspace({ userName }: { userName: string }) {
                 </div>
               </div>
 
-              <div className="seller-bars">
+              <div className="seller-chart-shell">
                 {sellers.length === 0 ? (
                   <p className="empty-state">Nenhuma venda paga registrada ainda.</p>
                 ) : (
-                  sellers.slice(0, 5).map((seller, index) => {
-                    const height = Math.max(10, (numeric(seller.revenue) / maxSellerRevenue) * 100);
-                    return (
-                      <div className="seller-bar-column" key={seller.membershipId ?? index}>
-                        <div className="seller-bar-value">{compactMoney(seller.revenue)}</div>
-                        <div className="seller-bar-track">
-                          <span style={{ height: `${height}%` }} />
-                        </div>
-                        <strong>{seller.sellerName ?? "Vendedora"}</strong>
-                        <small>{seller.sales ?? 0} venda(s)</small>
-                      </div>
-                    );
-                  })
+                  <>
+                    <svg className="seller-line-chart" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
+                      <polyline points={sellerLinePoints} />
+                      {sellerSeries.map((seller, index) => {
+                        const x = sellerSeries.length <= 1 ? 50 : 8 + (index / Math.max(1, sellerSeries.length - 1)) * 84;
+                        const y = 88 - (numeric(seller.revenue) / maxSellerRevenue) * 64;
+                        return <circle key={seller.membershipId ?? index} cx={x} cy={y} r="1.15" />;
+                      })}
+                    </svg>
+                    <div className="seller-bars">
+                      {sellerSeries.map((seller, index) => {
+                        const height = Math.max(10, (numeric(seller.revenue) / maxSellerRevenue) * 100);
+                        return (
+                          <div className="seller-bar-column" key={seller.membershipId ?? index}>
+                            <div className="seller-bar-value">{compactMoney(seller.revenue)}</div>
+                            <div className="seller-bar-track">
+                              <span style={{ height: `${height}%` }} />
+                            </div>
+                            <strong>{seller.sellerName ?? "Vendedora"}</strong>
+                            <small>{seller.sales ?? 0} venda(s)</small>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
                 )}
               </div>
             </article>
