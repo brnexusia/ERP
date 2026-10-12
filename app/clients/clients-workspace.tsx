@@ -129,6 +129,8 @@ export function ClientsWorkspace({ role }: { role: string }) {
   const [profile, setProfile] = useState<CentralProfile | null>(null);
   const [crm, setCrm] = useState<CrmEntry[]>([]);
   const [search, setSearch] = useState("");
+  const [segmentFilter, setSegmentFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
   const [createOpen, setCreateOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -192,20 +194,42 @@ export function ClientsWorkspace({ role }: { role: string }) {
     }
   }, [loadDetail, selectedId]);
 
-  const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    if (!term) return clients;
-    return clients.filter((client) =>
-      [client.name, client.document, client.whatsapp, client.email, client.segment?.name]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(term)),
-    );
-  }, [clients, search]);
-
   const alertIds = useMemo(
     () => new Set(alerts.map((entry) => entry.client?.id).filter(Boolean)),
     [alerts],
   );
+
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return clients.filter((client) => {
+      const matchesSearch = !term || [
+        client.name,
+        client.document,
+        client.whatsapp,
+        client.email,
+        client.segment?.name,
+        client.responsibleSeller?.user?.name,
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(term));
+      const matchesSegment = segmentFilter === "ALL"
+        || (segmentFilter === "NO_SEGMENT" ? !client.segment : client.segment?.id === segmentFilter);
+      const inactive = alertIds.has(client.id);
+      const matchesStatus = statusFilter === "ALL"
+        || (statusFilter === "INACTIVE" ? inactive : !inactive);
+      return matchesSearch && matchesSegment && matchesStatus;
+    });
+  }, [alertIds, clients, search, segmentFilter, statusFilter]);
+
+  const activeCount = clients.filter((client) => !alertIds.has(client.id)).length;
+  const assignedCount = clients.filter((client) => client.responsibleSeller?.user?.name).length;
+  const segmentSummary = segments
+    .map((segment) => ({
+      ...segment,
+      count: clients.filter((client) => client.segment?.id === segment.id).length,
+    }))
+    .sort((a, b) => b.count - a.count);
+  const largestSegment = segmentSummary[0] ?? null;
 
   async function runAction(action: () => Promise<void>, success: string) {
     setBusy(true);
@@ -642,11 +666,61 @@ export function ClientsWorkspace({ role }: { role: string }) {
       {error && <div className="erp-alert error">{error}</div>}
       {notice && <div className="erp-alert success">{notice}</div>}
 
-      <section className="metric-grid">
-        <article className="metric-card"><span>Clientes cadastrados</span><strong>{clients.length}</strong><small>Base da empresa ativa</small></article>
-        <article className="metric-card"><span>Grupos/perfis</span><strong>{segments.length}</strong><small>Segmentação comercial</small></article>
-        <article className="metric-card"><span>Alertas de inatividade</span><strong>{alerts.length}</strong><small>{inactivityDays ? `Após ${inactivityDays} dias` : "Regra ainda não configurada"}</small></article>
-        <article className="metric-card"><span>Módulo</span><strong>Operacional</strong><small>Dados isolados por empresa</small></article>
+      <section className="metric-grid client-kpi-grid">
+        <article className="metric-card">
+          <div className="metric-card-head"><span>Total de clientes</span><i>◉</i></div>
+          <strong>{clients.length}</strong>
+          <small>Base cadastrada</small>
+        </article>
+        <article className="metric-card">
+          <div className="metric-card-head"><span>Clientes ativos</span><i>✓</i></div>
+          <strong>{activeCount}</strong>
+          <small>Sem alerta de inatividade</small>
+        </article>
+        <article className="metric-card">
+          <div className="metric-card-head"><span>Para reativar</span><i>↻</i></div>
+          <strong>{alerts.length}</strong>
+          <small>{inactivityDays ? `Após ${inactivityDays} dias sem compra` : "Regra não configurada"}</small>
+        </article>
+        <article className="metric-card">
+          <div className="metric-card-head"><span>Com responsável</span><i>◎</i></div>
+          <strong>{assignedCount}</strong>
+          <small>Carteira atribuída à equipe</small>
+        </article>
+      </section>
+
+      <section className="client-filter-card">
+        <div className="client-filter-title">
+          <div>
+            <p className="erp-kicker">Segmentação da carteira</p>
+            <strong>Filtre rapidamente os clientes</strong>
+          </div>
+          <span>{filtered.length} de {clients.length}</span>
+        </div>
+
+        <div className="client-filter-strip">
+          <button className={statusFilter === "ALL" ? "filter-pill active" : "filter-pill"} type="button" onClick={() => setStatusFilter("ALL")}>
+            Todos <b>{clients.length}</b>
+          </button>
+          <button className={statusFilter === "ACTIVE" ? "filter-pill active" : "filter-pill"} type="button" onClick={() => setStatusFilter("ACTIVE")}>
+            Ativos <b>{activeCount}</b>
+          </button>
+          <button className={statusFilter === "INACTIVE" ? "filter-pill active warning" : "filter-pill"} type="button" onClick={() => setStatusFilter("INACTIVE")}>
+            Reativar <b>{alerts.length}</b>
+          </button>
+          <span className="filter-divider" />
+          <button className={segmentFilter === "ALL" ? "filter-pill active soft" : "filter-pill"} type="button" onClick={() => setSegmentFilter("ALL")}>
+            Todos os grupos
+          </button>
+          {segmentSummary.slice(0, 4).map((segment) => (
+            <button className={segmentFilter === segment.id ? "filter-pill active soft" : "filter-pill"} type="button" key={segment.id} onClick={() => setSegmentFilter(segment.id)}>
+              {segment.name} <b>{segment.count}</b>
+            </button>
+          ))}
+          <button className={segmentFilter === "NO_SEGMENT" ? "filter-pill active soft" : "filter-pill"} type="button" onClick={() => setSegmentFilter("NO_SEGMENT")}>
+            Sem grupo
+          </button>
+        </div>
       </section>
 
       {canWriteClients && createOpen && (
@@ -675,12 +749,20 @@ export function ClientsWorkspace({ role }: { role: string }) {
       )}
 
       <section className="erp-panel">
-        <div className="panel-heading">
-          <div><p className="erp-kicker">Base de clientes</p><h2>Gestão central</h2></div>
-          <label className="search-field">
-            <span>⌕</span>
-            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar nome, CPF/CNPJ, WhatsApp..." />
-          </label>
+        <div className="client-toolbar">
+          <div>
+            <p className="erp-kicker">Base de clientes</p>
+            <h2>Carteira comercial</h2>
+          </div>
+          <div className="client-toolbar-actions">
+            <label className="search-field">
+              <span>⌕</span>
+              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar cliente, documento ou WhatsApp..." />
+            </label>
+            <button className="secondary-button" type="button" onClick={() => { setSearch(""); setSegmentFilter("ALL"); setStatusFilter("ALL"); }}>
+              Limpar filtros
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -715,6 +797,64 @@ export function ClientsWorkspace({ role }: { role: string }) {
             </table>
           </div>
         )}
+      </section>
+
+      <section className="client-portfolio-grid">
+        <article className="erp-panel stitch-panel portfolio-card">
+          <div className="panel-heading">
+            <div>
+              <p className="erp-kicker">Saúde da carteira</p>
+              <h2>Relacionamento dos clientes</h2>
+            </div>
+          </div>
+          <div className="portfolio-stat-row">
+            <span>Ativos</span>
+            <div><i style={{ width: `${clients.length ? (activeCount / clients.length) * 100 : 0}%` }} /></div>
+            <strong>{activeCount}</strong>
+          </div>
+          <div className="portfolio-stat-row">
+            <span>Reativar</span>
+            <div><i className="warning" style={{ width: `${clients.length ? (alerts.length / clients.length) * 100 : 0}%` }} /></div>
+            <strong>{alerts.length}</strong>
+          </div>
+          <small className="portfolio-note">A régua de inatividade usa compras pagas como referência.</small>
+        </article>
+
+        <article className="erp-panel stitch-panel portfolio-card">
+          <div className="panel-heading">
+            <div>
+              <p className="erp-kicker">Distribuição comercial</p>
+              <h2>Segmentação da carteira</h2>
+            </div>
+          </div>
+          <div className="segment-mini-grid">
+            {segmentSummary.slice(0, 4).map((segment) => (
+              <div key={segment.id}>
+                <span>{segment.name}</span>
+                <strong>{segment.count}</strong>
+              </div>
+            ))}
+            {segmentSummary.length === 0 && <p className="empty-state">Crie grupos para visualizar a distribuição.</p>}
+          </div>
+          <small className="portfolio-note">{largestSegment ? `${largestSegment.name} é o maior grupo atual.` : "Nenhum grupo cadastrado."}</small>
+        </article>
+
+        <article className="gold-insight-card">
+          <p className="erp-kicker">Próxima ação recomendada</p>
+          <h2>{alerts.length > 0 ? "Reative clientes antes de perder a recorrência." : "Sua carteira está sem alertas de inatividade."}</h2>
+          <p>
+            {alerts.length > 0
+              ? `${alerts.length} cliente(s) atingiram a régua de inatividade. Priorize os contatos com maior tempo sem compra.`
+              : "Continue acompanhando relacionamento, crédito e histórico pelo CRM."}
+          </p>
+          <div>
+            <strong>{alerts.length}</strong>
+            <span>clientes para ação</span>
+          </div>
+          <button type="button" onClick={() => setStatusFilter(alerts.length > 0 ? "INACTIVE" : "ALL")}>
+            {alerts.length > 0 ? "Ver clientes" : "Ver carteira"} →
+          </button>
+        </article>
       </section>
 
       {alerts.length > 0 && (
