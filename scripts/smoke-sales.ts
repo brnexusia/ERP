@@ -331,6 +331,15 @@ async function main() {
       where: { clientId: clientId!, organizationId: organization.id },
     });
     assert.equal(stableValeAccount.balance.toFixed(2), "5.00");
+    const cashFlowResponse = await requestJson("/api/finance/cash-flow", cookie);
+    assert.equal(cashFlowResponse.status, 200);
+    const cashFlow = (await cashFlowResponse.json()).cashFlow;
+    assert.equal(
+      cashFlow.entries.some((entry: { sourceId: string }) => entry.sourceId === valePaymentId),
+      false,
+      "Vale pré-pago não representa uma nova entrada bancária.",
+    );
+
     console.log("✓ representante por venda, percentual negociado e pagamentos cash/vale validados");
 
     const saleCount = await db.sale.count({ where: { id: saleId!, organizationId: organization.id } });
