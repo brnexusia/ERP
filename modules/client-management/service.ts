@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import {
   assertAnyPermission,
   assertPermission,
+  PermissionDeniedError,
 } from "@/lib/auth/permissions";
 import type { ClientAccessContext } from "@/modules/clients/service";
 import type {
