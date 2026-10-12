@@ -35,7 +35,14 @@ function saleInclude() {
     seller: { include: { user: true } },
     representative: true,
     items: {
-      include: { product: { include: { category: true, subcategory: true } } },
+      include: {
+        product: {
+          select: {
+            id: true, name: true, sku: true,
+            category: true, subcategory: true,
+          },
+        },
+      },
       orderBy: { createdAt: "asc" as const },
     },
     payments: { orderBy: { createdAt: "asc" as const } },
