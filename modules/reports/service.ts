@@ -262,11 +262,35 @@ export async function getClientCommercialProfile(context: ClientAccessContext, c
   const daysWithoutPurchase = lastPurchaseAt
     ? Math.floor((now.getTime() - lastPurchaseAt.getTime()) / 86_400_000)
     : null;
+  const inactivityThreshold = client.inactivityDaysOverride ?? settings?.inactivityDays ?? null;
   const inactivityAlert = Boolean(
-    settings?.inactivityDays &&
+    inactivityThreshold &&
       daysWithoutPurchase !== null &&
-      daysWithoutPurchase >= settings.inactivityDays,
+      daysWithoutPurchase >= inactivityThreshold,
   );
+  const sellerServiceCounts = new Map<string, { name: string; count: number }>();
+  const topProducts = new Map<string, { productId: string; name: string; quantity: Prisma.Decimal }>();
+  for (const sale of purchases) {
+    const sellerId = sale.sellerMembershipId;
+    const sellerName = sale.seller.user.name;
+    const previous = sellerServiceCounts.get(sellerId);
+    sellerServiceCounts.set(sellerId, { name: sellerName, count: (previous?.count ?? 0) + 1 });
+    for (const item of sale.items) {
+      const previousProduct = topProducts.get(item.productId);
+      topProducts.set(item.productId, {
+        productId: item.productId,
+        name: item.productName,
+        quantity: (previousProduct?.quantity ?? new Prisma.Decimal(0)).add(item.quantity),
+      });
+    }
+  }
+  const mostFrequentSeller = [...sellerServiceCounts.entries()]
+    .sort((a, b) => b[1].count - a[1].count || a[0].localeCompare(b[0]))[0] ?? null;
+  const sortedDates = paidPurchaseDates.slice().sort((a, b) => a.getTime() - b.getTime());
+  const averageDaysBetweenPurchases = sortedDates.length > 1
+    ? (sortedDates[sortedDates.length - 1].getTime() - sortedDates[0].getTime()) /
+      (sortedDates.length - 1) / 86_400_000
+    : null;
 
   return {
     client,
@@ -277,8 +301,14 @@ export async function getClientCommercialProfile(context: ClientAccessContext, c
       firstPurchaseAt,
       lastPurchaseAt,
       customerType: purchases.length > 1 ? "RECURRING" : purchases.length === 1 ? "NEW" : "NO_PURCHASE",
-      inactivityDaysConfigured: settings?.inactivityDays ?? null,
+      inactivityDaysConfigured: inactivityThreshold,
       daysWithoutPurchase,
+      averageDaysBetweenPurchases,
+      mostFrequentSeller: mostFrequentSeller
+        ? { membershipId: mostFrequentSeller[0], name: mostFrequentSeller[1].name, paidSales: mostFrequentSeller[1].count }
+        : null,
+      topProducts: [...topProducts.values()]
+        .sort((a, b) => b.quantity.comparedTo(a.quantity)).slice(0, 10),
       inactivityAlert,
       repurchaseWithinThreeMonths,
       predominantCategories: [...categoryMap.values()].sort((a, b) => b.revenue.comparedTo(a.revenue)),
@@ -293,50 +323,59 @@ export async function listInactivityAlerts(context: ClientAccessContext) {
   assertPermission(context.role, "clients:read");
   assertPermission(context.role, "sales:read");
 
-  const settings = await db.clientModuleSettings.findUnique({
-    where: { organizationId: context.organizationId },
-  });
-  if (!settings?.inactivityDays) {
-    return { inactivityDays: null, alerts: [] };
+  const [settings, clients, recentPurchases, sellers] = await Promise.all([
+    db.clientModuleSettings.findUnique({ where: { organizationId: context.organizationId } }),
+    db.client.findMany({
+      where: { organizationId: context.organizationId },
+      include: { segment: true, representative: true, responsibleSeller: { include: { user: true } } },
+    }),
+    db.sale.groupBy({
+      by: ["clientId"],
+      where: { organizationId: context.organizationId, stage: "PAID", paidAt: { not: null } },
+      _max: { paidAt: true },
+    }),
+    db.sale.groupBy({
+      by: ["clientId", "sellerMembershipId"],
+      where: { organizationId: context.organizationId, stage: "PAID" },
+      _count: { _all: true },
+    }),
+  ]);
+
+  const lastPurchaseByClient = new Map(recentPurchases.map((row) => [row.clientId, row._max.paidAt]));
+  const topSellerByClient = new Map<string, { membershipId: string; count: number }>();
+  for (const row of sellers) {
+    const current = topSellerByClient.get(row.clientId);
+    if (!current || row._count._all > current.count) {
+      topSellerByClient.set(row.clientId, { membershipId: row.sellerMembershipId, count: row._count._all });
+    }
   }
-
-  const lastPurchases = await db.sale.groupBy({
-    by: ["clientId"],
-    where: {
-      organizationId: context.organizationId,
-      stage: "PAID",
-      paidAt: { not: null },
-    },
-    _max: { paidAt: true },
+  const sellerMembershipIds = [...new Set([...topSellerByClient.values()].map((value) => value.membershipId))];
+  const sellerRows = await db.membership.findMany({
+    where: { organizationId: context.organizationId, id: { in: sellerMembershipIds } },
+    select: { id: true, user: { select: { id: true, name: true } } },
   });
-
-  const cutoff = new Date(Date.now() - settings.inactivityDays * 86_400_000);
-  const inactive = lastPurchases.filter((entry) => entry._max.paidAt && entry._max.paidAt <= cutoff);
-  const clients = await db.client.findMany({
-    where: {
-      organizationId: context.organizationId,
-      id: { in: inactive.map((entry) => entry.clientId) },
-    },
-    include: {
-      segment: true,
-      responsibleSeller: { include: { user: true } },
-    },
-  });
-  const clientMap = new Map(clients.map((client) => [client.id, client]));
+  const sellerNames = new Map(sellerRows.map((row) => [row.id, row.user]));
+  const now = Date.now();
 
   return {
-    inactivityDays: settings.inactivityDays,
-    alerts: inactive
-      .map((entry) => {
-        const lastPurchaseAt = entry._max.paidAt!;
-        return {
-          client: clientMap.get(entry.clientId),
-          lastPurchaseAt,
-          daysWithoutPurchase: Math.floor((Date.now() - lastPurchaseAt.getTime()) / 86_400_000),
-        };
-      })
-      .filter((entry) => entry.client)
-      .sort((a, b) => b.daysWithoutPurchase - a.daysWithoutPurchase),
+    inactivityDays: settings?.inactivityDays ?? null,
+    alerts: clients.flatMap((client) => {
+      const threshold = client.inactivityDaysOverride ?? settings?.inactivityDays ?? null;
+      if (!threshold) return [];
+      const lastPurchaseAt = lastPurchaseByClient.get(client.id) ?? null;
+      // Clients who never purchased use registration date; existing customers are preserved.
+      const anchor = lastPurchaseAt ?? client.createdAt;
+      const daysWithoutPurchase = Math.floor((now - anchor.getTime()) / 86_400_000);
+      if (daysWithoutPurchase < threshold) return [];
+      const frequentSellerId = topSellerByClient.get(client.id)?.membershipId;
+      const sellerToNotify = frequentSellerId
+        ? sellerNames.get(frequentSellerId) ?? null
+        : client.responsibleSeller?.user ?? null;
+      return [{
+        client, lastPurchaseAt, daysWithoutPurchase, thresholdDays: threshold,
+        sellerToNotify: sellerToNotify ? { id: sellerToNotify.id, name: sellerToNotify.name } : null,
+      }];
+    }).sort((a, b) => b.daysWithoutPurchase - a.daysWithoutPurchase),
   };
 }
 
