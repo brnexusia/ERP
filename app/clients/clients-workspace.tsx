@@ -132,6 +132,50 @@ function purchaseSummary(purchase: Record<string, unknown>) {
   };
 }
 
+function ClientLookupButton({ type, onError }: {
+  type: "cep" | "cnpj";
+  onError: (message: string) => void;
+}) {
+  const [loading, setLoading] = useState(false);
+
+  async function lookup(event: React.MouseEvent<HTMLButtonElement>) {
+    const form = event.currentTarget.closest("form");
+    const fieldName = type === "cep" ? "postalCode" : "document";
+    const value = form?.querySelector<HTMLInputElement>(`[name="${fieldName}"]`)?.value ?? "";
+    const digits = value.replace(/\D/g, "");
+    if (digits.length !== (type === "cep" ? 8 : 14)) {
+      onError(type === "cep" ? "Informe um CEP de 8 dígitos." : "Informe um CNPJ de 14 dígitos.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/clients/lookup?type=${type}&value=${digits}`);
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? "Consulta indisponível.");
+      function assign(name: string, next: unknown) {
+        const input = form?.querySelector<HTMLInputElement>(`[name="${name}"]`);
+        if (input && typeof next === "string" && next.trim() && !input.value.trim()) input.value = next;
+      }
+      const address = type === "cep" ? result.address : result.business?.address;
+      if (type === "cnpj") {
+        assign("name", result.business?.name);
+        assign("email", result.business?.email);
+      }
+      for (const key of ["postalCode", "street", "number", "district", "city", "state"]) {
+        assign(key, address?.[key]);
+      }
+    } catch (error) {
+      onError(error instanceof Error ? error.message : "Consulta indisponível.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return <button className="secondary-button" type="button" onClick={(event) => { void lookup(event); }} disabled={loading}>
+    {loading ? "Consultando..." : type === "cep" ? "Buscar CEP" : "Buscar CNPJ"}
+  </button>;
+}
+
 export function ClientsWorkspace({ role }: { role: string }) {
   const [clients, setClients] = useState<Client[]>([]);
   const [segments, setSegments] = useState<Segment[]>([]);
@@ -419,6 +463,7 @@ export function ClientsWorkspace({ role }: { role: string }) {
                     >
                       <label>Nome / razão social<input name="name" defaultValue={selected.name} required /></label>
                       <label>CPF / CNPJ<input name="document" defaultValue={selected.document} required /></label>
+                      <ClientLookupButton type="cnpj" onError={setError} />
                       <label>WhatsApp<input name="whatsapp" defaultValue={selected.whatsapp} required /></label>
                       <label>E-mail<input name="email" defaultValue={selected.email} type="email" required /></label>
                       <label>Instagram<input name="instagram" defaultValue={selected.instagram ?? ""} placeholder="@cliente" /></label>
@@ -432,6 +477,7 @@ export function ClientsWorkspace({ role }: { role: string }) {
                       </select></label>
                       <label>Inatividade individual (dias)<input name="inactivityDaysOverride" type="number" min={1} max={3650} defaultValue={selected.inactivityDaysOverride ?? ""} placeholder="Regra geral" /></label>
                       <label>CEP<input name="postalCode" defaultValue={selected.address?.postalCode ?? ""} required /></label>
+                      <ClientLookupButton type="cep" onError={setError} />
                       <label>Rua<input name="street" defaultValue={selected.address?.street ?? ""} required /></label>
                       <label>Número<input name="number" defaultValue={selected.address?.number ?? ""} required /></label>
                       <label>Complemento<input name="complement" defaultValue={selected.address?.complement ?? ""} /></label>
@@ -802,6 +848,7 @@ export function ClientsWorkspace({ role }: { role: string }) {
           <form className="client-form" onSubmit={createClient}>
             <label>Nome / razão social<input name="name" required minLength={2} /></label>
             <label>CPF / CNPJ<input name="document" required inputMode="numeric" /></label>
+            <ClientLookupButton type="cnpj" onError={setError} />
             <label>WhatsApp<input name="whatsapp" required inputMode="tel" /></label>
             <label>E-mail<input name="email" required type="email" /></label>
             <label>Instagram<input name="instagram" placeholder="@cliente" /></label>
@@ -815,6 +862,7 @@ export function ClientsWorkspace({ role }: { role: string }) {
             </select></label>
             <label>Inatividade individual (dias)<input name="inactivityDaysOverride" type="number" min={1} max={3650} placeholder="Regra geral" /></label>
             <label>CEP<input name="postalCode" required inputMode="numeric" /></label>
+            <ClientLookupButton type="cep" onError={setError} />
             <label>Rua / avenida<input name="street" required /></label>
             <label>Número<input name="number" required /></label>
             <label>Complemento<input name="complement" /></label>
