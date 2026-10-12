@@ -19,6 +19,11 @@ const normalizedPostalCode = z
   .transform(onlyDigits)
   .refine((value) => value.length === 8, "CEP inválido.");
 
+const priceTable = z.enum(["LOJA", "CATALOGO", "NUVEMSHOP", "ESPECIAL"]);
+const instagram = z.string().trim().max(100).nullable().optional();
+const inactivityDaysOverride = z.number().int().min(1).max(3650).nullable().optional();
+const representativeId = z.string().cuid().nullable().optional();
+
 export const clientAddressSchema = z.object({
   postalCode: normalizedPostalCode,
   street: z.string().trim().min(2).max(200),
@@ -35,6 +40,10 @@ export const clientCreateSchema = z.object({
   document: normalizedDocument,
   whatsapp: normalizedWhatsapp,
   email: z.string().trim().toLowerCase().email().max(254),
+  instagram,
+  priceTableKey: priceTable.optional(),
+  representativeId,
+  inactivityDaysOverride,
   address: clientAddressSchema,
 });
 
@@ -44,6 +53,10 @@ export const clientUpdateSchema = z
     document: normalizedDocument.optional(),
     whatsapp: normalizedWhatsapp.optional(),
     email: z.string().trim().toLowerCase().email().max(254).optional(),
+    instagram,
+    priceTableKey: priceTable.optional(),
+    representativeId,
+    inactivityDaysOverride,
     address: clientAddressSchema.partial().optional(),
   })
   .refine((value) => Object.keys(value).length > 0, "Informe ao menos um campo para atualização.");
