@@ -36,7 +36,21 @@ function clientInclude() {
     address: true,
     segment: true,
     responsibleSeller: { include: { user: true } },
+    representative: true,
   };
+}
+
+async function verifyRepresentative(
+  tx: Prisma.TransactionClient,
+  organizationId: string,
+  representativeId: string | null | undefined,
+) {
+  if (!representativeId) return;
+  const match = await tx.representative.findFirst({
+    where: { id: representativeId, organizationId },
+    select: { id: true },
+  });
+  if (!match) throw new Error("Representante não encontrado nesta empresa.");
 }
 
 export async function listClients(context: ClientAccessContext) {
@@ -68,6 +82,7 @@ export async function createClient(context: ClientAccessContext, input: ClientCr
 
   try {
     return await db.$transaction(async (tx) => {
+      await verifyRepresentative(tx, context.organizationId, input.representativeId);
       const client = await tx.client.create({
         data: {
           organizationId: context.organizationId,
@@ -76,6 +91,10 @@ export async function createClient(context: ClientAccessContext, input: ClientCr
           document: input.document,
           whatsapp: input.whatsapp,
           email: input.email,
+          instagram: input.instagram ?? null,
+          priceTableKey: input.priceTableKey ?? "LOJA",
+          representativeId: input.representativeId ?? null,
+          inactivityDaysOverride: input.inactivityDaysOverride ?? null,
           address: {
             create: {
               organizationId: context.organizationId,
@@ -129,6 +148,7 @@ export async function updateClient(
       });
 
       if (!current) throw new ClientNotFoundError();
+      await verifyRepresentative(tx, context.organizationId, input.representativeId);
 
       let documentType: ClientDocumentType | undefined;
       if (input.document) {
@@ -149,6 +169,10 @@ export async function updateClient(
           documentType,
           whatsapp: input.whatsapp,
           email: input.email,
+          instagram: input.instagram,
+          priceTableKey: input.priceTableKey,
+          representativeId: input.representativeId,
+          inactivityDaysOverride: input.inactivityDaysOverride,
           address: input.address
             ? {
                 update: {
