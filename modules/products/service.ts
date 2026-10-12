@@ -54,6 +54,17 @@ function withStockStatus<T extends { stock: { quantity: Prisma.Decimal; minimum:
   };
 }
 
+// Only management sees acquisition costs. Suppression happens before serialization,
+ // so seller/read-only clients cannot recover the value through the API.
+function redactCostsForRole<T extends { costPrice: Prisma.Decimal }>(
+  product: T,
+  role: ProductAccessContext["role"],
+) {
+  if (["OWNER", "ADMIN", "MANAGER"].includes(role)) return product;
+  const { costPrice: _costPrice, ...safeProduct } = product;
+  return safeProduct;
+}
+
 async function validateCategoryPair(
   tx: Prisma.TransactionClient | typeof db,
   organizationId: string,
@@ -153,7 +164,7 @@ export async function listProducts(context: ProductAccessContext) {
     include: productInclude(),
     orderBy: [{ name: "asc" }, { createdAt: "asc" }],
   });
-  return products.map(withStockStatus);
+  return products.map((product) => redactCostsForRole(withStockStatus(product), context.role));
 }
 
 export async function getProduct(context: ProductAccessContext, productId: string) {
@@ -162,7 +173,7 @@ export async function getProduct(context: ProductAccessContext, productId: strin
     where: { id: productId, organizationId: context.organizationId },
     include: productInclude(),
   });
-  return product ? withStockStatus(product) : null;
+  return product ? redactCostsForRole(withStockStatus(product), context.role) : null;
 }
 
 export async function createProduct(context: ProductAccessContext, input: ProductCreateInput) {
