@@ -57,6 +57,8 @@ enum PaymentMethod {
   PIX
   BOLETO
   CHEQUE
+  CASH
+  VALE
 }
 
 enum PaymentStatus {
@@ -270,6 +272,7 @@ model Representative {
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   clients      Client[]
+  sales        Sale[]
 
   @@index([organizationId, name])
 }
@@ -531,6 +534,8 @@ model Sale {
   organizationId     String
   clientId           String
   sellerMembershipId String
+  representativeId   String?
+  representativeRate Decimal?     @db.Decimal(5, 2)
   stage              SaleStage    @default(QUOTE)
   channel            SalesChannel
   totalAmount        Decimal      @default(0) @db.Decimal(14, 2)
@@ -543,6 +548,7 @@ model Sale {
   organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   client         Client          @relation(fields: [clientId], references: [id], onDelete: Restrict)
   seller         Membership      @relation("SaleSeller", fields: [sellerMembershipId], references: [id], onDelete: Restrict)
+  representative Representative? @relation(fields: [representativeId], references: [id], onDelete: SetNull)
   items          SaleItem[]
   payments       SalePayment[]
   supportRecords SupportRecord[]
@@ -551,6 +557,7 @@ model Sale {
   @@index([organizationId, stage, createdAt])
   @@index([organizationId, clientId, createdAt])
   @@index([organizationId, sellerMembershipId, createdAt])
+  @@index([organizationId, representativeId, createdAt])
   @@index([organizationId, channel, createdAt])
 }
 
@@ -582,6 +589,10 @@ model SalePayment {
   status         PaymentStatus @default(PENDING)
   amount         Decimal       @db.Decimal(14, 2)
   dueDate        DateTime?
+  chequeBank     String?
+  chequeNumber   String?
+  chequeHolder   String?
+  chequeDepositAt DateTime?
   settledAt      DateTime?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
