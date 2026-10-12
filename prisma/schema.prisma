@@ -604,6 +604,7 @@ model SalePayment {
   @@index([organizationId, saleId, createdAt])
   @@index([organizationId, method, createdAt])
   @@index([organizationId, status, dueDate])
+  @@index([organizationId, chequeNumber])
 }
 
 model SupportRecord {
