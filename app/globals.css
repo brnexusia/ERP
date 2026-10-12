@@ -2299,3 +2299,54 @@ a {
     grid-template-columns: 1fr;
   }
 }
+
+/* Júlia Bijoux — Módulo 1: campos adicionais sem alterar o design system */
+.client-form select,
+.compact-representative-form input {
+  min-height: 35px;
+  width: 100%;
+  border: 1px solid var(--erp-line-strong);
+  border-radius: 6px;
+  padding: 0 9px;
+  background: #fff;
+  color: var(--erp-text);
+  font-size: 10px;
+}
+
+.client-form .secondary-button {
+  align-self: end;
+}
+
+.credit-method-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.credit-method-options label,
+.action-form label:has(input[type="checkbox"]) {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.credit-method-options input[type="checkbox"],
+.action-form input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  min-height: 0;
+  padding: 0;
+  accent-color: var(--erp-gold);
+}
+
+.compact-representative-form {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 135px auto;
+  align-items: end;
+  margin-bottom: 14px;
+}
+
+@media (max-width: 820px) {
+  .compact-representative-form {
+    grid-template-columns: 1fr;
+  }
+}

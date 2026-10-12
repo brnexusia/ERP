@@ -9,6 +9,13 @@ type Client = {
   documentType: "CPF" | "CNPJ";
   whatsapp: string;
   email: string;
+  instagram?: string | null;
+  priceTableKey?: string;
+  inactivityDaysOverride?: number | null;
+  creditAllowed?: boolean;
+  creditMethods?: string[];
+  representativeId?: string | null;
+  representative?: { id: string; name: string } | null;
   address?: {
     postalCode: string;
     street: string;
@@ -24,10 +31,13 @@ type Client = {
 };
 
 type Segment = { id: string; name: string };
+type Representative = { id: string; name: string };
 type InactivityAlert = {
   client?: Client;
-  lastPurchaseAt: string;
+  lastPurchaseAt: string | null;
   daysWithoutPurchase: number;
+  thresholdDays?: number;
+  sellerToNotify?: { id: string; name: string } | null;
 };
 
 type CentralProfile = {
@@ -39,6 +49,8 @@ type CentralProfile = {
     customerType?: string;
     daysWithoutPurchase?: number | null;
     inactivityAlert?: boolean;
+    averageDaysBetweenPurchases?: number | null;
+    mostFrequentSeller?: { name: string; paidSales: number } | null;
   };
   purchases?: Array<Record<string, unknown>>;
   financial?: {
@@ -120,9 +132,54 @@ function purchaseSummary(purchase: Record<string, unknown>) {
   };
 }
 
+function ClientLookupButton({ type, onError }: {
+  type: "cep" | "cnpj";
+  onError: (message: string) => void;
+}) {
+  const [loading, setLoading] = useState(false);
+
+  async function lookup(event: React.MouseEvent<HTMLButtonElement>) {
+    const form = event.currentTarget.closest("form");
+    const fieldName = type === "cep" ? "postalCode" : "document";
+    const value = form?.querySelector<HTMLInputElement>(`[name="${fieldName}"]`)?.value ?? "";
+    const digits = value.replace(/\D/g, "");
+    if (digits.length !== (type === "cep" ? 8 : 14)) {
+      onError(type === "cep" ? "Informe um CEP de 8 dígitos." : "Informe um CNPJ de 14 dígitos.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/clients/lookup?type=${type}&value=${digits}`);
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? "Consulta indisponível.");
+      function assign(name: string, next: unknown) {
+        const input = form?.querySelector<HTMLInputElement>(`[name="${name}"]`);
+        if (input && typeof next === "string" && next.trim() && !input.value.trim()) input.value = next;
+      }
+      const address = type === "cep" ? result.address : result.business?.address;
+      if (type === "cnpj") {
+        assign("name", result.business?.name);
+        assign("email", result.business?.email);
+      }
+      for (const key of ["postalCode", "street", "number", "district", "city", "state"]) {
+        assign(key, address?.[key]);
+      }
+    } catch (error) {
+      onError(error instanceof Error ? error.message : "Consulta indisponível.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return <button className="secondary-button" type="button" onClick={(event) => { void lookup(event); }} disabled={loading}>
+    {loading ? "Consultando..." : type === "cep" ? "Buscar CEP" : "Buscar CNPJ"}
+  </button>;
+}
+
 export function ClientsWorkspace({ role }: { role: string }) {
   const [clients, setClients] = useState<Client[]>([]);
   const [segments, setSegments] = useState<Segment[]>([]);
+  const [representatives, setRepresentatives] = useState<Representative[]>([]);
   const [alerts, setAlerts] = useState<InactivityAlert[]>([]);
   const [inactivityDays, setInactivityDays] = useState<number | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -139,23 +196,25 @@ export function ClientsWorkspace({ role }: { role: string }) {
   const [error, setError] = useState<string | null>(null);
 
   const canWriteClients = ["OWNER", "ADMIN", "MANAGER", "SELLER", "SUPPORT"].includes(role);
-  const canManageCreditLimit = ["OWNER", "ADMIN", "FINANCE"].includes(role);
+  const canManageCreditLimit = ["OWNER", "ADMIN", "MANAGER"].includes(role);
   const canMoveFinancial = canWriteClients || role === "FINANCE";
 
   const loadSummary = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [clientData, segmentData, alertData, settingData] = await Promise.all([
+      const [clientData, segmentData, alertData, settingData, repData] = await Promise.all([
         requestJson<{ clients: Client[] }>("/api/clients"),
         requestJson<{ segments: Segment[] }>("/api/client-segments"),
         requestJson<{ inactivity: { inactivityDays: number | null; alerts: InactivityAlert[] } }>(
           "/api/clients/inactivity-alerts",
         ),
         requestJson<{ settings: { inactivityDays?: number | null } | null }>("/api/client-settings"),
+        requestJson<{ representatives: Representative[] }>("/api/representatives"),
       ]);
       setClients(clientData.clients);
       setSegments(segmentData.segments);
+      setRepresentatives(repData.representatives);
       setAlerts(alertData.inactivity.alerts);
       setInactivityDays(settingData.settings?.inactivityDays ?? alertData.inactivity.inactivityDays);
     } catch (cause) {
@@ -257,6 +316,11 @@ export function ClientsWorkspace({ role }: { role: string }) {
         document: String(form.get("document") ?? ""),
         whatsapp: String(form.get("whatsapp") ?? ""),
         email: String(form.get("email") ?? ""),
+        instagram: String(form.get("instagram") ?? "") || null,
+        priceTableKey: String(form.get("priceTableKey") ?? "LOJA"),
+        representativeId: String(form.get("representativeId") ?? "") || null,
+        inactivityDaysOverride: String(form.get("inactivityDaysOverride") ?? "")
+          ? Number(form.get("inactivityDaysOverride")) : null,
         address: {
           postalCode: String(form.get("postalCode") ?? ""),
           street: String(form.get("street") ?? ""),
@@ -347,6 +411,12 @@ export function ClientsWorkspace({ role }: { role: string }) {
                 <dl className="detail-list">
                   <div><dt>E-mail</dt><dd>{selected.email}</dd></div>
                   <div><dt>WhatsApp</dt><dd>{selected.whatsapp}</dd></div>
+                  <div><dt>Instagram</dt><dd>{selected.instagram || "—"}</dd></div>
+                  <div><dt>Representante</dt><dd>{selected.representative?.name ?? "—"}</dd></div>
+                  <div><dt>Tabela</dt><dd>{selected.priceTableKey ?? "LOJA"}</dd></div>
+                  <div><dt>Inatividade</dt><dd>{selected.inactivityDaysOverride ? `${selected.inactivityDaysOverride} dias (individual)` : "Regra geral"}</dd></div>
+                  <div><dt>Vendedora frequente</dt><dd>{profile.commercial?.mostFrequentSeller?.name ?? "—"}</dd></div>
+                  <div><dt>Intervalo médio de compras</dt><dd>{profile.commercial?.averageDaysBetweenPurchases != null ? `${Math.round(profile.commercial.averageDaysBetweenPurchases)} dias` : "—"}</dd></div>
                   <div><dt>Endereço</dt><dd>{selected.address ? `${selected.address.street}, ${selected.address.number} — ${selected.address.city}/${selected.address.state}` : "—"}</dd></div>
                   <div><dt>Última compra</dt><dd>{date(profile.commercial?.daysWithoutPurchase == null ? null : profile.purchases?.[0]?.paidAt)}</dd></div>
                   <div><dt>Dias sem comprar</dt><dd>{profile.commercial?.daysWithoutPurchase ?? "—"}</dd></div>
@@ -369,6 +439,11 @@ export function ClientsWorkspace({ role }: { role: string }) {
                                 document: String(form.get("document") ?? ""),
                                 whatsapp: String(form.get("whatsapp") ?? ""),
                                 email: String(form.get("email") ?? ""),
+                                instagram: String(form.get("instagram") ?? "") || null,
+                                priceTableKey: String(form.get("priceTableKey") ?? "LOJA"),
+                                representativeId: String(form.get("representativeId") ?? "") || null,
+                                inactivityDaysOverride: String(form.get("inactivityDaysOverride") ?? "")
+                                  ? Number(form.get("inactivityDaysOverride")) : null,
                                 address: {
                                   postalCode: String(form.get("postalCode") ?? ""),
                                   street: String(form.get("street") ?? ""),
@@ -388,9 +463,21 @@ export function ClientsWorkspace({ role }: { role: string }) {
                     >
                       <label>Nome / razão social<input name="name" defaultValue={selected.name} required /></label>
                       <label>CPF / CNPJ<input name="document" defaultValue={selected.document} required /></label>
+                      <ClientLookupButton type="cnpj" onError={setError} />
                       <label>WhatsApp<input name="whatsapp" defaultValue={selected.whatsapp} required /></label>
                       <label>E-mail<input name="email" defaultValue={selected.email} type="email" required /></label>
+                      <label>Instagram<input name="instagram" defaultValue={selected.instagram ?? ""} placeholder="@cliente" /></label>
+                      <label>Tabela de preços<select name="priceTableKey" defaultValue={selected.priceTableKey ?? "LOJA"}>
+                        <option value="LOJA">Loja</option><option value="CATALOGO">Catálogo</option>
+                        <option value="NUVEMSHOP">Nuvemshop</option><option value="ESPECIAL">Especial</option>
+                      </select></label>
+                      <label>Representante<select name="representativeId" defaultValue={selected.representativeId ?? ""}>
+                        <option value="">Sem representante</option>
+                        {representatives.map((rep) => <option key={rep.id} value={rep.id}>{rep.name}</option>)}
+                      </select></label>
+                      <label>Inatividade individual (dias)<input name="inactivityDaysOverride" type="number" min={1} max={3650} defaultValue={selected.inactivityDaysOverride ?? ""} placeholder="Regra geral" /></label>
                       <label>CEP<input name="postalCode" defaultValue={selected.address?.postalCode ?? ""} required /></label>
+                      <ClientLookupButton type="cep" onError={setError} />
                       <label>Rua<input name="street" defaultValue={selected.address?.street ?? ""} required /></label>
                       <label>Número<input name="number" defaultValue={selected.address?.number ?? ""} required /></label>
                       <label>Complemento<input name="complement" defaultValue={selected.address?.complement ?? ""} /></label>
@@ -465,6 +552,36 @@ export function ClientsWorkspace({ role }: { role: string }) {
                   <label>Limite de crédito<input name="creditLimit" inputMode="decimal" defaultValue={String(credit?.creditLimit ?? "0")} /></label>
                   <button className="secondary-button" disabled={busy}>Atualizar limite</button>
                 </form>
+                )}
+
+                <div className="erp-alert neutral">
+                  Compra a prazo: {selected.creditAllowed ? "autorizada" : "bloqueada"}.
+                  Modalidades: {selected.creditMethods?.join(", ") || "nenhuma"}.
+                </div>
+                {canManageCreditLimit && (
+                  <form className="action-form" onSubmit={(event) => {
+                    event.preventDefault();
+                    const form = new FormData(event.currentTarget);
+                    void runAction(async () => {
+                      const allowed = form.get("creditAllowed") === "on";
+                      await requestJson(`/api/clients/${selectedId}/credit-policy`, {
+                        method: "PATCH",
+                        body: JSON.stringify({
+                          creditAllowed: allowed,
+                          creditMethods: allowed ? form.getAll("creditMethods").map(String) : [],
+                        }),
+                      });
+                    }, "Política de compra a prazo atualizada.");
+                  }}>
+                    <h3>Autorização de compra a prazo (gestor)</h3>
+                    <label><input type="checkbox" name="creditAllowed" defaultChecked={selected.creditAllowed} /> Permitir compra a prazo</label>
+                    <div className="credit-method-options">
+                      {["CHEQUE", "BOLETO", "VALE"].map((method) => (
+                        <label key={method}><input type="checkbox" name="creditMethods" value={method} defaultChecked={selected.creditMethods?.includes(method)} /> {method}</label>
+                      ))}
+                    </div>
+                    <button className="secondary-button" disabled={busy}>Salvar autorização</button>
+                  </form>
                 )}
 
                 {canMoveFinancial && (
@@ -731,9 +848,21 @@ export function ClientsWorkspace({ role }: { role: string }) {
           <form className="client-form" onSubmit={createClient}>
             <label>Nome / razão social<input name="name" required minLength={2} /></label>
             <label>CPF / CNPJ<input name="document" required inputMode="numeric" /></label>
+            <ClientLookupButton type="cnpj" onError={setError} />
             <label>WhatsApp<input name="whatsapp" required inputMode="tel" /></label>
             <label>E-mail<input name="email" required type="email" /></label>
+            <label>Instagram<input name="instagram" placeholder="@cliente" /></label>
+            <label>Tabela de preços<select name="priceTableKey" defaultValue="LOJA">
+              <option value="LOJA">Loja</option><option value="CATALOGO">Catálogo</option>
+              <option value="NUVEMSHOP">Nuvemshop</option><option value="ESPECIAL">Especial</option>
+            </select></label>
+            <label>Representante<select name="representativeId">
+              <option value="">Sem representante</option>
+              {representatives.map((rep) => <option key={rep.id} value={rep.id}>{rep.name}</option>)}
+            </select></label>
+            <label>Inatividade individual (dias)<input name="inactivityDaysOverride" type="number" min={1} max={3650} placeholder="Regra geral" /></label>
             <label>CEP<input name="postalCode" required inputMode="numeric" /></label>
+            <ClientLookupButton type="cep" onError={setError} />
             <label>Rua / avenida<input name="street" required /></label>
             <label>Número<input name="number" required /></label>
             <label>Complemento<input name="complement" /></label>
@@ -867,7 +996,7 @@ export function ClientsWorkspace({ role }: { role: string }) {
             {alerts.slice(0, 8).map((alert) => (
               <button key={alert.client?.id} className="alert-row" onClick={() => alert.client?.id && setSelectedId(alert.client.id)}>
                 <span className="client-avatar">{alert.client?.name?.slice(0, 2).toUpperCase() ?? "?"}</span>
-                <span><strong>{alert.client?.name}</strong><small>Última compra: {date(alert.lastPurchaseAt)}</small></span>
+                <span><strong>{alert.client?.name}</strong><small>Última compra: {date(alert.lastPurchaseAt)} · {alert.sellerToNotify?.name ?? "Sem vendedora"} · Regra: {alert.thresholdDays ?? inactivityDays ?? "—"} dias</small></span>
                 <b>{alert.daysWithoutPurchase} dias</b>
               </button>
             ))}

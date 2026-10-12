@@ -124,6 +124,7 @@ model Organization {
   accountPayables       AccountPayable[]
   bankStatementEntries  BankStatementEntry[]
   bankReconciliations   BankReconciliation[]
+  representatives Representative[]
 }
 
 model User {
@@ -221,6 +222,12 @@ model Client {
   organizationId                String
   segmentId                     String?
   responsibleSellerMembershipId String?
+  representativeId              String?
+  instagram                     String?
+  priceTableKey                 String           @default("LOJA")
+  inactivityDaysOverride        Int?
+  creditAllowed                 Boolean          @default(false)
+  creditMethods                 String[]         @default([])
   name                          String
   documentType                  ClientDocumentType
   document                      String
@@ -232,6 +239,7 @@ model Client {
   organization       Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   segment            ClientSegment? @relation(fields: [segmentId], references: [id], onDelete: SetNull)
   responsibleSeller  Membership?    @relation("ClientResponsibleSeller", fields: [responsibleSellerMembershipId], references: [id], onDelete: SetNull)
+  representative     Representative? @relation(fields: [representativeId], references: [id], onDelete: SetNull)
   address            ClientAddress?
   creditAccount      ClientCreditAccount?
   creditMovements    ClientCreditMovement[]
@@ -247,6 +255,23 @@ model Client {
   @@index([organizationId, email])
   @@index([organizationId, segmentId])
   @@index([organizationId, responsibleSellerMembershipId])
+  @@index([organizationId, representativeId])
+  @@index([organizationId, priceTableKey])
+}
+
+model Representative {
+  id                String   @id @default(cuid())
+  organizationId    String
+  name              String
+  whatsapp          String?
+  commissionPercent Decimal? @db.Decimal(5, 2)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  clients      Client[]
+
+  @@index([organizationId, name])
 }
 
 model ClientAddress {

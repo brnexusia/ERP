@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import {
   assertAnyPermission,
   assertPermission,
+  PermissionDeniedError,
 } from "@/lib/auth/permissions";
 import type { ClientAccessContext } from "@/modules/clients/service";
 import type {
@@ -193,7 +194,9 @@ export async function setClientCreditLimit(
   clientId: string,
   input: CreditLimitInput,
 ) {
-  assertAnyPermission(context.role, ["organization:manage", "finance:write"]);
+  if (!["OWNER", "ADMIN", "MANAGER"].includes(context.role)) {
+    throw new PermissionDeniedError("organization:manage");
+  }
   const nextLimit = new Prisma.Decimal(input.creditLimit);
 
   return runSerializable(async (tx) => {

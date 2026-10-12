@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
 type Segment = { id: string; name: string };
+type Representative = { id: string; name: string; commissionPercent?: string | null };
 type Integration = {
   id: string;
   provider: string;
@@ -33,6 +34,7 @@ function integrationText(status: Integration["status"] | undefined) {
 
 export function ClientSettingsWorkspace({ role }: { role: string }) {
   const [segments, setSegments] = useState<Segment[]>([]);
+  const [representatives, setRepresentatives] = useState<Representative[]>([]);
   const [inactivityDays, setInactivityDays] = useState<number | null>(null);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [busy, setBusy] = useState(false);
@@ -43,14 +45,16 @@ export function ClientSettingsWorkspace({ role }: { role: string }) {
   const load = useCallback(async () => {
     setError(null);
     try {
-      const [segmentData, settingData, integrationData] = await Promise.all([
+      const [segmentData, settingData, integrationData, representativeData] = await Promise.all([
         requestJson<{ segments: Segment[] }>("/api/client-segments"),
         requestJson<{ settings: { inactivityDays?: number | null } | null }>("/api/client-settings"),
         canManage
           ? requestJson<{ integrations: Integration[] }>("/api/integrations")
           : Promise.resolve({ integrations: [] as Integration[] }),
+        requestJson<{ representatives: Representative[] }>("/api/representatives"),
       ]);
       setSegments(segmentData.segments);
+      setRepresentatives(representativeData.representatives);
       setInactivityDays(settingData.settings?.inactivityDays ?? null);
       setIntegrations(integrationData.integrations);
     } catch (cause) {
@@ -186,6 +190,47 @@ export function ClientSettingsWorkspace({ role }: { role: string }) {
           </div>
         </section>
       </div>
+
+      <section className="erp-panel">
+        <div className="panel-heading">
+          <div>
+            <p className="erp-kicker">Relacionamento comercial</p>
+            <h2>Representantes</h2>
+          </div>
+        </div>
+        <p className="panel-description">Vincule representantes aos clientes. Comissão e fechamento serão operados no Módulo 2.</p>
+        {canManage && (
+          <form className="action-form compact-representative-form" onSubmit={(event) => {
+            event.preventDefault();
+            const formElement = event.currentTarget;
+            const data = new FormData(formElement);
+            void run(async () => {
+              await requestJson("/api/representatives", {
+                method: "POST",
+                body: JSON.stringify({
+                  name: String(data.get("name") ?? ""),
+                  whatsapp: String(data.get("whatsapp") ?? "") || null,
+                  commissionPercent: String(data.get("commissionPercent") ?? "") || null,
+                }),
+              });
+              formElement.reset();
+            }, "Representante cadastrado.");
+          }}>
+            <label>Nome<input name="name" required minLength={2} maxLength={200} /></label>
+            <label>WhatsApp<input name="whatsapp" /></label>
+            <label>Comissão negociada (%)<input name="commissionPercent" type="number" min={0} max={100} step=".01" placeholder="Opcional" /></label>
+            <button className="primary-button" disabled={busy}>Adicionar representante</button>
+          </form>
+        )}
+        <div className="chip-list">
+          {representatives.map((rep) => (
+            <span className="status-chip" key={rep.id}>
+              {rep.name}{rep.commissionPercent != null ? ` · ${rep.commissionPercent}%` : ""}
+            </span>
+          ))}
+          {representatives.length === 0 && <span className="empty-state">Nenhum representante cadastrado.</span>}
+        </div>
+      </section>
 
       <section className="erp-panel">
         <div className="panel-heading">
