@@ -56,12 +56,21 @@ async function main() {
   const cookie = cookiePair(login.headers.get("set-cookie"));
 
   let clientId: string | null = null;
+  let representativeId: string | null = null;
+  let secondSaleId: string | null = null;
   let categoryId: string | null = null;
   let productId: string | null = null;
   let saleId: string | null = null;
   let secondOrganizationId: string | null = null;
 
   try {
+    const representativeResponse = await requestJson("/api/representatives", cookie, {
+      method: "POST",
+      body: { name: "Representante Comercial Smoke", commissionPercent: "5.00" },
+    });
+    assert.equal(representativeResponse.status, 201);
+    representativeId = (await representativeResponse.json()).representative.id;
+
     const sellersResponse = await requestJson("/api/sellers", cookie);
     assert.equal(sellersResponse.status, 200);
     const sellers = (await sellersResponse.json()).sellers;
@@ -74,6 +83,7 @@ async function main() {
         document: "529.982.247-25",
         whatsapp: "55 71 96666-2222",
         email: "cliente-comercial@example.test",
+        representativeId,
         address: {
           postalCode: "44470-000",
           street: "Rua Comercial",
@@ -131,18 +141,21 @@ async function main() {
     const quote = (await quoteResponse.json()).sale;
     saleId = quote.id;
     assert.equal(quote.stage, "QUOTE");
+    assert.equal(quote.representativeId, representativeId);
+    assert.equal(String(quote.representativeRate), "5");
     assert.equal(quote.sellerMembershipId, sellerMembership.id);
     assert.equal(String(quote.totalAmount), "59.8");
     assert.equal(quote.items.length, 1);
 
     const updateQuoteResponse = await requestJson(`/api/sales/${saleId}`, cookie, {
       method: "PATCH",
-      body: { items: [{ productId, quantity: "3" }], channel: "SITE" }
+      body: { items: [{ productId, quantity: "3" }], channel: "SITE", representativeRate: "4.50" }
     });
     assert.equal(updateQuoteResponse.status, 200);
     const updatedQuote = (await updateQuoteResponse.json()).sale;
     assert.equal(updatedQuote.id, saleId);
     assert.equal(updatedQuote.stage, "QUOTE");
+    assert.equal(String(updatedQuote.representativeRate), "4.5");
     assert.equal(updatedQuote.channel, "SITE");
     assert.equal(String(updatedQuote.totalAmount), "89.7");
 
@@ -228,6 +241,34 @@ async function main() {
     assert.equal(purchases[0].stage, "PAID");
     assert.equal(purchases[0].payments.length, 2);
 
+    const extraQuote = await requestJson("/api/sales", cookie, {
+      method: "POST",
+      body: { clientId, channel: "PHYSICAL_STORE", items: [{ productId, quantity: "1" }] },
+    });
+    assert.equal(extraQuote.status, 201);
+    secondSaleId = (await extraQuote.json()).sale.id;
+    const extraOrder = await requestJson(`/api/sales/${secondSaleId}/order`, cookie, { method: "POST" });
+    assert.equal(extraOrder.status, 200);
+    const valePayment = await requestJson(`/api/sales/${secondSaleId}/payments`, cookie, {
+      method: "POST",
+      body: { method: "VALE", amount: "20.00", status: "PENDING", dueDate: "2026-12-15T12:00:00.000Z" },
+    });
+    assert.equal(valePayment.status, 201);
+    const valePaymentId = (await valePayment.json()).result.payment.id as string;
+    const cashPayment = await requestJson(`/api/sales/${secondSaleId}/payments`, cookie, {
+      method: "POST",
+      body: { method: "CASH", amount: "9.90", status: "PAID" },
+    });
+    assert.equal(cashPayment.status, 201);
+    const cashBody = (await cashPayment.json()).result;
+    assert.equal(cashBody.sale.stage, "ORDER");
+    const settleVale = await requestJson(`/api/sales/${secondSaleId}/payments/${valePaymentId}`, cookie, {
+      method: "PATCH", body: { status: "PAID" },
+    });
+    assert.equal(settleVale.status, 200);
+    assert.equal((await settleVale.json()).result.sale.stage, "PAID");
+    console.log("✓ representante por venda, percentual negociado e pagamentos cash/vale validados");
+
     const saleCount = await db.sale.count({ where: { id: saleId!, organizationId: organization.id } });
     assert.equal(saleCount, 1, "Orçamento, pedido e pagamento devem permanecer no mesmo registro de venda.");
 
@@ -260,10 +301,13 @@ async function main() {
     if (secondOrganizationId) {
       await db.organization.deleteMany({ where: { id: secondOrganizationId } });
     }
-    if (saleId) await db.sale.deleteMany({ where: { id: saleId } });
+    if (saleId || secondSaleId) {
+      await db.sale.deleteMany({ where: { id: { in: [saleId, secondSaleId].filter((id): id is string => id !== null) } } });
+    }
     if (productId) await db.product.deleteMany({ where: { id: productId, organizationId: organization.id } });
     if (categoryId) await db.productCategory.deleteMany({ where: { id: categoryId, organizationId: organization.id } });
     if (clientId) await db.client.deleteMany({ where: { id: clientId, organizationId: organization.id } });
+    if (representativeId) await db.representative.deleteMany({ where: { id: representativeId, organizationId: organization.id } });
     await db.membership.deleteMany({ where: { id: sellerMembership.id } });
     await db.user.deleteMany({ where: { id: seller.id } });
     await db.$disconnect();
