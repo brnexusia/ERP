@@ -454,7 +454,6 @@ export async function getProductSalesMetrics(context: ClientAccessContext, perio
           sku: product.sku,
           category: product.category,
           subcategory: product.subcategory,
-          costPrice: product.costPrice,
           salePrice: product.salePrice,
           unitMeasure: product.unitMeasure,
         },
