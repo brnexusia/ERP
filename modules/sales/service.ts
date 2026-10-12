@@ -1,3 +1,4 @@
+import { reserveClientCredit, releaseClientCredit, redeemClientVale } from "@/modules/sales/payment-ledger";
 import { PaymentStatus, Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { assertPermission, PermissionDeniedError } from "@/lib/auth/permissions";
@@ -457,6 +458,15 @@ export async function addSalePayment(
       },
     });
 
+    // Apply financial movements inside the same serializable transaction as the payment.
+    if (input.status === "PENDING") {
+      await reserveClientCredit(
+        tx, context, sale.clientId, payment.id, sale.id, payment.method, payment.amount,
+      );
+    } else if (payment.method === "VALE") {
+      await redeemClientVale(tx, context, sale.clientId, payment.id, sale.id, payment.amount);
+    }
+
     const updatedSale = await refreshSalePaymentStage(tx, sale.id);
 
     await tx.auditLog.create({
@@ -503,6 +513,18 @@ export async function updateSalePayment(
     if (!current) throw new SaleNotFoundError("Pagamento não encontrado.");
     if (current.status === "PAID" && input.status !== "PAID") {
       throw new SaleRuleError("Um pagamento quitado não pode voltar para pendente.");
+    }
+
+    // A settled payment cannot be debited twice. Legacy pending receivables
+    // without a reserve are settled without touching the credit ledger.
+    if (current.status === "PENDING" && input.status === "PAID") {
+      if (current.method === "VALE") {
+        await redeemClientVale(tx, context, sale.clientId, current.id, sale.id, current.amount);
+      } else {
+        await releaseClientCredit(
+          tx, context, sale.clientId, current.id, sale.id, current.method, current.amount,
+        );
+      }
     }
 
     const payment = await tx.salePayment.update({
