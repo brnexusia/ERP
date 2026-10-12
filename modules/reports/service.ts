@@ -207,7 +207,11 @@ export async function getClientCommercialProfile(context: ClientAccessContext, c
     include: {
       seller: { include: { user: true } },
       items: {
-        include: { product: { include: { category: true, subcategory: true } } },
+        include: {
+          product: {
+            select: { id: true, name: true, sku: true, category: true, subcategory: true },
+          },
+        },
         orderBy: { createdAt: "asc" },
       },
       payments: { orderBy: { createdAt: "asc" } },
