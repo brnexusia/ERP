@@ -373,9 +373,14 @@ export async function confirmOrder(context: ClientAccessContext, saleId: string)
       throw new SaleRuleError("O orçamento precisa ter produtos e valor antes de virar pedido.");
     }
 
+    const seller = await getSellerMembership(tx, context.organizationId, sale.sellerMembershipId);
     const updated = await tx.sale.update({
       where: { id: sale.id },
-      data: { stage: "ORDER", orderedAt: new Date() },
+      data: {
+        stage: "ORDER",
+        orderedAt: new Date(),
+        sellerCommissionRate: seller.commissionPercent,
+      },
       include: saleInclude(),
     });
 
@@ -386,6 +391,7 @@ export async function confirmOrder(context: ClientAccessContext, saleId: string)
         action: "SALE_ORDER_CONFIRM",
         entityType: "Sale",
         entityId: sale.id,
+        metadata: { sellerCommissionRate: seller.commissionPercent?.toFixed(2) ?? null },
       },
     });
 
