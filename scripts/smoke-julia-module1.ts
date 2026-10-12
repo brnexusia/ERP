@@ -81,7 +81,7 @@ async function main() {
     });
     assert.equal(invalid.response.status, 400);
     await db.client.update({
-      where: { id: clientId },
+      where: { id: clientId! },
       data: { createdAt: new Date(Date.now() - 4 * 86_400_000) },
     });
     const alerts = await jsonRequest("/api/clients/inactivity-alerts", cookie);
