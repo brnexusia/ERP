@@ -258,6 +258,7 @@ export async function reconcileBankStatementEntry(
           id: input.salePaymentId,
           organizationId: context.organizationId,
           status: "PAID",
+          method: { not: "VALE" },
           settledAt: { not: null },
         },
       });
@@ -344,6 +345,7 @@ export async function getCashFlow(context: FinanceAccessContext, period: Finance
       where: {
         organizationId: context.organizationId,
         status: "PAID",
+        method: { not: "VALE" },
         settledAt: settledAt ?? { not: null },
       },
       include: { sale: { include: { client: true } } },
@@ -439,6 +441,7 @@ export async function getFinancialReport(context: FinanceAccessContext, period: 
       where: {
         organizationId: context.organizationId,
         status: "PAID",
+        method: { not: "VALE" },
         settledAt: settledAt ?? { not: null },
       },
       _count: { _all: true },
