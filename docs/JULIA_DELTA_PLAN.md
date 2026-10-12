@@ -14,6 +14,12 @@ Fonte: Requisitos do ERP — Júlia Bijoux (9 páginas, out/2026). O escopo ofic
 - Proteção de custos: a API de catálogo de produtos não retorna `costPrice` para SELLER e demais papéis sem gestão, independentemente da UI.
 - Migração aditiva e guard de tenant no banco. Sem modificação de vendas/estoque preexistentes.
 
+## Módulo 2 — implementação parcial
+
+Implementado neste PR: vínculo opcional do representante comercial com cada venda, percentual referencial congelado no orçamento, alteração do percentual por gestor (auditada); pagamentos por DINHEIRO (CASH) e VALE, datas de vencimento para VALE, e metadados opcionais de cheque (banco, número, titular, data planejada de depósito). Migração aditiva, com testes de venda e pagamento no CI.
+
+**Não gera comissões automaticamente ainda**: falta ledger/fechamento auditável e aprovação de regras para cancelamento/estorno. **Não baixa estoque, não habilita venda por dúzia e não ativa a trava automática de crédito neste PR**.
+
 ## Módulo 2 — pendente, dependente de decisões
 
 - Comissões de vendedoras por mês e representantes por parcela; fechamento auditável e cancelamento/estorno.

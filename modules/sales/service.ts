@@ -1,6 +1,6 @@
 import { PaymentStatus, Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-import { assertPermission } from "@/lib/auth/permissions";
+import { assertPermission, PermissionDeniedError } from "@/lib/auth/permissions";
 import type { ClientAccessContext } from "@/modules/clients/service";
 import type {
   ClientSellerAssignmentInput,
@@ -33,8 +33,16 @@ function saleInclude() {
       },
     },
     seller: { include: { user: true } },
+    representative: true,
     items: {
-      include: { product: { include: { category: true, subcategory: true } } },
+      include: {
+        product: {
+          select: {
+            id: true, name: true, sku: true,
+            category: true, subcategory: true,
+          },
+        },
+      },
       orderBy: { createdAt: "asc" as const },
     },
     payments: { orderBy: { createdAt: "asc" as const } },
@@ -89,6 +97,31 @@ async function getClientForSale(
   });
   if (!client) throw new SaleNotFoundError("Cliente não encontrado.");
   return client;
+}
+
+async function resolveRepresentative(
+  tx: Prisma.TransactionClient,
+  context: ClientAccessContext,
+  representativeId: string | null,
+  requestedRate: string | undefined,
+) {
+  if (!representativeId) {
+    if (requestedRate !== undefined) throw new SaleRuleError("Comissão exige um representante.");
+    return { representativeId: null, representativeRate: null };
+  }
+  const rep = await tx.representative.findFirst({
+    where: { id: representativeId, organizationId: context.organizationId },
+  });
+  if (!rep) throw new SaleRuleError("Representante não encontrado nesta empresa.");
+  if (requestedRate !== undefined && !["OWNER", "ADMIN", "MANAGER"].includes(context.role)) {
+    throw new PermissionDeniedError("organization:manage");
+  }
+  return {
+    representativeId,
+    representativeRate: requestedRate !== undefined
+      ? new Prisma.Decimal(requestedRate)
+      : rep.commissionPercent,
+  };
 }
 
 async function buildItems(
@@ -209,12 +242,18 @@ export async function createQuote(context: ClientAccessContext, input: SaleCreat
     }
     await getSellerMembership(tx, context.organizationId, sellerMembershipId);
     const { rows, totalAmount } = await buildItems(tx, context.organizationId, input.items);
+    const representative = await resolveRepresentative(tx, context,
+      input.representativeId === undefined ? client.representativeId : input.representativeId,
+      input.representativeRate,
+    );
 
     const sale = await tx.sale.create({
       data: {
         organizationId: context.organizationId,
         clientId: client.id,
         sellerMembershipId,
+        representativeId: representative.representativeId,
+        representativeRate: representative.representativeRate,
         channel: input.channel,
         totalAmount,
         items: { create: rows },
@@ -232,6 +271,9 @@ export async function createQuote(context: ClientAccessContext, input: SaleCreat
         metadata: {
           clientId: sale.clientId,
           sellerMembershipId: sale.sellerMembershipId,
+          representativeId: sale.representativeId,
+          representativeRate: sale.representativeRate?.toFixed(2) ?? null,
+          negotiatedRateByUserId: input.representativeRate === undefined ? null : context.userId,
           channel: sale.channel,
           totalAmount: sale.totalAmount.toFixed(2),
         },
@@ -263,6 +305,14 @@ export async function updateQuote(
       await getSellerMembership(tx, context.organizationId, input.sellerMembershipId);
     }
 
+    const changedRepresentative = input.representativeId !== undefined;
+    const representative = (changedRepresentative || input.representativeRate !== undefined)
+      ? await resolveRepresentative(tx, context,
+          changedRepresentative ? input.representativeId! : current.representativeId,
+          input.representativeRate,
+        )
+      : null;
+
     let totalAmount = current.totalAmount;
     let itemUpdate: Prisma.SaleItemUpdateManyWithoutSaleNestedInput | undefined;
     if (input.items) {
@@ -278,6 +328,8 @@ export async function updateQuote(
       where: { id: current.id },
       data: {
         sellerMembershipId: input.sellerMembershipId,
+        representativeId: representative ? representative.representativeId : undefined,
+        representativeRate: representative ? representative.representativeRate : undefined,
         channel: input.channel,
         totalAmount,
         items: itemUpdate,
@@ -292,7 +344,12 @@ export async function updateQuote(
         action: "SALE_QUOTE_UPDATE",
         entityType: "Sale",
         entityId: sale.id,
-        metadata: { totalAmount: sale.totalAmount.toFixed(2) },
+        metadata: {
+          totalAmount: sale.totalAmount.toFixed(2),
+          representativeId: sale.representativeId,
+          representativeRate: sale.representativeRate?.toFixed(2) ?? null,
+          rateOverrideByUserId: input.representativeRate === undefined ? null : context.userId,
+        },
       },
     });
 
@@ -392,6 +449,10 @@ export async function addSalePayment(
         status: input.status,
         amount,
         dueDate: input.dueDate ?? null,
+        chequeBank: input.chequeBank ?? null,
+        chequeNumber: input.chequeNumber ?? null,
+        chequeHolder: input.chequeHolder ?? null,
+        chequeDepositAt: input.chequeDepositAt ?? null,
         settledAt: input.status === "PAID" ? new Date() : null,
       },
     });
@@ -410,6 +471,7 @@ export async function addSalePayment(
           method: payment.method,
           status: payment.status,
           amount: payment.amount.toFixed(2),
+          chequeNumber: payment.chequeNumber,
         },
       },
     });

@@ -11,6 +11,10 @@ const money = z
   .transform((value) => (typeof value === "number" ? value.toString() : value.trim().replace(",", ".")))
   .refine((value) => /^\d{1,12}(?:\.\d{1,2})?$/.test(value) && Number(value) > 0, "Valor inválido.");
 
+const percentage = z.union([z.string(), z.number()])
+  .transform((value) => String(value).trim().replace(",", "."))
+  .refine((value) => /^(?:100(?:\.0{1,2})?|\d{1,2}(?:\.\d{1,2})?)$/.test(value), "Percentual inválido.");
+
 const saleItems = z.array(
   z.object({
     productId: z.string().cuid(),
@@ -25,6 +29,8 @@ export const clientSellerAssignmentSchema = z.object({
 export const saleCreateSchema = z.object({
   clientId: z.string().cuid(),
   sellerMembershipId: z.string().cuid().optional(),
+  representativeId: z.string().cuid().nullable().optional(),
+  representativeRate: percentage.optional(),
   channel: z.nativeEnum(SalesChannel),
   items: saleItems,
 });
@@ -32,6 +38,8 @@ export const saleCreateSchema = z.object({
 export const saleQuoteUpdateSchema = z
   .object({
     sellerMembershipId: z.string().cuid().optional(),
+    representativeId: z.string().cuid().nullable().optional(),
+    representativeRate: percentage.optional(),
     channel: z.nativeEnum(SalesChannel).optional(),
     items: saleItems.optional(),
   })
@@ -43,14 +51,26 @@ export const salePaymentCreateSchema = z
     status: z.nativeEnum(PaymentStatus),
     amount: money,
     dueDate: z.string().datetime({ offset: true }).transform((value) => new Date(value)).nullable().optional(),
+    chequeBank: z.string().trim().max(120).nullable().optional(),
+    chequeNumber: z.string().trim().max(60).nullable().optional(),
+    chequeHolder: z.string().trim().max(200).nullable().optional(),
+    chequeDepositAt: z.string().datetime({ offset: true }).transform((value) => new Date(value)).nullable().optional(),
   })
   .superRefine((value, context) => {
-    const supportsDueDate = value.method === PaymentMethod.BOLETO || value.method === PaymentMethod.CHEQUE;
+    const supportsDueDate = value.method === PaymentMethod.BOLETO || value.method === PaymentMethod.CHEQUE || value.method === PaymentMethod.VALE;
     if (value.dueDate && !supportsDueDate) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["dueDate"],
-        message: "Vencimento só pode ser informado para boleto ou cheque.",
+        message: "Vencimento só pode ser informado para boleto, cheque ou vale.",
+      });
+    }
+    if (value.method !== PaymentMethod.CHEQUE &&
+      (value.chequeBank || value.chequeNumber || value.chequeHolder || value.chequeDepositAt)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["chequeNumber"],
+        message: "Campos do cheque só podem ser informados no pagamento por cheque.",
       });
     }
   });
