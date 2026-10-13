@@ -233,9 +233,16 @@ a {
 }
 
 .erp-brand-mark {
+  display: grid;
+  place-items: center;
   width: 32px;
   height: 32px;
+  border-radius: 8px;
+  background: var(--erp-gold);
+  color: #fff;
+  font-family: Georgia, serif;
   font-size: 15px;
+  font-weight: 700;
 }
 
 .erp-brand strong {
