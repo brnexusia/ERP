@@ -55,6 +55,14 @@ async function main() {
   assert.equal(login.status, 200);
   const cookie = cookiePair(login.headers.get("set-cookie"));
 
+  // Verify the sales workspace is exposed only to authenticated tenant users.
+  const salesPage = await requestJson("/sales", cookie);
+  assert.equal(salesPage.status, 200, "Sales & Orders page must be available after login.");
+  assert.match(await salesPage.text(), /Vendas &amp; Pedidos|Vendas & Pedidos/);
+  const blockedPage = await fetch(`${BASE_URL}/sales`, { redirect: "manual" });
+  assert.ok([302, 303, 307, 308].includes(blockedPage.status),
+    "Sales workspace must redirect an anonymous visitor.");
+
   let clientId: string | null = null;
   let representativeId: string | null = null;
   let secondSaleId: string | null = null;
