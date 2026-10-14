@@ -454,6 +454,11 @@ export function SalesWorkspace({ canWrite }: { canWrite: boolean }) {
             </div>
             <div className="sales-detail-actions">
               <span className={"status-chip sales-stage-" + selected.stage.toLowerCase()}>{stageText[selected.stage]}</span>
+              {selected.stage !== "QUOTE" && (
+                <a className="secondary-button" href={`/api/sales/${selected.id}/packing-slip`}>
+                  Baixar romaneio PDF
+                </a>
+              )}
               <button type="button" className="secondary-button" onClick={() => {setSelectedId(null);setEditQuote(false);}}>Fechar detalhes</button>
             </div>
           </div>
