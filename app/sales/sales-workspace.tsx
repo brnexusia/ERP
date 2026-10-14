@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FulfillmentPanel } from "@/app/sales/fulfillment-panel";
 
 type Stage = "QUOTE" | "ORDER" | "PAID";
 type Channel = "WHATSAPP" | "SITE" | "PHYSICAL_STORE";
@@ -498,6 +499,10 @@ export function SalesWorkspace({ canWrite }: { canWrite: boolean }) {
                 Confirmar pedido
               </button>}
             </div>
+          )}
+
+          {selected.stage !== "QUOTE" && (
+            <FulfillmentPanel key={selected.id} saleId={selected.id} items={selected.items} canWrite={canWrite} />
           )}
 
           {selected.stage !== "QUOTE" && (

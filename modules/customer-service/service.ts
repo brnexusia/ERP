@@ -144,6 +144,23 @@ export async function saveSaleDelivery(
     input.method === DeliveryMethod.CARRIER ? input.deliveryProofUrl ?? null : null;
 
   return db.$transaction(async (tx) => {
+    const latestSale = await tx.sale.findFirst({
+      where: { id: saleId, organizationId: context.organizationId },
+      select: { fulfillmentRequired: true, fulfillment: { select: { status: true } } },
+    });
+    if (!latestSale) throw new CustomerServiceNotFoundError("Venda não encontrada.");
+    const existingDelivery = await tx.saleDelivery.findFirst({
+      where: { organizationId: context.organizationId, saleId },
+      select: { id: true },
+    });
+    // Never retroactively break existing delivery records. All new sales after
+    // migration require two independent item checks before first dispatch.
+    if (latestSale.fulfillmentRequired && !existingDelivery &&
+        latestSale.fulfillment?.status !== "VERIFIED") {
+      throw new CustomerServiceRuleError(
+        "Finalize a separação e a conferência por outro funcionário antes de registrar a entrega.",
+      );
+    }
     const delivery = await tx.saleDelivery.upsert({
       where: { saleId },
       update: {

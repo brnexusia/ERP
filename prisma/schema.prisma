@@ -40,6 +40,11 @@ enum ClientDocumentType {
   CNPJ
 }
 
+enum FulfillmentStatus {
+  SEPARATED
+  VERIFIED
+}
+
 enum SaleStage {
   QUOTE
   ORDER
@@ -122,6 +127,7 @@ model Organization {
   salePayments          SalePayment[]
   supportRecords        SupportRecord[]
   saleDeliveries        SaleDelivery[]
+  saleFulfillments      SaleFulfillment[]
   sellerGoals           SellerGoal[]
   accountPayables       AccountPayable[]
   bankStatementEntries  BankStatementEntry[]
@@ -146,6 +152,8 @@ model User {
   crmEntriesCreated      ClientCrmEntry[]        @relation("CrmEntryCreator")
   supportRecordsCreated  SupportRecord[]         @relation("SupportRecordCreator")
   sellerGoalsCreated     SellerGoal[]            @relation("SellerGoalCreator")
+  fulfillmentsSeparated SaleFulfillment[] @relation("FulfillmentSeparator")
+  fulfillmentsVerified  SaleFulfillment[] @relation("FulfillmentVerifier")
 }
 
 model Membership {
@@ -538,6 +546,7 @@ model Sale {
   representativeId   String?
   representativeRate Decimal?     @db.Decimal(5, 2)
   sellerCommissionRate Decimal? @db.Decimal(5, 2)
+  fulfillmentRequired Boolean @default(true)
   stage              SaleStage    @default(QUOTE)
   channel            SalesChannel
   totalAmount        Decimal      @default(0) @db.Decimal(14, 2)
@@ -555,6 +564,7 @@ model Sale {
   payments       SalePayment[]
   supportRecords SupportRecord[]
   delivery       SaleDelivery?
+  fulfillment    SaleFulfillment?
 
   @@index([organizationId, stage, createdAt])
   @@index([organizationId, clientId, createdAt])
@@ -627,6 +637,28 @@ model SupportRecord {
   @@index([organizationId, clientId, createdAt])
   @@index([organizationId, saleId, createdAt])
   @@index([organizationId, kind, createdAt])
+}
+
+model SaleFulfillment {
+  id              String            @id @default(cuid())
+  organizationId  String
+  saleId          String            @unique
+  status          FulfillmentStatus
+  separationItems Json
+  verificationItems Json?
+  separatedByUserId String
+  verifiedByUserId String?
+  separatedAt     DateTime         @default(now())
+  verifiedAt      DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sale         Sale         @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  separatedBy  User         @relation("FulfillmentSeparator", fields: [separatedByUserId], references: [id], onDelete: Restrict)
+  verifiedBy   User?        @relation("FulfillmentVerifier", fields: [verifiedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, status, createdAt])
 }
 
 model SaleDelivery {
