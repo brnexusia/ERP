@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { db } from "../lib/db";
 import { verifySeparatedSale } from "../modules/sales/fulfillment";
+import { buildPackingSlipPdf } from "../modules/sales/packing-slip-pdf";
 
 const BASE_URL = process.env.APP_URL ?? "http://127.0.0.1:3000";
 
@@ -50,6 +51,33 @@ async function main() {
   });
   assert.equal(login.status, 200);
   const cookie = cookiePair(login.headers.get("set-cookie"));
+
+  const multiPage = buildPackingSlipPdf({
+    organization: "Atacado de Homologacao",
+    saleId: "pedido-multi-pagina",
+    orderedAt: new Date("2026-10-14T12:00:00Z"),
+    createdAt: new Date("2026-10-14T11:00:00Z"),
+    client: "Cliente Comercio de Bijuterias",
+    seller: "Vendedora Smoke",
+    address: "Rua da Confiabilidade, 99 - Centro - Salvador BA",
+    status: "SEPARATED",
+    separatedBy: "Operador A",
+    items: Array.from({ length: 80 }, (_, index) => ({
+      sku: "REF-" + String(index + 1).padStart(3, "0"),
+      description: "Produto de conferência código " + (index + 1) +
+        " com descrição extensível e informações de lote",
+      quantity: "12.000",
+    })),
+  });
+  const rawPdf = multiPage.toString("latin1");
+  assert.ok(rawPdf.startsWith("%PDF-1.4"), "Arquivo deve ser PDF real.");
+  assert.ok(rawPdf.includes("xref") && rawPdf.includes("%%EOF"), "PDF deve ter referências e trailer.");
+  assert.ok((rawPdf.match(/\/Type \/Page\b/g) ?? []).length >= 2,
+    "Romaneio com muitos itens deve ser paginado.");
+  assert.ok(rawPdf.includes("Pagina 2/"), "Páginas precisam ser numeradas.");
+  assert.ok(!rawPdf.includes("preco") && !rawPdf.includes("costPrice"),
+    "Romaneio nao deve carregar valores privados.");
+  console.log("✓ PDF multipágina real, com paginação e sem dados financeiros");
 
   let clientId: string | null = null;
   let categoryId: string | null = null;
@@ -120,6 +148,13 @@ async function main() {
     assert.equal(quoteResponse.status, 201);
     saleId = (await quoteResponse.json()).sale.id;
 
+    const forbiddenRomaneio = await requestJson(`/api/sales/${saleId}/packing-slip`, cookie);
+    assert.equal(forbiddenRomaneio.status, 422,
+      "Romaneio não deve ser gerado para orçamento não confirmado.");
+
+    const anonymousRomaneio = await fetch(`${BASE_URL}/api/sales/${saleId}/packing-slip`, { redirect: "manual" });
+    assert.equal(anonymousRomaneio.status, 401, "Romaneio exige autenticação.");
+
     const quoteDeliveryResponse = await requestJson(`/api/sales/${saleId}/delivery`, cookie, {
       method: "PUT",
       body: {
@@ -153,6 +188,17 @@ async function main() {
 
     const orderResponse = await requestJson(`/api/sales/${saleId}/order`, cookie, { method: "POST" });
     assert.equal(orderResponse.status, 200);
+    const pdfResponse = await requestJson(`/api/sales/${saleId}/packing-slip`, cookie);
+    assert.equal(pdfResponse.status, 200, "Romaneio de pedido deve ser emitido.");
+    assert.match(pdfResponse.headers.get("content-type") ?? "", /application\/pdf/);
+    assert.match(pdfResponse.headers.get("content-disposition") ?? "", /attachment/);
+    assert.match(pdfResponse.headers.get("cache-control") ?? "", /no-store/);
+    const binary = Buffer.from(await pdfResponse.arrayBuffer());
+    assert.ok(binary.toString("latin1").startsWith("%PDF-1.4"));
+    assert.ok(binary.toString("latin1").includes("Cliente Suporte Smoke"));
+    assert.ok(binary.toString("latin1").includes("Produto Support Smoke"));
+
+
 
     const orderBody = await orderResponse.json();
     const saleItemId = orderBody.sale.items[0].id as string;
@@ -280,6 +326,10 @@ async function main() {
     assert.equal(crossTenantSupport.status, 404);
     const crossTenantDelivery = await requestJson(`/api/sales/${saleId}/delivery`, cookie);
     assert.equal(crossTenantDelivery.status, 404);
+    const crossTenantPackingSlip = await requestJson(`/api/sales/${saleId}/packing-slip`, cookie);
+    assert.equal(crossTenantPackingSlip.status, 404,
+      "Romaneio não pode consultar pedido de outra empresa.");
+
     const crossTenantFulfillment = await requestJson(`/api/sales/${saleId}/fulfillment`, cookie);
     assert.equal(crossTenantFulfillment.status, 404);
 
