@@ -2598,3 +2598,41 @@ a {
   .sales-detail-meta, .sales-payment-summary { grid-template-columns: 1fr; }
   .sales-quote-footer > button { width: 100%; }
 }
+
+/* Módulo 2 · item-by-item shipment verification */
+.sales-fulfillment {
+  padding-top: 18px;
+  margin-top: 20px;
+  border-top: 1px solid var(--erp-line);
+}
+.sales-fulfillment .panel-heading { margin-bottom: 12px; }
+.sales-fulfillment-history {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  font-size: 10px;
+  color: var(--erp-muted);
+}
+.sales-fulfillment-history strong { color: var(--erp-text); }
+.sales-fulfillment-form { display: grid; gap: 12px; }
+.sales-fulfillment-form > button { justify-self: end; }
+.sales-fulfillment-form input[type="number"] {
+  max-width: 130px;
+  min-width: 90px;
+  height: 35px;
+  border: 1px solid var(--erp-line-strong);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--erp-text);
+  font-size: 11px;
+  padding: 0 10px;
+}
+.sales-fulfillment-form input[type="number"]:focus-visible {
+  outline: 2px solid var(--erp-gold);
+  outline-offset: 1px;
+}
+@media (max-width: 520px) {
+  .sales-fulfillment-form > button { width: 100%; }
+  .sales-fulfillment-form input[type="number"] { max-width: 100px; }
+}
