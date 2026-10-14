@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { db } from "../lib/db";
+import { verifySeparatedSale } from "../modules/sales/fulfillment";
 
 const BASE_URL = process.env.APP_URL ?? "http://127.0.0.1:3000";
 
@@ -153,6 +154,53 @@ async function main() {
     const orderResponse = await requestJson(`/api/sales/${saleId}/order`, cookie, { method: "POST" });
     assert.equal(orderResponse.status, 200);
 
+    const orderBody = await orderResponse.json();
+    const saleItemId = orderBody.sale.items[0].id as string;
+    const saleQty = String(orderBody.sale.items[0].quantity);
+    assert.equal(orderBody.sale.fulfillmentRequired, true);
+
+    const blockedNewDispatch = await requestJson(`/api/sales/${saleId}/delivery`, cookie, {
+      method: "PUT", body: { method: "PICKUP", pickupRegisteredAt: "2026-10-14T15:00:00.000Z" },
+    });
+    assert.equal(blockedNewDispatch.status, 422, "Entrega sem conferência deve ser bloqueada.");
+
+    const invalidPack = await requestJson(`/api/sales/${saleId}/fulfillment/separate`, cookie, {
+      method: "POST", body: { items: [{ saleItemId, quantity: "2" }] },
+    });
+    assert.equal(invalidPack.status, 422, "Separação com quantidade diferente deve ser recusada.");
+
+    const packed = await requestJson(`/api/sales/${saleId}/fulfillment/separate`, cookie, {
+      method: "POST", body: { items: [{ saleItemId, quantity: saleQty }] },
+    });
+    assert.equal(packed.status, 200);
+    const packing = (await packed.json()).fulfillment;
+    assert.equal(packing.status, "SEPARATED");
+    const repeatedPack = await requestJson(`/api/sales/${saleId}/fulfillment/separate`, cookie, {
+      method: "POST", body: { items: [{ saleItemId, quantity: saleQty }] },
+    });
+    assert.equal(repeatedPack.status, 422, "Separação duplicada deve ser recusada.");
+
+    const selfChecked = await requestJson(`/api/sales/${saleId}/fulfillment/verify`, cookie, {
+      method: "POST", body: { items: [{ saleItemId, quantity: saleQty }] },
+    });
+    assert.equal(selfChecked.status, 422, "A mesma pessoa não pode conferir a própria separação.");
+
+    const verified = await verifySeparatedSale(
+      { organizationId: organization.id, userId: seller.id, role: "SELLER" },
+      saleId!, [{ saleItemId, quantity: saleQty }],
+    );
+    assert.equal(verified.status, "VERIFIED");
+    assert.equal(verified.separatedByUserId, admin.id);
+    assert.equal(verified.verifiedByUserId, seller.id);
+
+    const checkView = await requestJson(`/api/sales/${saleId}/fulfillment`, cookie);
+    assert.equal(checkView.status, 200);
+    assert.equal((await checkView.json()).fulfillment.status, "VERIFIED");
+    const repeatedCheck = await requestJson(`/api/sales/${saleId}/fulfillment/verify`, cookie, {
+      method: "POST", body: { items: [{ saleItemId, quantity: saleQty }] },
+    });
+    assert.equal(repeatedCheck.status, 422, "Conferência encerrada não deve aceitar duplicação.");
+
     const pickupAt = "2026-09-15T20:00:00.000-03:00";
     const pickupResponse = await requestJson(`/api/sales/${saleId}/delivery`, cookie, {
       method: "PUT",
@@ -232,6 +280,8 @@ async function main() {
     assert.equal(crossTenantSupport.status, 404);
     const crossTenantDelivery = await requestJson(`/api/sales/${saleId}/delivery`, cookie);
     assert.equal(crossTenantDelivery.status, 404);
+    const crossTenantFulfillment = await requestJson(`/api/sales/${saleId}/fulfillment`, cookie);
+    assert.equal(crossTenantFulfillment.status, 404);
 
     console.log("✓ atendimento, pós-venda, reclamações e SAC registrados no histórico do cliente");
     console.log("✓ suporte vinculado à venda sem quebrar o histórico comercial");
