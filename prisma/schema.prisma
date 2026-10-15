@@ -40,6 +40,12 @@ enum ClientDocumentType {
   CNPJ
 }
 
+enum DiscountApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum FulfillmentStatus {
   SEPARATED
   VERIFIED
@@ -128,6 +134,7 @@ model Organization {
   supportRecords        SupportRecord[]
   saleDeliveries        SaleDelivery[]
   saleFulfillments      SaleFulfillment[]
+  saleDiscountRequests  SaleDiscountRequest[]
   sellerGoals           SellerGoal[]
   accountPayables       AccountPayable[]
   bankStatementEntries  BankStatementEntry[]
@@ -154,6 +161,8 @@ model User {
   sellerGoalsCreated     SellerGoal[]            @relation("SellerGoalCreator")
   fulfillmentsSeparated SaleFulfillment[] @relation("FulfillmentSeparator")
   fulfillmentsVerified  SaleFulfillment[] @relation("FulfillmentVerifier")
+  discountRequestsCreated SaleDiscountRequest[] @relation("DiscountRequester")
+  discountRequestsDecided SaleDiscountRequest[] @relation("DiscountApprover")
 }
 
 model Membership {
@@ -546,6 +555,7 @@ model Sale {
   representativeId   String?
   representativeRate Decimal?     @db.Decimal(5, 2)
   sellerCommissionRate Decimal? @db.Decimal(5, 2)
+  discountAmount      Decimal @default(0) @db.Decimal(14, 2)
   fulfillmentRequired Boolean @default(true)
   stage              SaleStage    @default(QUOTE)
   channel            SalesChannel
@@ -565,6 +575,7 @@ model Sale {
   supportRecords SupportRecord[]
   delivery       SaleDelivery?
   fulfillment    SaleFulfillment?
+  discountRequests SaleDiscountRequest[]
 
   @@index([organizationId, stage, createdAt])
   @@index([organizationId, clientId, createdAt])
@@ -637,6 +648,30 @@ model SupportRecord {
   @@index([organizationId, clientId, createdAt])
   @@index([organizationId, saleId, createdAt])
   @@index([organizationId, kind, createdAt])
+}
+
+model SaleDiscountRequest {
+  id              String @id @default(cuid())
+  organizationId  String
+  saleId          String
+  status          DiscountApprovalStatus @default(PENDING)
+  percent         Decimal @db.Decimal(5, 2)
+  baseAmount      Decimal @db.Decimal(14, 2)
+  discountAmount  Decimal @db.Decimal(14, 2)
+  reason          String
+  requestedByUserId String
+  decidedByUserId String?
+  decisionReason  String?
+  createdAt       DateTime @default(now())
+  decidedAt       DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sale         Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  requestedBy  User @relation("DiscountRequester", fields: [requestedByUserId], references: [id], onDelete: Restrict)
+  decidedBy    User? @relation("DiscountApprover", fields: [decidedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, saleId, createdAt])
+  @@index([organizationId, status, createdAt])
 }
 
 model SaleFulfillment {

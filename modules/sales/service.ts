@@ -294,14 +294,20 @@ export async function updateQuote(
 ) {
   assertPermission(context.role, "sales:write");
 
-  return db.$transaction(async (tx) => {
+  return runSerializable(async (tx) => {
     const current = await tx.sale.findFirst({
       where: { id: saleId, organizationId: context.organizationId },
-      include: { items: true },
+      include: { items: true, discountRequests: {
+        where: { status: { in: ["PENDING", "APPROVED"] } },
+        select: { id: true, status: true },
+      } },
     });
     if (!current) throw new SaleNotFoundError();
     if (current.stage !== "QUOTE") {
       throw new SaleRuleError("Somente orçamentos podem ter itens, canal ou vendedora alterados.");
+    }
+    if (current.discountRequests.length > 0 || current.discountAmount.gt(0)) {
+      throw new SaleRuleError("Desconto pendente ou aprovado: decida a solicitação antes de editar o orçamento. Orçamento com desconto aprovado não pode ser alterado.");
     }
 
     if (input.sellerMembershipId) {
@@ -366,11 +372,17 @@ export async function confirmOrder(context: ClientAccessContext, saleId: string)
   return runSerializable(async (tx) => {
     const sale = await tx.sale.findFirst({
       where: { id: saleId, organizationId: context.organizationId },
-      include: { items: true },
+      include: { items: true, discountRequests: {
+        where: { status: "PENDING" },
+        select: { id: true },
+      } },
     });
     if (!sale) throw new SaleNotFoundError();
     if (sale.stage !== "QUOTE") {
       throw new SaleRuleError("Apenas um orçamento pode evoluir para pedido.");
+    }
+    if (sale.discountRequests.length) {
+      throw new SaleRuleError("O desconto solicitado precisa ser aprovado ou recusado antes de confirmar o pedido.");
     }
     if (sale.items.length === 0 || sale.totalAmount.lte(0)) {
       throw new SaleRuleError("O orçamento precisa ter produtos e valor antes de virar pedido.");

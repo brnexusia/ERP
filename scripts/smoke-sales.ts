@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { db } from "../lib/db";
+import { decideSaleDiscount } from "../modules/sales/discounts";
 
 const BASE_URL = process.env.APP_URL ?? "http://127.0.0.1:3000";
 
@@ -66,6 +67,7 @@ async function main() {
   let clientId: string | null = null;
   let representativeId: string | null = null;
   let secondSaleId: string | null = null;
+  let discountSaleId: string | null = null;
   let categoryId: string | null = null;
   let productId: string | null = null;
   let saleId: string | null = null;
@@ -350,6 +352,114 @@ async function main() {
 
     console.log("✓ representante por venda, percentual negociado e pagamentos cash/vale validados");
 
+    // Safe discounted-order flow. No mutable prices until management approval.
+    const discountQuoteResponse = await requestJson("/api/sales", cookie, {
+      method: "POST",
+      body: { clientId, channel: "WHATSAPP", items: [{ productId, quantity: "1" }] },
+    });
+    assert.equal(discountQuoteResponse.status, 201);
+    const discountQuote = (await discountQuoteResponse.json()).sale;
+    discountSaleId = discountQuote.id;
+    assert.equal(Number(discountQuote.totalAmount).toFixed(2), "29.90");
+    assert.equal(Number(discountQuote.discountAmount), 0);
+
+    const invalidDiscount = await requestJson(`/api/sales/${discountSaleId}/discounts`, cookie, {
+      method: "POST", body: { percent: "100", reason: "Desconto total não permitido" },
+    });
+    assert.equal(invalidDiscount.status, 400, "Desconto 100% não pode ser solicitado.");
+
+    const requestedResponse = await requestJson(`/api/sales/${discountSaleId}/discounts`, cookie, {
+      method: "POST", body: { percent: "10", reason: "Campanha de negociação autorizável" },
+    });
+    assert.equal(requestedResponse.status, 201, "Solicitação de desconto deve ser criada.");
+    const firstRequest = (await requestedResponse.json()).discount;
+    assert.equal(firstRequest.status, "PENDING");
+    assert.equal(Number(firstRequest.discountAmount).toFixed(2), "2.99");
+
+    const duplicateRequest = await requestJson(`/api/sales/${discountSaleId}/discounts`, cookie, {
+      method: "POST", body: { percent: "11", reason: "Tentativa duplicada" },
+    });
+    assert.equal(duplicateRequest.status, 422);
+    const blockedOrder = await requestJson(`/api/sales/${discountSaleId}/order`, cookie, { method: "POST" });
+    assert.equal(blockedOrder.status, 422, "Pedido não deve avançar com desconto pendente.");
+    const blockedEdit = await requestJson(`/api/sales/${discountSaleId}`, cookie, {
+      method: "PATCH", body: { channel: "SITE" },
+    });
+    assert.equal(blockedEdit.status, 422, "Orçamento não pode ser editado com desconto pendente.");
+
+    const sellerCannotApprove = await decideSaleDiscount(
+      { organizationId: organization.id, userId: seller.id, role: "SELLER" },
+      discountSaleId!, firstRequest.id, { decision: "APPROVE" },
+    ).then(() => false, () => true);
+    assert.equal(sellerCannotApprove, true, "Vendedora não pode aprovar descontos.");
+
+    const rejectResponse = await requestJson(
+      `/api/sales/${discountSaleId}/discounts/${firstRequest.id}/decision`, cookie,
+      { method: "POST", body: { decision: "REJECT", reason: "Aguardando nova proposta" } },
+    );
+    assert.equal(rejectResponse.status, 200);
+    const afterReject = await db.sale.findUniqueOrThrow({ where: { id: discountSaleId! } });
+    assert.equal(afterReject.totalAmount.toFixed(2), "29.90");
+    assert.equal(afterReject.discountAmount.toFixed(2), "0.00");
+
+    const allowedEdit = await requestJson(`/api/sales/${discountSaleId}`, cookie, {
+      method: "PATCH", body: { channel: "SITE" },
+    });
+    assert.equal(allowedEdit.status, 200, "Rejeição deve liberar edição.");
+    const secondRequestResponse = await requestJson(`/api/sales/${discountSaleId}/discounts`, cookie, {
+      method: "POST", body: { percent: "10", reason: "Condição final da negociação" },
+    });
+    assert.equal(secondRequestResponse.status, 201);
+    const secondRequest = (await secondRequestResponse.json()).discount;
+
+    const approveResponse = await requestJson(
+      `/api/sales/${discountSaleId}/discounts/${secondRequest.id}/decision`, cookie,
+      { method: "POST", body: { decision: "APPROVE" } },
+    );
+    assert.equal(approveResponse.status, 200);
+    const approvedRequest = (await approveResponse.json()).discount;
+    assert.equal(approvedRequest.status, "APPROVED");
+
+    const doubleApproval = await requestJson(
+      `/api/sales/${discountSaleId}/discounts/${secondRequest.id}/decision`, cookie,
+      { method: "POST", body: { decision: "APPROVE" } },
+    );
+    assert.equal(doubleApproval.status, 422, "Aprovação duplicada não pode cobrar desconto duas vezes.");
+    const pricedQuote = await db.sale.findUniqueOrThrow({
+      where: { id: discountSaleId! },
+      include: { items: true },
+    });
+    assert.equal(pricedQuote.discountAmount.toFixed(2), "2.99");
+    assert.equal(pricedQuote.totalAmount.toFixed(2), "26.91");
+    assert.equal(pricedQuote.items[0].lineTotal.toFixed(2), "29.90",
+      "O preço bruto dos produtos deve ser preservado.");
+
+    const afterApprovalEdit = await requestJson(`/api/sales/${discountSaleId}`, cookie, {
+      method: "PATCH", body: { items: [{ productId, quantity: "2" }] },
+    });
+    assert.equal(afterApprovalEdit.status, 422, "Aprovação deve congelar o orçamento.");
+    const discountedOrder = await requestJson(`/api/sales/${discountSaleId}/order`, cookie, {
+      method: "POST",
+    });
+    assert.equal(discountedOrder.status, 200);
+    assert.equal((await discountedOrder.json()).sale.totalAmount, "26.91");
+    const paymentForNet = await requestJson(`/api/sales/${discountSaleId}/payments`, cookie, {
+      method: "POST", body: { method: "CASH", status: "PAID", amount: "26.91" },
+    });
+    assert.equal(paymentForNet.status, 201);
+    assert.equal((await paymentForNet.json()).result.sale.stage, "PAID");
+    const afterPaymentDiscount = await db.sale.findUniqueOrThrow({ where: { id: discountSaleId! } });
+    assert.equal(afterPaymentDiscount.totalAmount.toFixed(2), "26.91");
+    const readDiscount = await requestJson(`/api/sales/${discountSaleId}/discounts`, cookie);
+    assert.equal(readDiscount.status, 200);
+    assert.equal((await readDiscount.json()).requests.length, 2);
+    const auditApprovals = await db.auditLog.count({
+      where: { organizationId: organization.id, action: "SALE_DISCOUNT_APPROVE",
+        entityType: "SaleDiscountRequest", entityId: secondRequest.id },
+    });
+    assert.equal(auditApprovals, 1, "Aprovação deve ter trilha única de auditoria.");
+    console.log("✓ descontos auditados: requisição, rejeição, aprovação, bloqueio, pagamento líquido e duplicação");
+
     const saleCount = await db.sale.count({ where: { id: saleId!, organizationId: organization.id } });
     assert.equal(saleCount, 1, "Orçamento, pedido e pagamento devem permanecer no mesmo registro de venda.");
 
@@ -369,6 +479,9 @@ async function main() {
 
     const crossTenantResponse = await requestJson(`/api/sales/${saleId}`, cookie);
     assert.equal(crossTenantResponse.status, 404, "Venda de outra empresa deveria retornar 404.");
+    const crossTenantDiscounts = await requestJson(`/api/sales/${discountSaleId}/discounts`, cookie);
+    assert.equal(crossTenantDiscounts.status, 404,
+      "Descontos de outra organização não podem ser consultados.");
 
     console.log("✓ vínculo cliente-vendedora validado");
     console.log("✓ orçamento -> pedido -> pagamento no mesmo registro validado");
@@ -382,8 +495,10 @@ async function main() {
     if (secondOrganizationId) {
       await db.organization.deleteMany({ where: { id: secondOrganizationId } });
     }
-    if (saleId || secondSaleId) {
-      await db.sale.deleteMany({ where: { id: { in: [saleId, secondSaleId].filter((id): id is string => id !== null) } } });
+    if (saleId || secondSaleId || discountSaleId) {
+      await db.sale.deleteMany({
+        where: { id: { in: [saleId, secondSaleId, discountSaleId].filter((id): id is string => id !== null) } },
+      });
     }
     if (productId) await db.product.deleteMany({ where: { id: productId, organizationId: organization.id } });
     if (categoryId) await db.productCategory.deleteMany({ where: { id: categoryId, organizationId: organization.id } });
