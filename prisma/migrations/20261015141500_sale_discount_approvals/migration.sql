@@ -4,7 +4,7 @@ CREATE TYPE "DiscountApprovalStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED')
 ALTER TABLE "Sale"
   ADD COLUMN "discountAmount" DECIMAL(14,2) NOT NULL DEFAULT 0;
 ALTER TABLE "Sale"
-  ADD CONSTRAINT "sale_discount_nonnegative" CHECK ("discountAmount" >= 0 AND "discountAmount" < "totalAmount" OR "discountAmount" = 0);
+  ADD CONSTRAINT "sale_discount_nonnegative" CHECK ("discountAmount" >= 0);
 
 CREATE TABLE "SaleDiscountRequest" (
   "id" TEXT NOT NULL,
