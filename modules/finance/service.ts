@@ -523,16 +523,50 @@ export async function getFinancialReport(context: FinanceAccessContext, period: 
     }),
   ]);
 
-  const inflow = realizedReceipts._sum.amount ?? new Prisma.Decimal(0);
-  const outflow = realizedPayments._sum.amount ?? new Prisma.Decimal(0);
+  const [chequeReturns, periodReturns, periodRecoveries] = await Promise.all([
+    db.saleChequeReturn.findMany({
+      where: { organizationId: context.organizationId },
+      include: { payment: { select: { amount: true } },
+        recoveries: { select: { amount: true } } },
+    }),
+    db.saleChequeReturn.findMany({
+      where: {
+        organizationId: context.organizationId,
+        ...(settledAt ? { returnedAt: settledAt } : {}),
+      },
+      select: { payment: { select: { amount: true } } },
+    }),
+    db.saleChequeRecovery.findMany({
+      where: {
+        organizationId: context.organizationId,
+        ...(settledAt ? { receivedAt: settledAt } : {}),
+      },
+      select: { amount: true },
+    }),
+  ]);
+  const chequeOutstanding = chequeReturns.map((item) =>
+    item.payment.amount.sub(decimalSum(item.recoveries.map((row) => row.amount))));
+  const openReturns = chequeOutstanding.filter((amount) => amount.gt(0));
+  const outstanding = decimalSum(openReturns);
+  const reversedDuringPeriod = decimalSum(periodReturns.map((item) => item.payment.amount));
+  const recoveredDuringPeriod = decimalSum(periodRecoveries.map((item) => item.amount));
+  const inflow = (realizedReceipts._sum.amount ?? new Prisma.Decimal(0)).add(recoveredDuringPeriod);
+  const outflow = (realizedPayments._sum.amount ?? new Prisma.Decimal(0)).add(reversedDuringPeriod);
 
   return {
     period,
     accountsReceivable: {
-      pendingCount: receivableOpen._count._all,
-      pendingAmount: receivableOpen._sum.amount ?? new Prisma.Decimal(0),
-      overdueCount: receivableOverdue._count._all,
-      overdueAmount: receivableOverdue._sum.amount ?? new Prisma.Decimal(0),
+      pendingCount: receivableOpen._count._all + openReturns.length,
+      pendingAmount: (receivableOpen._sum.amount ?? new Prisma.Decimal(0)).add(outstanding),
+      overdueCount: receivableOverdue._count._all + openReturns.length,
+      overdueAmount: (receivableOverdue._sum.amount ?? new Prisma.Decimal(0)).add(outstanding),
+    },
+    chequeReturns: {
+      totalCount: chequeReturns.length,
+      openCount: openReturns.length,
+      outstandingAmount: outstanding,
+      reversedDuringPeriod,
+      recoveredDuringPeriod,
     },
     accountsPayable: {
       pendingCount: payableOpen._count._all,
@@ -541,9 +575,9 @@ export async function getFinancialReport(context: FinanceAccessContext, period: 
       overdueAmount: payableOverdue._sum.amount ?? new Prisma.Decimal(0),
     },
     cashFlow: {
-      receiptCount: realizedReceipts._count._all,
+      receiptCount: realizedReceipts._count._all + periodRecoveries.length,
       inflow,
-      paymentCount: realizedPayments._count._all,
+      paymentCount: realizedPayments._count._all + periodReturns.length,
       outflow,
       net: inflow.minus(outflow),
     },
