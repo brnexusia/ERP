@@ -46,7 +46,10 @@ function saleInclude() {
       },
       orderBy: { createdAt: "asc" as const },
     },
-    payments: { orderBy: { createdAt: "asc" as const } },
+    payments: {
+      include: { chequeReturn: { select: { id: true } } },
+      orderBy: { createdAt: "asc" as const },
+    },
   };
 }
 
