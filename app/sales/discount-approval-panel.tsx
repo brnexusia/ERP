@@ -24,11 +24,12 @@ const money = (value: number | string) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(value));
 
 export function DiscountApprovalPanel({
-  saleId, canWrite, onChanged,
+  saleId, canWrite, onChanged, onLockChange,
 }: {
   saleId: string;
   canWrite: boolean;
   onChanged: () => Promise<void>;
+  onLockChange: (status: "PENDING" | "APPROVED" | null) => void;
 }) {
   const [data, setData] = useState<DiscountPayload | null>(null);
   const [busy, setBusy] = useState(false);
@@ -39,7 +40,9 @@ export function DiscountApprovalPanel({
     const result = await response.json();
     if (!response.ok) throw new Error(result.error ?? "Não foi possível consultar os descontos.");
     setData(result);
-  }, [saleId]);
+    onLockChange(result.requests.find((discount: Discount) =>
+      discount.status === "PENDING" || discount.status === "APPROVED")?.status ?? null);
+  }, [saleId, onLockChange]);
 
   useEffect(() => {
     let active = true;
@@ -50,13 +53,17 @@ export function DiscountApprovalPanel({
         const response = await fetch(`/api/sales/${saleId}/discounts`, { cache: "no-store" });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error ?? "Não foi possível consultar os descontos.");
-        if (active) setData(result);
+        if (active) {
+          setData(result);
+          onLockChange(result.requests.find((discount: Discount) =>
+            discount.status === "PENDING" || discount.status === "APPROVED")?.status ?? null);
+        }
       } catch (cause) {
         if (active) setError(cause instanceof Error ? cause.message : "Falha ao consultar descontos.");
       }
     })();
     return () => { active = false; };
-  }, [saleId]);
+  }, [saleId, onLockChange]);
 
   async function request(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
