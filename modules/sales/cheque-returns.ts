@@ -136,8 +136,11 @@ export async function recordChequeRecovery(
   });
   if (existing) {
     if (existing.chequeReturn.organizationId !== context.organizationId ||
-        existing.chequeReturn.salePaymentId !== paymentId) {
-      throw new SaleRuleError("Chave de recuperação já utilizada.");
+        existing.chequeReturn.salePaymentId !== paymentId ||
+        !existing.amount.equals(new Prisma.Decimal(input.amount)) ||
+        existing.method !== input.method ||
+        existing.receivedAt.getTime() !== input.receivedAt.getTime()) {
+      throw new SaleRuleError("Chave de recuperação reutilizada com dados diferentes.");
     }
     return existing;
   }
@@ -201,7 +204,10 @@ export async function recordChequeRecovery(
         include: { chequeReturn: { select: { salePaymentId: true, organizationId: true } } },
       });
       if (repeated && repeated.chequeReturn.organizationId === context.organizationId &&
-          repeated.chequeReturn.salePaymentId === paymentId) return repeated;
+          repeated.chequeReturn.salePaymentId === paymentId &&
+          repeated.method === input.method &&
+          repeated.amount.equals(new Prisma.Decimal(input.amount)) &&
+          repeated.receivedAt.getTime() === input.receivedAt.getTime()) return repeated;
     }
     throw error;
   }
