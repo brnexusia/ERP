@@ -95,8 +95,8 @@ async function main() {
     const ret = await request(`/api/sales/${sale.id}/payments/${cheque.id}/return`, cookie, "POST", {
       returnedAt: returnedAt.toISOString(), reason: "Cheque devolvido por falta de fundos",
     });
-    assert.equal(ret.status, 201, await ret.text().catch(() => "failed"));
-    const incident = (await ret.clone().json()).returnedCheque; // Clone after response parse is not allowed; handled below.
+    assert.equal(ret.status, 201);
+    const incident = (await ret.json()).returnedCheque;
     assert.equal(incident.recoveryStatus, "OPEN");
     assert.equal(Number(incident.outstandingAmount), 100);
     const duplicate = await request(`/api/sales/${sale.id}/payments/${cheque.id}/return`, cookie, "POST", {
