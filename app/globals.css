@@ -2636,3 +2636,74 @@ a {
   .sales-fulfillment-form > button { width: 100%; }
   .sales-fulfillment-form input[type="number"] { max-width: 100px; }
 }
+
+/* Módulo 2 — discount approval uses existing Stitch components */
+.sales-discount-panel {
+  border-top: 1px solid var(--erp-line);
+  margin-top: 18px;
+  padding-top: 19px;
+}
+.sales-discount-panel .panel-heading { margin-bottom: 9px; }
+.sales-discount-form {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  margin-top: 14px;
+}
+.sales-discount-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--erp-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+.sales-discount-form input {
+  height: 35px;
+  border: 1px solid var(--erp-line-strong);
+  border-radius: 6px;
+  padding: 0 10px;
+  color: var(--erp-text);
+  background: #fff;
+  font-size: 11px;
+  min-width: 0;
+}
+.sales-discount-history { margin-top: 15px; display: grid; gap: 7px; }
+.sales-discount-history-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  border: 1px solid var(--erp-line);
+  border-radius: 7px;
+  padding: 12px 13px;
+  background: var(--erp-surface-soft);
+}
+.sales-discount-history-row > div:first-child { flex: 1; min-width: 200px; }
+.sales-discount-history-row strong { font-size: 11px; }
+.sales-discount-history-row small {
+  display: block;
+  margin-top: 5px;
+  color: var(--erp-muted);
+  font-size: 9px;
+}
+.sales-discount-history-row > span { color: var(--erp-muted); font-size: 10px; }
+.sales-discount-actions { display: flex; gap: 7px; }
+.sales-discount-totals {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  border: 1px solid var(--erp-line);
+  border-radius: 7px;
+  padding: 12px;
+  background: #f9f7f1;
+  font-size: 10px;
+}
+.sales-discount-totals span { color: var(--erp-muted); }
+.sales-discount-totals strong { color: var(--erp-text); }
+.sales-discount-panel .sales-form-note { margin-top: 12px; }
+@media (max-width: 740px) {
+  .sales-discount-form { grid-template-columns: 1fr; }
+  .sales-discount-form .secondary-button { width: 100%; }
+}
