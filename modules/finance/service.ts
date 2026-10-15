@@ -363,7 +363,10 @@ export async function getCashFlow(context: FinanceAccessContext, period: Finance
     db.saleChequeReturn.findMany({
       where: {
         organizationId: context.organizationId,
-        ...(settledAt ? { returnedAt: settledAt } : {}),
+        ...((period.from || period.to) ? { returnedAt: {
+          ...(period.from ? { gte: period.from } : {}),
+          ...(period.to ? { lte: period.to } : {}),
+        } } : {}),
       },
       include: { payment: { select: { amount: true, sale: { select: { client: { select: { name: true } } } } } } },
       orderBy: { returnedAt: "asc" },
@@ -371,7 +374,10 @@ export async function getCashFlow(context: FinanceAccessContext, period: Finance
     db.saleChequeRecovery.findMany({
       where: {
         organizationId: context.organizationId,
-        ...(settledAt ? { receivedAt: settledAt } : {}),
+        ...((period.from || period.to) ? { receivedAt: {
+          ...(period.from ? { gte: period.from } : {}),
+          ...(period.to ? { lte: period.to } : {}),
+        } } : {}),
       },
       include: { chequeReturn: { select: {
         payment: { select: { sale: { select: { client: { select: { name: true } } } } } },
@@ -532,14 +538,20 @@ export async function getFinancialReport(context: FinanceAccessContext, period: 
     db.saleChequeReturn.findMany({
       where: {
         organizationId: context.organizationId,
-        ...(settledAt ? { returnedAt: settledAt } : {}),
+        ...((period.from || period.to) ? { returnedAt: {
+          ...(period.from ? { gte: period.from } : {}),
+          ...(period.to ? { lte: period.to } : {}),
+        } } : {}),
       },
       select: { payment: { select: { amount: true } } },
     }),
     db.saleChequeRecovery.findMany({
       where: {
         organizationId: context.organizationId,
-        ...(settledAt ? { receivedAt: settledAt } : {}),
+        ...((period.from || period.to) ? { receivedAt: {
+          ...(period.from ? { gte: period.from } : {}),
+          ...(period.to ? { lte: period.to } : {}),
+        } } : {}),
       },
       select: { amount: true },
     }),
