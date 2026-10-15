@@ -259,6 +259,7 @@ export async function reconcileBankStatementEntry(
           organizationId: context.organizationId,
           status: "PAID",
           method: { not: "VALE" },
+          chequeReturn: { is: null },
           settledAt: { not: null },
         },
       });
@@ -340,7 +341,7 @@ export async function getCashFlow(context: FinanceAccessContext, period: Finance
   const settledAt = nullableDateRange(period);
   const paidAt = nullableDateRange(period);
 
-  const [receipts, payments] = await Promise.all([
+  const [receipts, payments, returnedCheques, recoveries] = await Promise.all([
     db.salePayment.findMany({
       where: {
         organizationId: context.organizationId,
@@ -359,10 +360,28 @@ export async function getCashFlow(context: FinanceAccessContext, period: Finance
       },
       orderBy: { paidAt: "asc" },
     }),
+    db.saleChequeReturn.findMany({
+      where: {
+        organizationId: context.organizationId,
+        ...(settledAt ? { returnedAt: settledAt } : {}),
+      },
+      include: { payment: { select: { amount: true, sale: { select: { client: { select: { name: true } } } } } } },
+      orderBy: { returnedAt: "asc" },
+    }),
+    db.saleChequeRecovery.findMany({
+      where: {
+        organizationId: context.organizationId,
+        ...(settledAt ? { receivedAt: settledAt } : {}),
+      },
+      include: { chequeReturn: { select: {
+        payment: { select: { sale: { select: { client: { select: { name: true } } } } } },
+      } } },
+      orderBy: { receivedAt: "asc" },
+    }),
   ]);
 
-  const inflow = decimalSum(receipts.map((item) => item.amount));
-  const outflow = decimalSum(payments.map((item) => item.amount));
+  const inflow = decimalSum([...receipts.map((item) => item.amount), ...recoveries.map((item) => item.amount)]);
+  const outflow = decimalSum([...payments.map((item) => item.amount), ...returnedCheques.map((item) => item.payment.amount)]);
   const entries = [
     ...receipts.map((item) => ({
       direction: "INFLOW" as const,
@@ -379,6 +398,22 @@ export async function getCashFlow(context: FinanceAccessContext, period: Finance
       occurredAt: item.paidAt,
       amount: item.amount,
       description: item.description,
+    })),
+    ...returnedCheques.map((item) => ({
+      direction: "OUTFLOW" as const,
+      source: "CHEQUE_RETURN" as const,
+      sourceId: item.id,
+      occurredAt: item.returnedAt,
+      amount: item.payment.amount,
+      description: `Estorno contábil de cheque devolvido - ${item.payment.sale.client.name}`,
+    })),
+    ...recoveries.map((item) => ({
+      direction: "INFLOW" as const,
+      source: "CHEQUE_RECOVERY" as const,
+      sourceId: item.id,
+      occurredAt: item.receivedAt,
+      amount: item.amount,
+      description: `Recuperação de cheque devolvido - ${item.chequeReturn.payment.sale.client.name}`,
     })),
   ].sort((a, b) => (a.occurredAt?.getTime() ?? 0) - (b.occurredAt?.getTime() ?? 0));
 
