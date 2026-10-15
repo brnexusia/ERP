@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { FulfillmentPanel } from "@/app/sales/fulfillment-panel";
+import { DiscountApprovalPanel } from "@/app/sales/discount-approval-panel";
 
 type Stage = "QUOTE" | "ORDER" | "PAID";
 type Channel = "WHATSAPP" | "SITE" | "PHYSICAL_STORE";
@@ -13,6 +14,7 @@ type Sale = {
   stage: Stage;
   channel: Channel;
   totalAmount: string;
+  discountAmount: string;
   createdAt: string;
   orderedAt: string | null;
   paidAt: string | null;
@@ -122,6 +124,7 @@ export function SalesWorkspace({ canWrite }: { canWrite: boolean }) {
   const [rows, setRows] = useState<QuoteRow[]>([emptyRow(0)]);
   const [keyCounter, setKeyCounter] = useState(1);
   const [editQuote, setEditQuote] = useState(false);
+  const [discountLock, setDiscountLock] = useState<"PENDING" | "APPROVED" | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("PIX");
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("PAID");
   const [loading, setLoading] = useState(true);
@@ -198,6 +201,7 @@ export function SalesWorkspace({ canWrite }: { canWrite: boolean }) {
     setRepresentativeId("");
     setChannel("WHATSAPP");
     setEditQuote(false);
+    setDiscountLock(null);
   }
 
   function useClient(value: string) {
@@ -244,6 +248,10 @@ export function SalesWorkspace({ canWrite }: { canWrite: boolean }) {
   }
 
   function beginEdit(sale: Sale) {
+    if (discountLock) {
+      setError("Orçamento bloqueado por desconto pendente ou aprovado.");
+      return;
+    }
     setShowCreate(false);
     setSelectedId(sale.id);
     setClientId(sale.clientId);
@@ -434,7 +442,7 @@ export function SalesWorkspace({ canWrite }: { canWrite: boolean }) {
                     <td><strong>{currency(sale.totalAmount)}</strong></td>
                     <td><span className={"status-chip sales-stage-" + sale.stage.toLowerCase()}>{stageText[sale.stage]}</span></td>
                     <td><button type="button" className="table-action" onClick={() => {
-                      setSelectedId(sale.id); setEditQuote(false); setShowCreate(false); setError(null);
+                      setSelectedId(sale.id); setEditQuote(false); setDiscountLock(null); setShowCreate(false); setError(null);
                     }}>Detalhes →</button></td>
                   </tr>
                 ))}
@@ -494,13 +502,20 @@ export function SalesWorkspace({ canWrite }: { canWrite: boolean }) {
             </div>
           )}
 
+          <DiscountApprovalPanel
+            key={selected.id}
+            saleId={selected.id}
+            canWrite={canWrite}
+            onChanged={load}
+            onLockChange={setDiscountLock}
+          />
           {selected.stage === "QUOTE" && canWrite && (
             <div className="sales-order-actions">
-              <button className="secondary-button" type="button" disabled={busy}
+              <button className="secondary-button" type="button" disabled={busy || (Boolean(discountLock) && !editQuote)}
                 onClick={() => editQuote ? setEditQuote(false) : beginEdit(selected)}>
                 {editQuote ? "Cancelar edição" : "Editar orçamento"}
               </button>
-              {!editQuote && <button className="primary-button" type="button" disabled={busy} onClick={() => {void confirmSale();}}>
+              {!editQuote && <button className="primary-button" type="button" disabled={busy || discountLock === "PENDING"} onClick={() => {void confirmSale();}}>
                 Confirmar pedido
               </button>}
             </div>
