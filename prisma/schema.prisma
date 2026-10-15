@@ -40,6 +40,13 @@ enum ClientDocumentType {
   CNPJ
 }
 
+enum ChequeRecoveryMethod {
+  PIX
+  CASH
+  CARD
+  TRANSFER
+}
+
 enum DiscountApprovalStatus {
   PENDING
   APPROVED
@@ -135,6 +142,8 @@ model Organization {
   saleDeliveries        SaleDelivery[]
   saleFulfillments      SaleFulfillment[]
   saleDiscountRequests  SaleDiscountRequest[]
+  chequeReturns         SaleChequeReturn[]
+  chequeRecoveries      SaleChequeRecovery[]
   sellerGoals           SellerGoal[]
   accountPayables       AccountPayable[]
   bankStatementEntries  BankStatementEntry[]
@@ -163,6 +172,8 @@ model User {
   fulfillmentsVerified  SaleFulfillment[] @relation("FulfillmentVerifier")
   discountRequestsCreated SaleDiscountRequest[] @relation("DiscountRequester")
   discountRequestsDecided SaleDiscountRequest[] @relation("DiscountApprover")
+  chequeReturnsRecorded SaleChequeReturn[] @relation("ChequeReturnRecorder")
+  chequeRecoveriesRecorded SaleChequeRecovery[] @relation("ChequeRecoveryRecorder")
 }
 
 model Membership {
@@ -623,6 +634,7 @@ model SalePayment {
   organization    Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   sale            Sale                 @relation(fields: [saleId], references: [id], onDelete: Cascade)
   reconciliations BankReconciliation[]
+  chequeReturn    SaleChequeReturn?
 
   @@index([organizationId, saleId, createdAt])
   @@index([organizationId, method, createdAt])
@@ -648,6 +660,43 @@ model SupportRecord {
   @@index([organizationId, clientId, createdAt])
   @@index([organizationId, saleId, createdAt])
   @@index([organizationId, kind, createdAt])
+}
+
+model SaleChequeReturn {
+  id             String @id @default(cuid())
+  organizationId String
+  salePaymentId  String @unique
+  reason         String
+  returnedAt     DateTime
+  recordedByUserId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  payment      SalePayment @relation(fields: [salePaymentId], references: [id], onDelete: Restrict)
+  recordedBy   User @relation("ChequeReturnRecorder", fields: [recordedByUserId], references: [id], onDelete: Restrict)
+  recoveries   SaleChequeRecovery[]
+
+  @@index([organizationId, returnedAt])
+}
+
+model SaleChequeRecovery {
+  id             String @id @default(cuid())
+  organizationId String
+  returnId       String
+  method         ChequeRecoveryMethod
+  amount         Decimal @db.Decimal(14, 2)
+  receivedAt     DateTime
+  idempotencyKey String @unique
+  note           String?
+  recordedByUserId String
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  chequeReturn  SaleChequeReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  recordedBy    User @relation("ChequeRecoveryRecorder", fields: [recordedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, returnId, receivedAt])
 }
 
 model SaleDiscountRequest {

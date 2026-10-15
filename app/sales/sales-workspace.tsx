@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { FulfillmentPanel } from "@/app/sales/fulfillment-panel";
 import { DiscountApprovalPanel } from "@/app/sales/discount-approval-panel";
+import { ChequeReturnsPanel } from "@/app/sales/cheque-returns-panel";
 
 type Stage = "QUOTE" | "ORDER" | "PAID";
 type Channel = "WHATSAPP" | "SITE" | "PHYSICAL_STORE";
@@ -44,6 +45,7 @@ type Sale = {
     chequeNumber: string | null;
     chequeBank: string | null;
     chequeHolder: string | null;
+    chequeReturn?: { id: string } | null;
   }>;
 };
 type Client = {
@@ -107,7 +109,13 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   return payload as T;
 }
 
-export function SalesWorkspace({ canWrite }: { canWrite: boolean }) {
+export function SalesWorkspace({
+  canWrite, canReviewCheques, canManageCheques,
+}: {
+  canWrite: boolean;
+  canReviewCheques: boolean;
+  canManageCheques: boolean;
+}) {
   const [sales, setSales] = useState<Sale[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [sellers, setSellers] = useState<Seller[]>([]);
@@ -543,8 +551,8 @@ export function SalesWorkspace({ canWrite }: { canWrite: boolean }) {
                       <td><strong>{methodText[payment.method]}</strong></td>
                       <td>{currency(payment.amount)}</td>
                       <td>{dateTime(payment.dueDate)}</td>
-                      <td><span className={"status-chip " + (payment.status === "PAID" ? "success" : "warning")}>
-                        {payment.status === "PAID" ? "Quitado" : "Pendente"}
+                      <td><span className={"status-chip " + (payment.chequeReturn ? "warning" : payment.status === "PAID" ? "success" : "warning")}>
+                        {payment.chequeReturn ? "Devolvido" : payment.status === "PAID" ? "Quitado" : "Pendente"}
                       </span></td>
                       <td>{canWrite && selected.stage === "ORDER" && payment.status === "PENDING" &&
                         <button className="table-action" type="button" disabled={busy}
@@ -554,6 +562,11 @@ export function SalesWorkspace({ canWrite }: { canWrite: boolean }) {
                 </table>
                 {selected.payments.length === 0 && <p className="empty-state">Nenhum pagamento registrado.</p>}
               </div>
+
+              {canReviewCheques && selected.payments.some((payment) => payment.method === "CHEQUE") && (
+                <ChequeReturnsPanel key={selected.id} saleId={selected.id}
+                  payments={selected.payments} canManage={canManageCheques} onChanged={load} />
+              )}
 
               {selected.stage === "ORDER" && canWrite && remainingToRegister(selected) > 0 && (
                 <form className="sales-payment-form" onSubmit={addPayment}>

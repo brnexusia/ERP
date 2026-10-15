@@ -13,6 +13,8 @@ export default async function SalesPage() {
     >
       <SalesWorkspace
         canWrite={["OWNER", "ADMIN", "MANAGER", "SELLER"].includes(session.role)}
+        canReviewCheques={["OWNER", "ADMIN", "MANAGER", "FINANCE", "VIEWER"].includes(session.role)}
+        canManageCheques={["OWNER", "ADMIN", "FINANCE"].includes(session.role)}
       />
     </ModuleShell>
   );

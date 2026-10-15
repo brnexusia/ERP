@@ -259,6 +259,7 @@ export async function reconcileBankStatementEntry(
           organizationId: context.organizationId,
           status: "PAID",
           method: { not: "VALE" },
+          chequeReturn: { is: null },
           settledAt: { not: null },
         },
       });
@@ -340,7 +341,7 @@ export async function getCashFlow(context: FinanceAccessContext, period: Finance
   const settledAt = nullableDateRange(period);
   const paidAt = nullableDateRange(period);
 
-  const [receipts, payments] = await Promise.all([
+  const [receipts, payments, returnedCheques, recoveries] = await Promise.all([
     db.salePayment.findMany({
       where: {
         organizationId: context.organizationId,
@@ -359,10 +360,34 @@ export async function getCashFlow(context: FinanceAccessContext, period: Finance
       },
       orderBy: { paidAt: "asc" },
     }),
+    db.saleChequeReturn.findMany({
+      where: {
+        organizationId: context.organizationId,
+        ...((period.from || period.to) ? { returnedAt: {
+          ...(period.from ? { gte: period.from } : {}),
+          ...(period.to ? { lte: period.to } : {}),
+        } } : {}),
+      },
+      include: { payment: { select: { amount: true, sale: { select: { client: { select: { name: true } } } } } } },
+      orderBy: { returnedAt: "asc" },
+    }),
+    db.saleChequeRecovery.findMany({
+      where: {
+        organizationId: context.organizationId,
+        ...((period.from || period.to) ? { receivedAt: {
+          ...(period.from ? { gte: period.from } : {}),
+          ...(period.to ? { lte: period.to } : {}),
+        } } : {}),
+      },
+      include: { chequeReturn: { select: {
+        payment: { select: { sale: { select: { client: { select: { name: true } } } } } },
+      } } },
+      orderBy: { receivedAt: "asc" },
+    }),
   ]);
 
-  const inflow = decimalSum(receipts.map((item) => item.amount));
-  const outflow = decimalSum(payments.map((item) => item.amount));
+  const inflow = decimalSum([...receipts.map((item) => item.amount), ...recoveries.map((item) => item.amount)]);
+  const outflow = decimalSum([...payments.map((item) => item.amount), ...returnedCheques.map((item) => item.payment.amount)]);
   const entries = [
     ...receipts.map((item) => ({
       direction: "INFLOW" as const,
@@ -379,6 +404,22 @@ export async function getCashFlow(context: FinanceAccessContext, period: Finance
       occurredAt: item.paidAt,
       amount: item.amount,
       description: item.description,
+    })),
+    ...returnedCheques.map((item) => ({
+      direction: "OUTFLOW" as const,
+      source: "CHEQUE_RETURN" as const,
+      sourceId: item.id,
+      occurredAt: item.returnedAt,
+      amount: item.payment.amount,
+      description: `Estorno contábil de cheque devolvido - ${item.payment.sale.client.name}`,
+    })),
+    ...recoveries.map((item) => ({
+      direction: "INFLOW" as const,
+      source: "CHEQUE_RECOVERY" as const,
+      sourceId: item.id,
+      occurredAt: item.receivedAt,
+      amount: item.amount,
+      description: `Recuperação de cheque devolvido - ${item.chequeReturn.payment.sale.client.name}`,
     })),
   ].sort((a, b) => (a.occurredAt?.getTime() ?? 0) - (b.occurredAt?.getTime() ?? 0));
 
@@ -488,16 +529,56 @@ export async function getFinancialReport(context: FinanceAccessContext, period: 
     }),
   ]);
 
-  const inflow = realizedReceipts._sum.amount ?? new Prisma.Decimal(0);
-  const outflow = realizedPayments._sum.amount ?? new Prisma.Decimal(0);
+  const [chequeReturns, periodReturns, periodRecoveries] = await Promise.all([
+    db.saleChequeReturn.findMany({
+      where: { organizationId: context.organizationId },
+      include: { payment: { select: { amount: true } },
+        recoveries: { select: { amount: true } } },
+    }),
+    db.saleChequeReturn.findMany({
+      where: {
+        organizationId: context.organizationId,
+        ...((period.from || period.to) ? { returnedAt: {
+          ...(period.from ? { gte: period.from } : {}),
+          ...(period.to ? { lte: period.to } : {}),
+        } } : {}),
+      },
+      select: { payment: { select: { amount: true } } },
+    }),
+    db.saleChequeRecovery.findMany({
+      where: {
+        organizationId: context.organizationId,
+        ...((period.from || period.to) ? { receivedAt: {
+          ...(period.from ? { gte: period.from } : {}),
+          ...(period.to ? { lte: period.to } : {}),
+        } } : {}),
+      },
+      select: { amount: true },
+    }),
+  ]);
+  const chequeOutstanding = chequeReturns.map((item) =>
+    item.payment.amount.sub(decimalSum(item.recoveries.map((row) => row.amount))));
+  const openReturns = chequeOutstanding.filter((amount) => amount.gt(0));
+  const outstanding = decimalSum(openReturns);
+  const reversedDuringPeriod = decimalSum(periodReturns.map((item) => item.payment.amount));
+  const recoveredDuringPeriod = decimalSum(periodRecoveries.map((item) => item.amount));
+  const inflow = (realizedReceipts._sum.amount ?? new Prisma.Decimal(0)).add(recoveredDuringPeriod);
+  const outflow = (realizedPayments._sum.amount ?? new Prisma.Decimal(0)).add(reversedDuringPeriod);
 
   return {
     period,
     accountsReceivable: {
-      pendingCount: receivableOpen._count._all,
-      pendingAmount: receivableOpen._sum.amount ?? new Prisma.Decimal(0),
-      overdueCount: receivableOverdue._count._all,
-      overdueAmount: receivableOverdue._sum.amount ?? new Prisma.Decimal(0),
+      pendingCount: receivableOpen._count._all + openReturns.length,
+      pendingAmount: (receivableOpen._sum.amount ?? new Prisma.Decimal(0)).add(outstanding),
+      overdueCount: receivableOverdue._count._all + openReturns.length,
+      overdueAmount: (receivableOverdue._sum.amount ?? new Prisma.Decimal(0)).add(outstanding),
+    },
+    chequeReturns: {
+      totalCount: chequeReturns.length,
+      openCount: openReturns.length,
+      outstandingAmount: outstanding,
+      reversedDuringPeriod,
+      recoveredDuringPeriod,
     },
     accountsPayable: {
       pendingCount: payableOpen._count._all,
@@ -506,9 +587,9 @@ export async function getFinancialReport(context: FinanceAccessContext, period: 
       overdueAmount: payableOverdue._sum.amount ?? new Prisma.Decimal(0),
     },
     cashFlow: {
-      receiptCount: realizedReceipts._count._all,
+      receiptCount: realizedReceipts._count._all + periodRecoveries.length,
       inflow,
-      paymentCount: realizedPayments._count._all,
+      paymentCount: realizedPayments._count._all + periodReturns.length,
       outflow,
       net: inflow.minus(outflow),
     },
