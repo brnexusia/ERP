@@ -341,7 +341,7 @@ export async function getCashFlow(context: FinanceAccessContext, period: Finance
   const settledAt = nullableDateRange(period);
   const paidAt = nullableDateRange(period);
 
-  const [receipts, payments, returnedCheques, recoveries] = await Promise.all([
+  const [receipts, payments, returnedCheques, recoveries, manualReceipts] = await Promise.all([
     db.salePayment.findMany({
       where: {
         organizationId: context.organizationId,
@@ -384,9 +384,23 @@ export async function getCashFlow(context: FinanceAccessContext, period: Finance
       } } },
       orderBy: { receivedAt: "asc" },
     }),
+    db.clientManualReceipt.findMany({
+      where: {
+        organizationId: context.organizationId,
+        ...((period.from || period.to) ? { receivedAt: {
+          ...(period.from ? { gte: period.from } : {}),
+          ...(period.to ? { lte: period.to } : {}),
+        } } : {}),
+      },
+      include: { receivable: { select: {
+        client: { select: { name: true } }, description: true,
+      } } },
+      orderBy: { receivedAt: "asc" },
+    }),
   ]);
 
-  const inflow = decimalSum([...receipts.map((item) => item.amount), ...recoveries.map((item) => item.amount)]);
+  const inflow = decimalSum([...receipts.map((item) => item.amount),
+    ...recoveries.map((item) => item.amount), ...manualReceipts.map((item) => item.amount)]);
   const outflow = decimalSum([...payments.map((item) => item.amount), ...returnedCheques.map((item) => item.payment.amount)]);
   const entries = [
     ...receipts.map((item) => ({
@@ -420,6 +434,14 @@ export async function getCashFlow(context: FinanceAccessContext, period: Finance
       occurredAt: item.receivedAt,
       amount: item.amount,
       description: `Recuperação de cheque devolvido - ${item.chequeReturn.payment.sale.client.name}`,
+    })),
+    ...manualReceipts.map((item) => ({
+      direction: "INFLOW" as const,
+      source: "MANUAL_RECEIPT" as const,
+      sourceId: item.id,
+      occurredAt: item.receivedAt,
+      amount: item.amount,
+      description: `Cobrança avulsa - ${item.receivable.client.name} - ${item.receivable.description}`,
     })),
   ].sort((a, b) => (a.occurredAt?.getTime() ?? 0) - (b.occurredAt?.getTime() ?? 0));
 
@@ -529,6 +551,31 @@ export async function getFinancialReport(context: FinanceAccessContext, period: 
     }),
   ]);
 
+  const [manualDebts, manualReceiptsInPeriod] = await Promise.all([
+    db.clientManualReceivable.findMany({
+      where: { organizationId: context.organizationId },
+      include: { receipts: { select: { amount: true } } },
+    }),
+    db.clientManualReceipt.findMany({
+      where: {
+        organizationId: context.organizationId,
+        ...((period.from || period.to) ? { receivedAt: {
+          ...(period.from ? { gte: period.from } : {}),
+          ...(period.to ? { lte: period.to } : {}),
+        } } : {}),
+      },
+      select: { amount: true },
+    }),
+  ]);
+  const openManual = manualDebts.map((debt) => ({
+    dueDate: debt.dueDate,
+    outstanding: debt.amount.sub(decimalSum(debt.receipts.map((receipt) => receipt.amount))),
+  })).filter((item) => item.outstanding.gt(0));
+  const manualOutstanding = decimalSum(openManual.map((item) => item.outstanding));
+  const overdueManual = openManual.filter((item) => item.dueDate < now);
+  const manualOverdue = decimalSum(overdueManual.map((item) => item.outstanding));
+  const manualInflow = decimalSum(manualReceiptsInPeriod.map((item) => item.amount));
+
   const [chequeReturns, periodReturns, periodRecoveries] = await Promise.all([
     db.saleChequeReturn.findMany({
       where: { organizationId: context.organizationId },
@@ -562,16 +609,24 @@ export async function getFinancialReport(context: FinanceAccessContext, period: 
   const outstanding = decimalSum(openReturns);
   const reversedDuringPeriod = decimalSum(periodReturns.map((item) => item.payment.amount));
   const recoveredDuringPeriod = decimalSum(periodRecoveries.map((item) => item.amount));
-  const inflow = (realizedReceipts._sum.amount ?? new Prisma.Decimal(0)).add(recoveredDuringPeriod);
+  const inflow = (realizedReceipts._sum.amount ?? new Prisma.Decimal(0))
+    .add(recoveredDuringPeriod).add(manualInflow);
   const outflow = (realizedPayments._sum.amount ?? new Prisma.Decimal(0)).add(reversedDuringPeriod);
 
   return {
     period,
     accountsReceivable: {
-      pendingCount: receivableOpen._count._all + openReturns.length,
-      pendingAmount: (receivableOpen._sum.amount ?? new Prisma.Decimal(0)).add(outstanding),
-      overdueCount: receivableOverdue._count._all + openReturns.length,
-      overdueAmount: (receivableOverdue._sum.amount ?? new Prisma.Decimal(0)).add(outstanding),
+      pendingCount: receivableOpen._count._all + openReturns.length + openManual.length,
+      pendingAmount: (receivableOpen._sum.amount ?? new Prisma.Decimal(0)).add(outstanding).add(manualOutstanding),
+      overdueCount: receivableOverdue._count._all + openReturns.length + overdueManual.length,
+      overdueAmount: (receivableOverdue._sum.amount ?? new Prisma.Decimal(0)).add(outstanding).add(manualOverdue),
+    },
+    manualReceivables: {
+      totalCount: manualDebts.length,
+      openCount: openManual.length,
+      outstandingAmount: manualOutstanding,
+      overdueAmount: manualOverdue,
+      receivedDuringPeriod: manualInflow,
     },
     chequeReturns: {
       totalCount: chequeReturns.length,
@@ -587,7 +642,7 @@ export async function getFinancialReport(context: FinanceAccessContext, period: 
       overdueAmount: payableOverdue._sum.amount ?? new Prisma.Decimal(0),
     },
     cashFlow: {
-      receiptCount: realizedReceipts._count._all + periodRecoveries.length,
+      receiptCount: realizedReceipts._count._all + periodRecoveries.length + manualReceiptsInPeriod.length,
       inflow,
       paymentCount: realizedPayments._count._all + periodReturns.length,
       outflow,
