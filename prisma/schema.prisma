@@ -40,6 +40,13 @@ enum ClientDocumentType {
   CNPJ
 }
 
+enum ManualReceiptMethod {
+  PIX
+  CASH
+  CARD
+  TRANSFER
+}
+
 enum ChequeRecoveryMethod {
   PIX
   CASH
@@ -144,6 +151,8 @@ model Organization {
   saleDiscountRequests  SaleDiscountRequest[]
   chequeReturns         SaleChequeReturn[]
   chequeRecoveries      SaleChequeRecovery[]
+  manualReceivables      ClientManualReceivable[]
+  manualReceipts         ClientManualReceipt[]
   sellerGoals           SellerGoal[]
   accountPayables       AccountPayable[]
   bankStatementEntries  BankStatementEntry[]
@@ -174,6 +183,8 @@ model User {
   discountRequestsDecided SaleDiscountRequest[] @relation("DiscountApprover")
   chequeReturnsRecorded SaleChequeReturn[] @relation("ChequeReturnRecorder")
   chequeRecoveriesRecorded SaleChequeRecovery[] @relation("ChequeRecoveryRecorder")
+  manualReceivablesCreated ClientManualReceivable[] @relation("ManualReceivableCreator")
+  manualReceiptsRecorded ClientManualReceipt[] @relation("ManualReceiptRecorder")
 }
 
 model Membership {
@@ -279,6 +290,7 @@ model Client {
   crmEntries         ClientCrmEntry[]
   sales              Sale[]
   supportRecords     SupportRecord[]
+  manualReceivables ClientManualReceivable[]
 
   @@unique([organizationId, document])
   @@index([organizationId, name])
@@ -660,6 +672,45 @@ model SupportRecord {
   @@index([organizationId, clientId, createdAt])
   @@index([organizationId, saleId, createdAt])
   @@index([organizationId, kind, createdAt])
+}
+
+model ClientManualReceivable {
+  id              String @id @default(cuid())
+  organizationId  String
+  clientId        String
+  sourceReference String
+  description     String
+  amount          Decimal @db.Decimal(14, 2)
+  dueDate         DateTime
+  createdByUserId String
+  createdAt       DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  createdBy    User @relation("ManualReceivableCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  receipts     ClientManualReceipt[]
+
+  @@unique([organizationId, sourceReference])
+  @@index([organizationId, clientId, dueDate])
+}
+
+model ClientManualReceipt {
+  id              String @id @default(cuid())
+  organizationId  String
+  receivableId    String
+  method          ManualReceiptMethod
+  amount          Decimal @db.Decimal(14, 2)
+  receivedAt      DateTime
+  idempotencyKey  String @unique
+  note            String?
+  recordedByUserId String
+  createdAt       DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  receivable   ClientManualReceivable @relation(fields: [receivableId], references: [id], onDelete: Restrict)
+  recordedBy   User @relation("ManualReceiptRecorder", fields: [recordedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, receivableId, receivedAt])
 }
 
 model SaleChequeReturn {
