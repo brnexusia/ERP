@@ -690,7 +690,7 @@ model ClientManualReceivable {
   createdBy    User @relation("ManualReceivableCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
   receipts     ClientManualReceipt[]
 
-  @@unique([organizationId, sourceReference])
+  @@unique([organizationId, sourceReference], map: "manual_receivable_reference_unique")
   @@index([organizationId, clientId, dueDate])
 }
 
