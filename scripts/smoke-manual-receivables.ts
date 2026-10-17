@@ -163,7 +163,8 @@ async function main() {
     assert.equal(filtered.status, 404);
     const serverRejected = await receiveManualReceivable(
       { organizationId: org.id, userId: seller.id, role: "SELLER" },
-      debtId!, { ...partial, amount: "1.00", method: "PIX" },
+      debtId!, { ...partial, receivedAt: new Date(partial.receivedAt),
+        amount: "1.00", method: "PIX" },
     ).then(() => false, () => true);
     assert.equal(serverRejected, true);
 
