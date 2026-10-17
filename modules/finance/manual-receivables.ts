@@ -163,9 +163,6 @@ export async function receiveManualReceivable(
         include: { receipts: { select: { amount: true } } },
       });
       if (!account) throw new FinanceNotFoundError("Cobrança não encontrada nesta empresa.");
-      if (input.receivedAt < account.createdAt) {
-        throw new FinanceRuleError("O recebimento não pode anteceder o cadastro da cobrança.");
-      }
       const received = account.receipts.reduce((sum, row) => sum.add(row.amount), zero());
       const paymentAmount = new Prisma.Decimal(input.amount);
       if (received.add(paymentAmount).gt(account.amount)) {
