@@ -4,7 +4,7 @@ import { LogoutButton } from "@/app/logout-button";
 
 type ModuleShellProps = {
   children: ReactNode;
-  active: "dashboard" | "clients" | "settings" | "commissions" | "sales";
+  active: "dashboard" | "clients" | "settings" | "commissions" | "sales" | "receivables";
   organizationName: string;
   userName: string;
   role: string;
@@ -95,6 +95,11 @@ export function ModuleShell({
           {["OWNER", "ADMIN", "MANAGER", "FINANCE"].includes(role) && (
             <Link className={active === "commissions" ? "active" : ""} href="/commissions">
               <NavIcon kind="reports" /><span>Comissões · prévia</span><b>02</b>
+            </Link>
+          )}
+          {["OWNER", "ADMIN", "MANAGER", "FINANCE", "VIEWER"].includes(role) && (
+            <Link className={active === "receivables" ? "active" : ""} href="/receivables">
+              <NavIcon kind="finance" /><span>Cobranças avulsas</span><b>02</b>
             </Link>
           )}
           <span className="erp-nav-disabled"><NavIcon kind="support" /><span>Atendimento & SAC</span></span>

@@ -2782,3 +2782,93 @@ a {
   .sales-cheque-form button { width: 100%; }
   .sales-cheque-summary > div:last-child { text-align: left; }
 }
+
+/* Módulo 2 — cobranças avulsas: componentes no design system do ERP. */
+.manual-debt-form, .manual-debt-receipt {
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 12px;
+  align-items: end;
+}
+.manual-debt-form .manual-debt-reason { grid-column: span 3; }
+.manual-debt-form label, .manual-debt-receipt label, .manual-debt-filter {
+  display: grid;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--erp-muted);
+  font-weight: 700;
+}
+.manual-debt-form input, .manual-debt-form select,
+.manual-debt-receipt input, .manual-debt-receipt select,
+.manual-debt-filter select {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  padding: 0 10px;
+  background: #fff;
+  color: var(--erp-text);
+  font-size: 11px;
+  border: 1px solid var(--erp-line-strong);
+  border-radius: 6px;
+}
+.manual-debt-form input:focus-visible, .manual-debt-form select:focus-visible,
+.manual-debt-receipt input:focus-visible, .manual-debt-receipt select:focus-visible {
+  outline: 2px solid var(--erp-gold);
+  outline-offset: 1px;
+}
+.manual-debt-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.manual-debt-toolbar h2 { margin: 4px 0 0; font-size: 16px; }
+.manual-debt-filter { min-width: 170px; }
+.manual-debt-list { display: grid; gap: 10px; }
+.manual-debt-card {
+  border: 1px solid var(--erp-line);
+  border-radius: 8px;
+  padding: 16px;
+  background: var(--erp-surface-soft);
+}
+.manual-debt-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.manual-debt-head strong { font-size: 12px; }
+.manual-debt-head small { display: block; margin-top: 5px; font-size: 10px; color: var(--erp-muted); }
+.manual-debt-amounts {
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 12px;
+  padding: 13px 0;
+}
+.manual-debt-amounts span {
+  display: block;
+  font-size: 9px;
+  color: var(--erp-muted);
+  margin-bottom: 5px;
+}
+.manual-debt-amounts strong { font-size: 12px; }
+.manual-debt-history {
+  display: grid;
+  gap: 6px;
+  border-top: 1px solid var(--erp-line);
+  padding: 13px 0;
+}
+.manual-debt-history strong { font-size: 10px; }
+.manual-debt-history small { color: var(--erp-muted); font-size: 10px; }
+.manual-debt-receipt { border-top: 1px solid var(--erp-line); padding-top: 13px; }
+@media (max-width: 1000px) {
+  .manual-debt-form, .manual-debt-receipt { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .manual-debt-form .manual-debt-reason { grid-column: 1 / -1; }
+}
+@media (max-width: 550px) {
+  .manual-debt-form, .manual-debt-receipt, .manual-debt-amounts { grid-template-columns: 1fr; }
+  .manual-debt-form button, .manual-debt-receipt button { width: 100%; }
+}
