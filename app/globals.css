@@ -2872,3 +2872,22 @@ a {
   .manual-debt-form, .manual-debt-receipt, .manual-debt-amounts { grid-template-columns: 1fr; }
   .manual-debt-form button, .manual-debt-receipt button { width: 100%; }
 }
+
+/* Módulo 2 — fechamento mensal / parcela: controles discretos. */
+.commission-closing-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.commission-closing-actions small,
+.commission-pending-label {
+  color: var(--erp-muted);
+  font-size: 10px;
+}
+.commission-closing-actions .secondary-button {
+  white-space: nowrap;
+}
+@media (max-width: 740px) {
+  .commission-closing-actions { align-items: flex-start; flex-direction: column; }
+}
