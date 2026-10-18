@@ -136,7 +136,7 @@ export function CommissionsWorkspace({
     }
   }
 
-  const closedMonth = /^20\\d{2}-(0[1-9]|1[0-2])$/.test(month) &&
+  const closedMonth = /^20\d{2}-(0[1-9]|1[0-2])$/.test(month) &&
     new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 1, 3)) <= new Date();
   const closingFor = (kind: Closing["kind"], sourceId: string) =>
     closings.find((closing) => closing.kind === kind && closing.sourceId === sourceId);
