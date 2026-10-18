@@ -842,7 +842,7 @@ model CommissionClosing {
   payable      AccountPayable @relation(fields: [payableId], references: [id], onDelete: Restrict)
   approvedBy   User @relation("CommissionClosingApprover", fields: [approvedByUserId], references: [id], onDelete: Restrict)
 
-  @@unique([organizationId, month, kind, sourceId])
+  @@unique([organizationId, month, kind, sourceId], map: "commission_unique_source")
   @@index([organizationId, month, kind])
 }
 
