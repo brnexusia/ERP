@@ -279,7 +279,9 @@ async function main() {
     const repPending = await db.accountPayable.findUniqueOrThrow({
       where: { id: repClosing.payableId },
     });
-    assert.equal(repPending.status, "PENDING");
+    assert.equal(repPending.status, "PAID",
+      "Após correção aprovada e confirmação, a comissão do representante deve estar quitada.");
+    assert.equal(repPending.amount.toFixed(2), "7.00");
     const closingsAudited = await db.auditLog.count({
       where: { organizationId: organization.id, action: "COMMISSION_CLOSING_APPROVE",
         entityType: "CommissionClosing", entityId: sellerClosing.id },
