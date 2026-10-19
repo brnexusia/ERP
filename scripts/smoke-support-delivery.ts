@@ -375,7 +375,7 @@ async function main() {
       ["SALE_ITEMS_SEPARATED", packing.id, "SaleFulfillment"],
       ["SALE_ITEMS_VERIFIED", packing.id, "SaleFulfillment"],
     ]) {
-      const auditCount = await db.auditLog.count({
+      const auditCount: number = await db.auditLog.count({
         where: { organizationId: organization.id, action, entityId, entityType },
       });
       assert.equal(auditCount, 1, "Evento auditável deve ocorrer uma única vez: " + action);
