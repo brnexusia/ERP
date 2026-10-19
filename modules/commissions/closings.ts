@@ -20,8 +20,14 @@ function approveAllowed(context: ClientAccessContext) {
 const zero = () => new Prisma.Decimal(0);
 const money = (value: Prisma.Decimal) =>
   value.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
-const detail = { payable: { select: { id: true, status: true, paidAt: true, dueDate: true } },
-  approvedBy: { select: { name: true } } };
+const detail = {
+  payable: { select: { id: true, amount: true, status: true, paidAt: true, dueDate: true } },
+  approvedBy: { select: { name: true } },
+  adjustments: {
+    where: { status: "PENDING" as const },
+    select: { id: true },
+  },
+};
 
 export async function listCommissionClosings(context: ClientAccessContext, month: string) {
   readAllowed(context);

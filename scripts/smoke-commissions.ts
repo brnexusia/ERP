@@ -4,6 +4,10 @@ import { db } from "../lib/db";
 import { getCommissionPreview, updateSellerCommission } from "../modules/commissions/service";
 import { closeCommission, listCommissionClosings } from "../modules/commissions/closings";
 import { settleAccountPayable } from "../modules/finance/service";
+import {
+  requestCommissionAdjustment, decideCommissionAdjustment, listCommissionAdjustments,
+} from "../modules/commissions/adjustments";
+import { recordReturnedCheque } from "../modules/sales/cheque-returns";
 
 async function main() {
   const organization = await db.organization.findUniqueOrThrow({
@@ -149,6 +153,124 @@ async function main() {
     assert.ok(history.some((row) => row.id === sellerClosing.id));
     assert.ok(history.some((row) => row.id === repClosing.id));
 
+    const payment = confirmed.payments[0];
+    const bankSettlement = new Date(Date.now() - 120_000);
+    const bankReturn = new Date(Date.now() - 60_000);
+    await db.salePayment.update({
+      where: { id: payment.id },
+      data: { status: "PAID", settledAt: bankSettlement },
+    });
+    const returned = await recordReturnedCheque(context, confirmed.id, payment.id, {
+      returnedAt: bankReturn, reason: "Cheque devolvido após compensação bancária",
+    });
+    assert.equal(returned.recoveryStatus, "OPEN");
+    // A returned cheque does not unilaterally change an approved rep commission.
+    const priorPayable = await db.accountPayable.findUniqueOrThrow({
+      where: { id: repClosing.payableId },
+    });
+    assert.equal(priorPayable.amount.toFixed(2), "10.00");
+    assert.equal(repClosing.amount.toFixed(2), "10.00");
+
+    const deniedRequest = await requestCommissionAdjustment({
+      organizationId: organization.id, userId: user.id, role: "SELLER",
+    }, repClosing.id, {
+      direction: "DECREASE", amount: "3.00", reason: "Cheque devolvido e conferido",
+    }).then(() => false, () => true);
+    assert.equal(deniedRequest, true, "Vendedora não pode solicitar ajustes financeiros.");
+
+    const financeContext = {
+      organizationId: organization.id, userId: admin.id, role: "FINANCE" as const,
+    };
+    const adjustment = await requestCommissionAdjustment(financeContext, repClosing.id, {
+      direction: "DECREASE", amount: "3.00",
+      reason: "Cheque devolvido, ajuste sujeito à decisão da gestão",
+    });
+    assert.equal(adjustment.status, "PENDING");
+    const pendingPayable = await db.accountPayable.findUniqueOrThrow({
+      where: { id: repClosing.payableId },
+    });
+    assert.equal(pendingPayable.amount.toFixed(2), "10.00",
+      "Solicitação não pode alterar conta sem decisão.");
+
+    const doubleRequest = await requestCommissionAdjustment(financeContext, repClosing.id, {
+      direction: "INCREASE", amount: "1.00", reason: "Tentativa duplicada",
+    }).then(() => false, () => true);
+    assert.equal(doubleRequest, true);
+    const blockedSettlement = await settleAccountPayable(context, repClosing.payableId)
+      .then(() => false, () => true);
+    assert.equal(blockedSettlement, true,
+      "Comissão com pedido pendente não pode ser marcada como paga.");
+
+    const financeCannotApprove = await decideCommissionAdjustment(
+      financeContext, repClosing.id, adjustment.id, { decision: "APPROVE" },
+    ).then(() => false, () => true);
+    assert.equal(financeCannotApprove, true);
+
+    const rejected = await decideCommissionAdjustment(
+      context, repClosing.id, adjustment.id,
+      { decision: "REJECT", reason: "Aguardar documento bancário" },
+    );
+    assert.equal(rejected.status, "REJECTED");
+    assert.equal(rejected.amountAfter, null);
+    const unmodified = await db.accountPayable.findUniqueOrThrow({
+      where: { id: repClosing.payableId },
+    });
+    assert.equal(unmodified.amount.toFixed(2), "10.00");
+
+    const excessive = await requestCommissionAdjustment(financeContext, repClosing.id, {
+      direction: "DECREASE", amount: "10.00", reason: "Anulação integral inválida",
+    }).then(() => false, () => true);
+    assert.equal(excessive, true, "Anulação integral não deve ser feita por ajuste.");
+    const next = await requestCommissionAdjustment(financeContext, repClosing.id, {
+      direction: "DECREASE", amount: "3.00",
+      reason: "Revisão confirmada pela gestão com documento do banco",
+    });
+    const approved = await decideCommissionAdjustment(context, repClosing.id, next.id, {
+      decision: "APPROVE", reason: "Conferido e aprovado",
+    });
+    assert.equal(approved.status, "APPROVED");
+    assert.equal(approved.amountBefore?.toFixed(2), "10.00");
+    assert.equal(approved.amountAfter?.toFixed(2), "7.00");
+    const afterCorrection = await db.accountPayable.findUniqueOrThrow({
+      where: { id: repClosing.payableId },
+    });
+    assert.equal(afterCorrection.amount.toFixed(2), "7.00");
+    const originalClosing = await db.commissionClosing.findUniqueOrThrow({
+      where: { id: repClosing.id },
+    });
+    assert.equal(originalClosing.amount.toFixed(2), "10.00",
+      "Fechamento original deve ficar congelado.");
+
+    const doubleApproval = await decideCommissionAdjustment(
+      context, repClosing.id, next.id, { decision: "APPROVE" },
+    ).then(() => false, () => true);
+    assert.equal(doubleApproval, true);
+    const otherOrganization = await listCommissionAdjustments({
+      organizationId: "another-tenant", userId: admin.id, role: "OWNER",
+    }, repClosing.id).then(() => false, () => true);
+    assert.equal(otherOrganization, true, "Empresa estrangeira não pode consultar histórico.");
+    const adjustmentHistory = await listCommissionAdjustments(context, repClosing.id);
+    assert.equal(adjustmentHistory.adjustments.length, 2);
+    assert.equal(adjustmentHistory.closing.payable.amount.toFixed(2), "7.00");
+
+    const settledRep = await settleAccountPayable(context, repClosing.payableId);
+    assert.equal(settledRep.status, "PAID");
+    assert.equal(settledRep.amount.toFixed(2), "7.00");
+    const afterPaid = await requestCommissionAdjustment(financeContext, repClosing.id, {
+      direction: "INCREASE", amount: "2.00",
+      reason: "Tentativa depois de quitação",
+    }).then(() => false, () => true);
+    assert.equal(afterPaid, true, "Comissão paga não aceita correções de valor.");
+    assert.equal(await db.auditLog.count({
+      where: {
+        organizationId: organization.id, action: "COMMISSION_ADJUSTMENT_APPROVE",
+        entityType: "CommissionAdjustment", entityId: next.id,
+      },
+    }), 1, "Aprovação não pode ser duplicada.");
+
+    console.log("✓ cheque devolvido preserva comissão original; correção precisa de aprovação");
+    console.log("✓ solicitação/rejeição/aprovação, pagamento bloqueado e ajuste pós-pagamento recusado");
+
     const settled = await settleAccountPayable(context, sellerClosing.payableId);
     assert.equal(settled.status, "PAID");
     assert.ok(settled.paidAt);
@@ -157,7 +279,9 @@ async function main() {
     const repPending = await db.accountPayable.findUniqueOrThrow({
       where: { id: repClosing.payableId },
     });
-    assert.equal(repPending.status, "PENDING");
+    assert.equal(repPending.status, "PAID",
+      "Após correção aprovada e confirmação, a comissão do representante deve estar quitada.");
+    assert.equal(repPending.amount.toFixed(2), "7.00");
     const closingsAudited = await db.auditLog.count({
       where: { organizationId: organization.id, action: "COMMISSION_CLOSING_APPROVE",
         entityType: "CommissionClosing", entityId: sellerClosing.id },
@@ -170,6 +294,14 @@ async function main() {
     console.log("✓ percentual de comissão configurável apenas pelo gestor");
     console.log("✓ comissões de vendedora e representante por período e parcela, sem baixa financeira automática");
   } finally {
+    await db.commissionAdjustment.deleteMany({
+      where: { closing: { organizationId: organization.id, payableId: { in: closingPayables } } },
+    });
+    if (closedSaleId) {
+      await db.saleChequeReturn.deleteMany({
+        where: { payment: { saleId: closedSaleId } },
+      });
+    }
     await db.commissionClosing.deleteMany({
       where: { organizationId: organization.id, payableId: { in: closingPayables } },
     });

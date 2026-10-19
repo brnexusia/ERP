@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
+import { CommissionAdjustmentPanel } from "@/app/commissions/commission-adjustment-panel";
 
 type SellerLine = {
   saleId: string;
@@ -77,7 +78,8 @@ type Closing = {
   approvedAt: string;
   approvedBy: { name: string };
   payableId: string;
-  payable: { status: "PENDING" | "PAID"; paidAt: string | null };
+  payable: { status: "PENDING" | "PAID"; paidAt: string | null; amount: string };
+  adjustments: Array<{ id: string }>;
 };
 export function CommissionsWorkspace({
   canManage, canSettle,
@@ -85,6 +87,7 @@ export function CommissionsWorkspace({
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [report, setReport] = useState<Report | null>(null);
   const [closings, setClosings] = useState<Closing[]>([]);
+  const [correctionClosingId, setCorrectionClosingId] = useState<string | null>(null);
   const [busyClosing, setBusyClosing] = useState<string | null>(null);
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [loading, setLoading] = useState(false);
@@ -185,7 +188,13 @@ export function CommissionsWorkspace({
           {closing.payable.status === "PAID" ? "Pago" : "A pagar"}
         </span>
         <small title={`Aprovado por ${closing.approvedBy.name}`}>Aprovado: {closing.approvedBy.name}</small>
-        {closing.payable.status === "PENDING" && canSettle && (
+        <strong className="commission-current-payable">{money(closing.payable.amount)}</strong>
+        {closing.adjustments.length > 0 && <span className="status-chip warning">Correção pendente</span>}
+        <button className="secondary-button" type="button"
+          onClick={() => setCorrectionClosingId((old) => old === closing.id ? null : closing.id)}>
+          {correctionClosingId === closing.id ? "Fechar ajustes" : "Correções"}
+        </button>
+        {closing.payable.status === "PENDING" && canSettle && !closing.adjustments.length && (
           <button className="secondary-button" type="button" disabled={Boolean(busyClosing)}
             onClick={() => { void markPaid(closing); }}>Marcar pago</button>
         )}
@@ -271,6 +280,23 @@ export function CommissionsWorkspace({
             ))}
             {sellers.length === 0 && <p className="empty-state">Nenhuma vendedora ativa.</p>}
           </div>
+        </section>
+      )}
+
+      {correctionClosingId && closings.some((row) => row.id === correctionClosingId) && (
+        <section className="erp-panel stitch-panel commission-adjustment-section">
+          <div className="panel-heading">
+            <div><p className="erp-kicker">Auditoria financeira · Módulo 2</p>
+              <h2>Correções autorizadas</h2>
+            </div>
+            <button type="button" className="secondary-button"
+              onClick={() => setCorrectionClosingId(null)}>Fechar</button>
+          </div>
+          <CommissionAdjustmentPanel
+            key={correctionClosingId}
+            closingId={correctionClosingId}
+            onChanged={load}
+          />
         </section>
       )}
 

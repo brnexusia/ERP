@@ -47,6 +47,17 @@ enum ManualReceiptMethod {
   TRANSFER
 }
 
+enum CommissionAdjustmentDirection {
+  INCREASE
+  DECREASE
+}
+
+enum CommissionAdjustmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum CommissionRecipientKind {
   SELLER
   REPRESENTATIVE
@@ -161,6 +172,7 @@ model Organization {
   sellerGoals           SellerGoal[]
   accountPayables       AccountPayable[]
   commissionClosings    CommissionClosing[]
+  commissionAdjustments CommissionAdjustment[]
   bankStatementEntries  BankStatementEntry[]
   bankReconciliations   BankReconciliation[]
   representatives Representative[]
@@ -190,6 +202,8 @@ model User {
   chequeReturnsRecorded SaleChequeReturn[] @relation("ChequeReturnRecorder")
   chequeRecoveriesRecorded SaleChequeRecovery[] @relation("ChequeRecoveryRecorder")
   commissionClosingsApproved CommissionClosing[] @relation("CommissionClosingApprover")
+  commissionAdjustmentsRequested CommissionAdjustment[] @relation("CommissionAdjustmentRequester")
+  commissionAdjustmentsDecided   CommissionAdjustment[] @relation("CommissionAdjustmentDecider")
   manualReceivablesCreated ClientManualReceivable[] @relation("ManualReceivableCreator")
   manualReceiptsRecorded ClientManualReceipt[] @relation("ManualReceiptRecorder")
 }
@@ -823,6 +837,31 @@ model SaleDelivery {
   @@index([organizationId, trackingCode])
 }
 
+model CommissionAdjustment {
+  id              String @id @default(cuid())
+  organizationId  String
+  closingId       String
+  status          CommissionAdjustmentStatus @default(PENDING)
+  direction       CommissionAdjustmentDirection
+  amount          Decimal @db.Decimal(14, 2)
+  reason          String
+  requestedByUserId String
+  decidedByUserId String?
+  decisionReason  String?
+  amountBefore    Decimal? @db.Decimal(14, 2)
+  amountAfter     Decimal? @db.Decimal(14, 2)
+  createdAt       DateTime @default(now())
+  decidedAt       DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  closing      CommissionClosing @relation(fields: [closingId], references: [id], onDelete: Restrict)
+  requestedBy  User @relation("CommissionAdjustmentRequester", fields: [requestedByUserId], references: [id], onDelete: Restrict)
+  decidedBy    User? @relation("CommissionAdjustmentDecider", fields: [decidedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, closingId, createdAt])
+  @@index([organizationId, status, createdAt])
+}
+
 model CommissionClosing {
   id               String @id @default(cuid())
   organizationId   String
@@ -837,6 +876,7 @@ model CommissionClosing {
   payableId        String @unique
   approvedByUserId String
   approvedAt       DateTime @default(now())
+  adjustments      CommissionAdjustment[]
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   payable      AccountPayable @relation(fields: [payableId], references: [id], onDelete: Restrict)

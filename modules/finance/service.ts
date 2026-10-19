@@ -137,9 +137,20 @@ export async function settleAccountPayable(context: FinanceAccessContext, payabl
   return runSerializable(async (tx) => {
     const payable = await tx.accountPayable.findFirst({
       where: { id: payableId, organizationId: context.organizationId },
+      include: { commissionClosing: {
+        select: { adjustments: {
+          where: { status: "PENDING" },
+          select: { id: true },
+        } },
+      } },
     });
     if (!payable) throw new FinanceNotFoundError("Conta a pagar não encontrada.");
     if (payable.status === "PAID") return payable;
+    if (payable.commissionClosing?.adjustments.length) {
+      throw new FinanceRuleError(
+        "A comissão possui correção pendente. Aguarde aprovação ou recusa antes de registrar pagamento.",
+      );
+    }
 
     const paidAt = new Date();
     const updated = await tx.accountPayable.update({
