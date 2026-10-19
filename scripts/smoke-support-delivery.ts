@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { db } from "../lib/db";
 import { verifySeparatedSale } from "../modules/sales/fulfillment";
+import { getCommissionPreview } from "../modules/commissions/service";
+import { getSaleTimeline } from "../modules/sales/timeline";
 import { buildPackingSlipPdf } from "../modules/sales/packing-slip-pdf";
 
 const BASE_URL = process.env.APP_URL ?? "http://127.0.0.1:3000";
@@ -40,7 +42,7 @@ async function main() {
     data: { name: "Vendedora Support Smoke", email: `support-seller-${Date.now()}@example.test` },
   });
   const sellerMembership = await db.membership.create({
-    data: { organizationId: organization.id, userId: seller.id, role: "SELLER" },
+    data: { organizationId: organization.id, userId: seller.id, role: "SELLER", commissionPercent: "5.00" },
   });
 
   const login = await fetch(`${BASE_URL}/api/auth/login`, {
@@ -186,8 +188,29 @@ async function main() {
     );
     assert.ok(supportHistory.every((record: { sale: { id: string } | null }) => record.sale?.id === saleId));
 
+    // One integrated commercial journey must use the same sale record:
+    // quote -> manager-approved discount -> order -> separation/check -> delivery -> paid -> commission.
+    const discountRequested = await requestJson("/api/sales/" + saleId + "/discounts", cookie, {
+      method: "POST",
+      body: { percent: "10", reason: "Condição comercial aprovada para teste integrado" },
+    });
+    assert.equal(discountRequested.status, 201);
+    const discount = (await discountRequested.json()).discount;
+    assert.equal(discount.status, "PENDING");
+    const blockedOrder = await requestJson("/api/sales/" + saleId + "/order", cookie, { method: "POST" });
+    assert.equal(blockedOrder.status, 422, "Pedido deve esperar aprovação do desconto.");
+    const approval = await requestJson(
+      "/api/sales/" + saleId + "/discounts/" + discount.id + "/decision", cookie,
+      { method: "POST", body: { decision: "APPROVE", reason: "Conferido pela gestão" } },
+    );
+    assert.equal(approval.status, 200);
+    const discountedSale = await db.sale.findUniqueOrThrow({ where: { id: saleId! } });
+    assert.equal(discountedSale.totalAmount.toFixed(2), "22.50");
+    assert.equal(discountedSale.discountAmount.toFixed(2), "2.50");
+
     const orderResponse = await requestJson(`/api/sales/${saleId}/order`, cookie, { method: "POST" });
     assert.equal(orderResponse.status, 200);
+    assert.equal((await db.sale.findUniqueOrThrow({ where: { id: saleId! } })).totalAmount.toFixed(2), "22.50");
     const pdfResponse = await requestJson(`/api/sales/${saleId}/packing-slip`, cookie);
     assert.equal(pdfResponse.status, 200, "Romaneio de pedido deve ser emitido.");
     assert.match(pdfResponse.headers.get("content-type") ?? "", /application\/pdf/);
@@ -289,6 +312,76 @@ async function main() {
     assert.equal(getDeliveryResponse.status, 200);
     const savedDelivery = (await getDeliveryResponse.json()).delivery;
     assert.equal(savedDelivery.id, carrier.id, "Atualização logística deve permanecer no mesmo registro de entrega.");
+
+    const paymentResponse = await requestJson("/api/sales/" + saleId + "/payments", cookie, {
+      method: "POST", body: { method: "PIX", status: "PAID", amount: "22.50" },
+    });
+    assert.equal(paymentResponse.status, 201);
+    const paid = (await paymentResponse.json()).result;
+    assert.equal(paid.sale.stage, "PAID", "Pedido deve ficar quitado pelo total líquido.");
+    const extraPayment = await requestJson("/api/sales/" + saleId + "/payments", cookie, {
+      method: "POST", body: { method: "PIX", status: "PAID", amount: "0.01" },
+    });
+    assert.equal(extraPayment.status, 422, "Pagamento duplicado não pode ultrapassar total aprovado.");
+
+    const state = await db.sale.findUniqueOrThrow({
+      where: { id: saleId! },
+      include: {
+        items: true, payments: true, fulfillment: true, delivery: true, discountRequests: true,
+      },
+    });
+    assert.equal(state.items.length, 1);
+    assert.equal(state.items[0].lineTotal.toFixed(2), "25.00",
+      "Item preserva preço bruto do catálogo.");
+    assert.equal(state.payments.length, 1);
+    assert.equal(state.discountRequests.length, 1);
+    assert.equal(state.fulfillment?.status, "VERIFIED");
+    assert.equal(state.delivery?.id, carrier.id);
+    assert.equal(await db.sale.count({
+      where: { id: saleId!, organizationId: organization.id },
+    }), 1, "Orçamento, pedido, pagamento e entrega devem compartilhar a mesma venda.");
+
+    const stock = await db.productStock.findUniqueOrThrow({ where: { productId: productId! } });
+    assert.equal(stock.quantity.toFixed(3), "10.000",
+      "Fluxo comercial não pode movimentar estoque antes das regras do módulo 3.");
+
+    const previewMonth = state.orderedAt!.toISOString().slice(0, 7);
+    const payableCountBefore = await db.accountPayable.count({
+      where: { organizationId: organization.id },
+    });
+    const commissionPreview = await getCommissionPreview({
+      organizationId: organization.id, userId: admin.id, role: "OWNER",
+    }, previewMonth);
+    const commissionLine = commissionPreview.sellers.flatMap((group) => group.sales)
+      .find((item) => item.saleId === saleId);
+    assert.equal(commissionLine?.commission.toFixed(2), "1.13",
+      "Comissão de 5% usa total líquido de 22,50, com arredondamento comercial.");
+    assert.equal(await db.accountPayable.count({
+      where: { organizationId: organization.id },
+    }), payableCountBefore, "Prévia não gera conta a pagar.");
+
+    const commercialHistory = await getSaleTimeline({
+      organizationId: organization.id, userId: admin.id, role: "OWNER",
+    }, saleId!);
+    assert.equal(commercialHistory.sale.client.id, clientId);
+    assert.equal(commercialHistory.sale.seller.membershipId, sellerMembership.id);
+    for (const event of ["QUOTE_CREATED", "ORDER_CONFIRMED", "PAYMENT_REGISTERED",
+      "PAYMENT_SETTLED", "SALE_PAID", "DELIVERY_REGISTERED"]) {
+      assert.ok(commercialHistory.timeline.some((row) => row.type === event),
+        "Histórico comercial deve conter: " + event);
+    }
+    for (const [action, entityId, entityType] of [
+      ["SALE_DISCOUNT_APPROVE", discount.id, "SaleDiscountRequest"],
+      ["SALE_ITEMS_SEPARATED", packing.id, "SaleFulfillment"],
+      ["SALE_ITEMS_VERIFIED", packing.id, "SaleFulfillment"],
+    ]) {
+      const auditCount: number = await db.auditLog.count({
+        where: { organizationId: organization.id, action, entityId, entityType },
+      });
+      assert.equal(auditCount, 1, "Evento auditável deve ocorrer uma única vez: " + action);
+    }
+    console.log("✓ jornada integrada: desconto aprovado, pedido, conferência, entrega e pagamento líquido");
+    console.log("✓ mesma venda e cliente, comissão sobre valor líquido e estoque preservado");
 
     const supportAuditCount = await db.auditLog.count({
       where: {
