@@ -13,7 +13,10 @@ export default async function CommissionsPage() {
       userName={session.userName}
       role={session.role}
     >
-      <CommissionsWorkspace canManage={["OWNER", "ADMIN", "MANAGER"].includes(session.role)} />
+      <CommissionsWorkspace
+        canManage={["OWNER", "ADMIN", "MANAGER"].includes(session.role)}
+        canSettle={["OWNER", "ADMIN", "FINANCE"].includes(session.role)}
+      />
     </ModuleShell>
   );
 }

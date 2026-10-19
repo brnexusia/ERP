@@ -47,6 +47,11 @@ enum ManualReceiptMethod {
   TRANSFER
 }
 
+enum CommissionRecipientKind {
+  SELLER
+  REPRESENTATIVE
+}
+
 enum ChequeRecoveryMethod {
   PIX
   CASH
@@ -155,6 +160,7 @@ model Organization {
   manualReceipts         ClientManualReceipt[]
   sellerGoals           SellerGoal[]
   accountPayables       AccountPayable[]
+  commissionClosings    CommissionClosing[]
   bankStatementEntries  BankStatementEntry[]
   bankReconciliations   BankReconciliation[]
   representatives Representative[]
@@ -183,6 +189,7 @@ model User {
   discountRequestsDecided SaleDiscountRequest[] @relation("DiscountApprover")
   chequeReturnsRecorded SaleChequeReturn[] @relation("ChequeReturnRecorder")
   chequeRecoveriesRecorded SaleChequeRecovery[] @relation("ChequeRecoveryRecorder")
+  commissionClosingsApproved CommissionClosing[] @relation("CommissionClosingApprover")
   manualReceivablesCreated ClientManualReceivable[] @relation("ManualReceivableCreator")
   manualReceiptsRecorded ClientManualReceipt[] @relation("ManualReceiptRecorder")
 }
@@ -816,6 +823,29 @@ model SaleDelivery {
   @@index([organizationId, trackingCode])
 }
 
+model CommissionClosing {
+  id               String @id @default(cuid())
+  organizationId   String
+  month            String
+  kind             CommissionRecipientKind
+  sourceId         String
+  beneficiaryId    String
+  beneficiaryName  String
+  amount           Decimal @db.Decimal(14, 2)
+  dueDate          DateTime
+  snapshot         Json
+  payableId        String @unique
+  approvedByUserId String
+  approvedAt       DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  payable      AccountPayable @relation(fields: [payableId], references: [id], onDelete: Restrict)
+  approvedBy   User @relation("CommissionClosingApprover", fields: [approvedByUserId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, month, kind, sourceId], map: "commission_unique_source")
+  @@index([organizationId, month, kind])
+}
+
 model AccountPayable {
   id             String        @id @default(cuid())
   organizationId String
@@ -829,6 +859,7 @@ model AccountPayable {
 
   organization    Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   reconciliations BankReconciliation[]
+  commissionClosing CommissionClosing?
 
   @@index([organizationId, status, dueDate])
   @@index([organizationId, paidAt])

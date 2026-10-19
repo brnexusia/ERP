@@ -66,9 +66,26 @@ async function getJson<T>(url: string, init?: RequestInit): Promise<T> {
   return result as T;
 }
 
-export function CommissionsWorkspace({ canManage }: { canManage: boolean }) {
+type Closing = {
+  id: string;
+  kind: "SELLER" | "REPRESENTATIVE";
+  sourceId: string;
+  month: string;
+  beneficiaryName: string;
+  amount: string;
+  dueDate: string;
+  approvedAt: string;
+  approvedBy: { name: string };
+  payableId: string;
+  payable: { status: "PENDING" | "PAID"; paidAt: string | null };
+};
+export function CommissionsWorkspace({
+  canManage, canSettle,
+}: { canManage: boolean; canSettle: boolean }) {
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [report, setReport] = useState<Report | null>(null);
+  const [closings, setClosings] = useState<Closing[]>([]);
+  const [busyClosing, setBusyClosing] = useState<string | null>(null);
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [loading, setLoading] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -79,14 +96,16 @@ export function CommissionsWorkspace({ canManage }: { canManage: boolean }) {
     setLoading(true);
     setError(null);
     try {
-      const [reportPayload, sellerPayload] = await Promise.all([
+      const [reportPayload, sellerPayload, closingPayload] = await Promise.all([
         getJson<{ report: Report }>(`/api/commissions?month=${encodeURIComponent(month)}`),
         canManage
           ? getJson<{ sellers: Seller[] }>("/api/sellers")
           : Promise.resolve({ sellers: [] as Seller[] }),
+        getJson<{ closings: Closing[] }>(`/api/commissions/closings?month=${encodeURIComponent(month)}`),
       ]);
       setReport(reportPayload.report);
       setSellers(sellerPayload.sellers);
+      setClosings(closingPayload.closings);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Falha ao carregar comissões.");
     } finally {
@@ -117,13 +136,77 @@ export function CommissionsWorkspace({ canManage }: { canManage: boolean }) {
     }
   }
 
+  const closedMonth = /^20\d{2}-(0[1-9]|1[0-2])$/.test(month) &&
+    new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 1, 3)) <= new Date();
+  const closingFor = (kind: Closing["kind"], sourceId: string) =>
+    closings.find((closing) => closing.kind === kind && closing.sourceId === sourceId);
+
+  async function approveClosing(kind: Closing["kind"], sourceId: string, label: string, amount: string) {
+    if (!canManage || busyClosing || !closedMonth) return;
+    if (!window.confirm(
+      `Fechar definitivamente a comissão de ${label} (${money(amount)})? Isso criará uma conta a pagar. O valor não será recalculado depois.`,
+    )) return;
+    setBusyClosing(sourceId);
+    setError(null);
+    setNotice(null);
+    try {
+      await getJson("/api/commissions/closings", {
+        method: "POST", body: JSON.stringify({ month, kind, sourceId }),
+      });
+      setNotice("Fechamento aprovado e conta a pagar criada. O pagamento permanece pendente até confirmação financeira.");
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Falha ao fechar comissão.");
+    } finally { setBusyClosing(null); }
+  }
+
+  async function markPaid(closing: Closing) {
+    if (!canSettle || busyClosing || closing.payable.status !== "PENDING") return;
+    if (!window.confirm(
+      `Confirmar que ${money(closing.amount)} já foram efetivamente pagos para ${closing.beneficiaryName}? O ERP só registrará a baixa; não fará transferência bancária.`,
+    )) return;
+    setBusyClosing(closing.sourceId);
+    setError(null);
+    setNotice(null);
+    try {
+      await getJson(`/api/finance/payables/${closing.payableId}/settle`, { method: "POST" });
+      setNotice("Conta a pagar marcada como quitada. Nenhuma transferência foi iniciada.");
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Falha ao registrar quitação.");
+    } finally { setBusyClosing(null); }
+  }
+
+  function closingActions(kind: Closing["kind"], sourceId: string, name: string, amount: string) {
+    const closing = closingFor(kind, sourceId);
+    if (closing) return (
+      <div className="commission-closing-actions">
+        <span className={"status-chip " + (closing.payable.status === "PAID" ? "success" : "warning")}>
+          {closing.payable.status === "PAID" ? "Pago" : "A pagar"}
+        </span>
+        <small title={`Aprovado por ${closing.approvedBy.name}`}>Aprovado: {closing.approvedBy.name}</small>
+        {closing.payable.status === "PENDING" && canSettle && (
+          <button className="secondary-button" type="button" disabled={Boolean(busyClosing)}
+            onClick={() => { void markPaid(closing); }}>Marcar pago</button>
+        )}
+      </div>
+    );
+    if (canManage && closedMonth && Number(amount) > 0) return (
+      <button className="secondary-button" type="button" disabled={Boolean(busyClosing)}
+        onClick={() => { void approveClosing(kind, sourceId, name, amount); }}>
+        {busyClosing === sourceId ? "Aguarde..." : "Aprovar fechamento"}
+      </button>
+    );
+    return <span className="commission-pending-label">{closedMonth ? "Sem valor para fechar" : "Competência aberta"}</span>;
+  }
+
   return (
     <div className="erp-page commissions-page">
       <header className="erp-page-header">
         <div>
           <p className="erp-kicker">Etapa 2 · Gestão comercial</p>
           <h1>Demonstrativo de comissões</h1>
-          <p>Prévia para conferência: vendedoras por mês e representantes por vencimento da parcela.</p>
+          <p>Prévia, aprovação do fechamento e quitação financeira: vendedoras por mês e representantes por parcela.</p>
         </div>
         <label className="commission-month-label">
           Competência
@@ -131,8 +214,8 @@ export function CommissionsWorkspace({ canManage }: { canManage: boolean }) {
         </label>
       </header>
       <div className="erp-alert neutral">
-        Esta é uma prévia calculada com os percentuais registrados nas vendas.
-        Não gera pagamentos ou contas a pagar automaticamente.
+        As comissões começam como prévia. Depois de encerrada a competência, a gestão pode aprovar
+        cada fechamento para gerar uma conta a pagar. A confirmação do pagamento é manual e não transfere dinheiro.
       </div>
       {notice && <div className="erp-alert success">{notice}</div>}
       {error && <div className="erp-alert error">{error}</div>}
@@ -201,7 +284,7 @@ export function CommissionsWorkspace({ canManage }: { canManage: boolean }) {
         </div>
         <div className="client-table-wrap">
           <table className="client-table">
-            <thead><tr><th>Vendedora</th><th>Vendas</th><th>Faturamento</th><th>Comissão</th><th>Vencimento</th></tr></thead>
+            <thead><tr><th>Vendedora</th><th>Vendas</th><th>Faturamento</th><th>Comissão</th><th>Vencimento</th><th>Fechamento</th></tr></thead>
             <tbody>
               {report?.sellers.map((group) => (
                 <tr key={group.sellerMembershipId}>
@@ -210,6 +293,7 @@ export function CommissionsWorkspace({ canManage }: { canManage: boolean }) {
                   <td>{money(group.grossSold)}</td>
                   <td><strong>{money(group.commission)}</strong></td>
                   <td>{formattedDate(report.period.sellerDueDate)}</td>
+                  <td>{closingActions("SELLER", group.sellerMembershipId, group.sellerName, group.commission)}</td>
                 </tr>
               ))}
             </tbody>
@@ -227,7 +311,7 @@ export function CommissionsWorkspace({ canManage }: { canManage: boolean }) {
         </div>
         <div className="client-table-wrap">
           <table className="client-table">
-            <thead><tr><th>Representante</th><th>Cliente</th><th>Forma</th><th>Vencimento</th><th>Parcela</th><th>Taxa</th><th>Comissão</th></tr></thead>
+            <thead><tr><th>Representante</th><th>Cliente</th><th>Forma</th><th>Vencimento</th><th>Parcela</th><th>Taxa</th><th>Comissão</th><th>Fechamento</th></tr></thead>
             <tbody>
               {report?.representatives.flatMap((group) =>
                 group.payments.map((payment) => (
@@ -239,6 +323,7 @@ export function CommissionsWorkspace({ canManage }: { canManage: boolean }) {
                     <td>{money(payment.paymentAmount)}</td>
                     <td>{payment.rate}%</td>
                     <td><strong>{money(payment.commission)}</strong></td>
+                    <td>{closingActions("REPRESENTATIVE", payment.paymentId, group.representativeName, payment.commission)}</td>
                   </tr>
                 )))}
             </tbody>
