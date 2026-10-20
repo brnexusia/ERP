@@ -54,6 +54,14 @@ async function main() {
   assert.equal(login.status, 200);
   const cookie = cookiePair(login.headers.get("set-cookie"));
 
+  // UI smoke: the operational sales screen is protected by the existing login.
+  const authenticatedSalesPage = await requestJson("/sales", cookie);
+  assert.equal(authenticatedSalesPage.status, 200, "Sales UI must be available to tenant staff.");
+  assert.match(await authenticatedSalesPage.text(), /Vendas &amp; Pedidos|Vendas & Pedidos/);
+  const anonymousSalesPage = await fetch(BASE_URL + "/sales", { redirect: "manual" });
+  assert.ok([302, 303, 307, 308].includes(anonymousSalesPage.status),
+    "Sales UI must redirect unauthenticated visitors.");
+
   const multiPage = buildPackingSlipPdf({
     organization: "Atacado de Homologacao",
     saleId: "pedido-multi-pagina",

@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { FulfillmentPanel } from "@/app/sales/fulfillment-panel";
+import { SaleDeliveryPanel } from "@/app/sales/sale-delivery-panel";
 import { DiscountApprovalPanel } from "@/app/sales/discount-approval-panel";
 import { ChequeReturnsPanel } from "@/app/sales/cheque-returns-panel";
 
@@ -531,6 +532,9 @@ export function SalesWorkspace({
 
           {selected.stage !== "QUOTE" && (
             <FulfillmentPanel key={selected.id} saleId={selected.id} items={selected.items} canWrite={canWrite} />
+          )}
+          {selected.stage !== "QUOTE" && (
+            <SaleDeliveryPanel key={selected.id} saleId={selected.id} canWrite={canWrite} />
           )}
 
           {selected.stage !== "QUOTE" && (
