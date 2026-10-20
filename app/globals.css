@@ -2938,3 +2938,89 @@ a {
   .commission-correction-form { grid-template-columns: 1fr; }
   .commission-correction-form button { width: 100%; }
 }
+
+/* Módulo 2 — logística operacional no padrão visual existente. */
+.sales-delivery-section {
+  border-top: 1px solid var(--erp-line);
+  margin-top: 20px;
+  padding-top: 19px;
+}
+.sales-delivery-section .panel-heading { margin-bottom: 14px; }
+.sales-delivery-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.sales-delivery-summary > div {
+  padding: 13px;
+  border: 1px solid var(--erp-line);
+  border-radius: 7px;
+  background: var(--erp-surface-soft);
+}
+.sales-delivery-summary span {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--erp-muted);
+  font-size: 10px;
+}
+.sales-delivery-summary strong { color: var(--erp-text); font-size: 11px; overflow-wrap: anywhere; }
+.sales-delivery-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  gap: 12px;
+  align-items: end;
+}
+.sales-delivery-form label {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  color: var(--erp-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+.sales-delivery-form input, .sales-delivery-form select {
+  min-height: 37px;
+  width: 100%;
+  padding: 0 11px;
+  border: 1px solid var(--erp-line-strong);
+  border-radius: 6px;
+  color: var(--erp-text);
+  background: #fff;
+  font-size: 11px;
+}
+.sales-delivery-form input:focus-visible, .sales-delivery-form select:focus-visible {
+  outline: 2px solid var(--erp-gold);
+  outline-offset: 1px;
+}
+.sales-delivery-proofs {
+  display: grid;
+  gap: 10px;
+  margin-top: 17px;
+  padding: 12px 0;
+  border-top: 1px solid var(--erp-line);
+}
+.sales-delivery-proofs > strong { font-size: 11px; }
+.sales-delivery-proof-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 11px;
+}
+.sales-delivery-proof-row span, .sales-delivery-note {
+  color: var(--erp-muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+.sales-delivery-proof-row form { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.sales-delivery-proof-row input { max-width: 250px; font-size: 10px; }
+.sales-delivery-note { margin-top: 14px; }
+@media (max-width: 850px) {
+  .sales-delivery-form { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .sales-delivery-form button { justify-self: start; }
+}
+@media (max-width: 550px) {
+  .sales-delivery-summary, .sales-delivery-form { grid-template-columns: 1fr; }
+  .sales-delivery-form button, .sales-delivery-proof-row form button { width: 100%; }
+}
