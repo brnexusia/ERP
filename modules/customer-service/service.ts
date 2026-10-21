@@ -1,4 +1,4 @@
-import { DeliveryMethod } from "@prisma/client";
+import { DeliveryMethod, SupportKind, Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { assertPermission } from "@/lib/auth/permissions";
 import type { ClientAccessContext } from "@/modules/clients/service";
@@ -37,6 +37,47 @@ async function requireSale(context: ClientAccessContext, saleId: string) {
   });
   if (!sale) throw new CustomerServiceNotFoundError("Venda não encontrada.");
   return sale;
+}
+
+
+/**
+ * Centralized support history. Append-only records remain linked to the
+ * customer and optionally to an existing sale, with tenant-scoped pagination.
+ */
+export async function listOrganizationSupportRecords(
+  context: ClientAccessContext,
+  filters: { page: number; kind?: SupportKind; search?: string; clientId?: string },
+) {
+  assertPermission(context.role, "clients:read");
+  const pageSize = 20;
+  const term = filters.search?.trim();
+  const where: Prisma.SupportRecordWhereInput = {
+    organizationId: context.organizationId,
+    ...(filters.kind ? { kind: filters.kind } : {}),
+    ...(filters.clientId ? { clientId: filters.clientId } : {}),
+    ...(term ? { OR: [
+      { content: { contains: term, mode: "insensitive" } },
+      { client: { name: { contains: term, mode: "insensitive" } } },
+      { client: { whatsapp: { contains: term, mode: "insensitive" } } },
+    ] } : {}),
+  };
+  const [records, total] = await Promise.all([
+    db.supportRecord.findMany({
+      where,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      skip: (filters.page - 1) * pageSize,
+      take: pageSize,
+      select: {
+        id: true, kind: true, content: true, createdAt: true,
+        clientId: true, saleId: true,
+        client: { select: { id: true, name: true, whatsapp: true } },
+        createdBy: { select: { id: true, name: true } },
+        sale: { select: { id: true, stage: true } },
+      },
+    }),
+    db.supportRecord.count({ where }),
+  ]);
+  return { records, total, page: filters.page, pageSize, pages: Math.max(1, Math.ceil(total / pageSize)) };
 }
 
 export async function listClientSupportRecords(context: ClientAccessContext, clientId: string) {
