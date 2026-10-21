@@ -210,7 +210,7 @@ export function SupportWorkspace({ canWrite }: { canWrite: boolean }) {
               </div>
               <p>{record.content}</p>
               <div className="support-record-footer">
-                <Link href={`/clients?clientId=${encodeURIComponent(record.clientId)}`}>
+                <Link href="/clients">
                   Abrir Clientes & CRM
                 </Link>
                 {record.saleId && <span>Pedido: {record.saleId.slice(0, 12)}</span>}
