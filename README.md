@@ -44,6 +44,7 @@ O ERP não transforma essas lacunas em regra de negócio por suposição.
 - `docs/FINANCE_WORKSPACE.md` — operação financeira com conciliação manual e permissões;
 - `docs/PRODUCT_INTELLIGENCE_WORKSPACE.md` — dados de vendas por produto, participação factual e limiar informado;
 - `docs/PROMOTION_DRAFT_REGISTRY.md` — rascunhos auditados de promoções sem aplicação de preço;
+- `docs/OPERATIONAL_ALERT_CENTER.md` — central privada de inatividade e estoque mínimo com detecção na consulta;
 - `docs/HOMOLOGACAO_ERP_2026-10-26.md` — evidências da CI por etapa, lacunas de aceite e gate de liberação;
 - `docs/PRODUCTION_DEPLOYMENT.md` — implantação, persistência, backup e recuperação.
 
