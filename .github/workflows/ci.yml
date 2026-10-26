@@ -152,6 +152,9 @@ jobs:
           RESTORED_VALUE="$("${COMPOSE[@]}" run --rm --entrypoint /bin/sh storage-restore -ec 'cat /data/ci-roundtrip.txt')"
           test "$RESTORED_VALUE" = "erp-storage-roundtrip-v1"
 
+      - name: Install browser for interactive E2E
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Smoke test application flows
         shell: bash
         run: |
@@ -183,3 +186,15 @@ jobs:
           pnpm test:smoke-promotion-drafts
           pnpm test:smoke-alert-center
           pnpm test:smoke-page-rbac
+          pnpm test:browser
+
+      - name: Attach browser screenshots and trace evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: erp-browser-e2e-${{ github.run_id }}
+          path: |
+            test-results
+            playwright-report
+          if-no-files-found: ignore
+          retention-days: 14
