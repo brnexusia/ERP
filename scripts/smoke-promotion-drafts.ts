@@ -74,7 +74,7 @@ async function main() {
     assert.equal(productResponse.status, 201);
     productId = (await productResponse.json()).product.id;
     const saleCountBefore = await db.sale.count({ where: { organizationId: org.id } });
-    const productPriceBefore = (await db.product.findUniqueOrThrow({ where: { id: productId } })).salePrice;
+    const productPriceBefore = (await db.product.findUniqueOrThrow({ where: { id: productId! } })).salePrice;
     const candidates = [
       { name: "Rascunho produto", kind: "PRODUCT", productId },
       { name: "Rascunho categoria", kind: "CATEGORY", categoryId },
@@ -95,7 +95,7 @@ async function main() {
     assert.ok(draftIds.every((id) => listing.drafts.some((p: { id: string }) => p.id === id)));
     assert.equal(await db.sale.count({ where: { organizationId: org.id } }), saleCountBefore,
       "Cadastrar rascunho não cria ou altera venda.");
-    const productPriceAfter = (await db.product.findUniqueOrThrow({ where: { id: productId } })).salePrice;
+    const productPriceAfter = (await db.product.findUniqueOrThrow({ where: { id: productId! } })).salePrice;
     assert.equal(productPriceAfter.toFixed(2), productPriceBefore.toFixed(2),
       "Registrar promoções não pode alterar o preço de venda.");
     assert.equal((await json("/api/promotions", sellerCookie, "POST", {
