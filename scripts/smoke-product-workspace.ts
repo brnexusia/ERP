@@ -26,6 +26,8 @@ async function main() {
   const authed = async (path: string, init: RequestInit = {}) =>
     fetch(`${base}${path}`, { ...init, headers: { Cookie: cookie, ...init.headers } });
 
+  // A suíte não deve apagar links públicos preexistentes de uma empresa.
+  const priorShare = await db.catalogShare.findUnique({ where: { organizationId: organization.id } });
   let categoryId: string | null = null;
   let productId: string | null = null;
   const stamp = Date.now();
@@ -72,7 +74,9 @@ async function main() {
     console.log("✓ custo privado não exposto e token inexistente com 404");
   } finally {
     await db.session.deleteMany({ where: { userId: user.id } });
-    await db.catalogShare.deleteMany({ where: { organizationId: organization.id } });
+    if (!priorShare) {
+      await db.catalogShare.deleteMany({ where: { organizationId: organization.id } });
+    }
     if (productId) await db.product.deleteMany({ where: { id: productId, organizationId: organization.id } });
     if (categoryId) await db.productCategory.deleteMany({ where: { id: categoryId, organizationId: organization.id } });
     await db.$disconnect();
