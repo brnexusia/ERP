@@ -53,6 +53,7 @@ const currency = (value: Amount | null | undefined) =>
 const integer = (value: number) => new Intl.NumberFormat("pt-BR").format(value);
 const percent = (value: number) => new Intl.NumberFormat("pt-BR",
   { maximumFractionDigits: 1, minimumFractionDigits: 1 }).format(value) + "%";
+const barWidth = (value: number) => Math.max(0, Math.min(100, value)).toFixed(2) + "%";
 const date = (value: string | null | undefined) =>
   value ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "short",
     timeZone: "America/Sao_Paulo" }).format(new Date(value)) : "—";
@@ -239,7 +240,7 @@ export function ReportsWorkspace() {
                       <strong>{row.name}</strong><span>{integer(row.count)} venda(s) · {currency(row.revenue)}</span>
                     </div>
                     <div className="reports-bar-track">
-                      <div style={{ width: percent(Math.max(0, row.revenue / largest * 100)) }} />
+                      <div style={{ width: barWidth(row.revenue / largest * 100) }} />
                     </div>
                   </div>
                 ))}
@@ -275,7 +276,7 @@ export function ReportsWorkspace() {
                     <td>{integer(seller.clients)}</td>
                     <td>{currency(seller.averageTicket)}</td>
                     <td><div className="reports-mini-track"><span
-                      style={{ width: percent(Math.max(0, Number(seller.revenue) / sellerLargest * 100)) }} /></div></td>
+                      style={{ width: barWidth(Number(seller.revenue) / sellerLargest * 100) }} /></div></td>
                   </tr>
                 ))}</tbody>
               </table>
