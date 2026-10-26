@@ -38,7 +38,7 @@ O ERP não transforma essas lacunas em regra de negócio por suposição.
 - `docs/SCOPE_TRACEABILITY.md` — requisito oficial → implementação → progresso;
 - `docs/DECISIONS_REQUIRED.md` — regras ainda não definidas pelo escopo;
 - `docs/ARCHITECTURE.md` — arquitetura, isolamento, storage e segurança;
-- `docs/PROVISIONING.md` — criação controlada de novas empresas;
+- `docs/PROVISIONING.md` — criação controlada de novas empresas;\n- `docs/PRODUCTS_WORKSPACE.md` — operação de produtos, estoque e catálogo público;
 - `docs/PRODUCTION_DEPLOYMENT.md` — implantação, persistência, backup e recuperação.
 
 ## Princípio de arquitetura
