@@ -68,7 +68,7 @@ export async function listAccountsReceivable(context: FinanceAccessContext) {
       sale: {
         include: {
           client: true,
-          seller: { include: { user: true } },
+          seller: { include: { user: { select: { id: true, name: true } } } },
         },
       },
       reconciliations: true,

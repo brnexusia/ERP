@@ -76,7 +76,7 @@ export async function getCommercialDashboard(context: ClientAccessContext, perio
     },
     include: {
       client: { select: { id: true, name: true } },
-      seller: { include: { user: true } },
+      seller: { include: { user: { select: { id: true, name: true } } } },
     },
     orderBy: { paidAt: "asc" },
   });
@@ -189,7 +189,7 @@ export async function getClientCommercialProfile(context: ClientAccessContext, c
     include: {
       address: true,
       segment: true,
-      responsibleSeller: { include: { user: true } },
+      responsibleSeller: { include: { user: { select: { id: true, name: true } } } },
       crmEntries: {
         include: { createdBy: { select: { id: true, name: true } } },
         orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }],
@@ -205,7 +205,7 @@ export async function getClientCommercialProfile(context: ClientAccessContext, c
       stage: "PAID",
     },
     include: {
-      seller: { include: { user: true } },
+      seller: { include: { user: { select: { id: true, name: true } } } },
       items: {
         include: {
           product: {
@@ -331,7 +331,7 @@ export async function listInactivityAlerts(context: ClientAccessContext) {
     db.clientModuleSettings.findUnique({ where: { organizationId: context.organizationId } }),
     db.client.findMany({
       where: { organizationId: context.organizationId },
-      include: { segment: true, representative: true, responsibleSeller: { include: { user: true } } },
+      include: { segment: true, representative: true, responsibleSeller: { include: { user: { select: { id: true, name: true } } } } },
     }),
     db.sale.groupBy({
       by: ["clientId"],
