@@ -3219,3 +3219,14 @@ a {
   }
   .reports-period-form button, .reports-comparison-form button { width: 100%; }
 }
+
+/* Guard: later base dashboard rules must not override the responsive grid.
+ * Without this, Performance and Channels overlap on 390px mobile screens. */
+@media (max-width: 1180px) {
+  .dashboard-grid-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dashboard-grid-main > .erp-panel {
+    min-width: 0;
+  }
+}
