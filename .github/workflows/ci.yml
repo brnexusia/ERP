@@ -178,3 +178,5 @@ jobs:
           pnpm test:smoke-client-management
           pnpm test:smoke-product-workspace
           pnpm test:smoke-integration-registry-page
+          pnpm test:smoke-finance-workspace
+          pnpm test:smoke-product-intelligence-page
