@@ -181,13 +181,13 @@ function ClientLookupButton({ type, onError }: {
   </button>;
 }
 
-export function ClientsWorkspace({ role }: { role: string }) {
+export function ClientsWorkspace({ role, initialClientId }: { role: string; initialClientId?: string | null }) {
   const [clients, setClients] = useState<Client[]>([]);
   const [segments, setSegments] = useState<Segment[]>([]);
   const [representatives, setRepresentatives] = useState<Representative[]>([]);
   const [alerts, setAlerts] = useState<InactivityAlert[]>([]);
   const [inactivityDays, setInactivityDays] = useState<number | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(initialClientId ?? null);
   const [profile, setProfile] = useState<CentralProfile | null>(null);
   const [crm, setCrm] = useState<CrmEntry[]>([]);
   const [search, setSearch] = useState("");
