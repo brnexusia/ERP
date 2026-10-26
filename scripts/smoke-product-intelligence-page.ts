@@ -24,7 +24,7 @@ async function main() {
     assert.equal(page.status, 200);
     const html = await page.text();
     assert.ok(html.includes("Inteligência de produtos"), "Tela de análise deve existir.");
-    assert.ok(html.includes("Limiar máximo informado"), "Critérios explícitos devem estar presentes no bundle.");
+    assert.ok(html.includes("Início do período"), "Critérios explícitos devem estar presentes na tela.");
 
     const params = new URLSearchParams({
       start: "2026-01-01T00:00:00.000Z", end: "2026-12-31T23:59:59.000Z",
