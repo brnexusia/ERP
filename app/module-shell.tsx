@@ -4,7 +4,7 @@ import { LogoutButton } from "@/app/logout-button";
 
 type ModuleShellProps = {
   children: ReactNode;
-  active: "dashboard" | "clients" | "settings" | "commissions" | "sales" | "receivables" | "support" | "reports";
+  active: "dashboard" | "clients" | "settings" | "commissions" | "sales" | "receivables" | "support" | "reports" | "products" | "integrations" | "finance";
   organizationName: string;
   userName: string;
   role: string;
@@ -90,7 +90,7 @@ export function ModuleShell({
 
           <p className="erp-nav-section">Operação</p>
           <Link className={active === "sales" ? "active" : ""} href="/sales"><NavIcon kind="sales" /><span>Vendas & Pedidos</span><b>02</b></Link>
-          <span className="erp-nav-disabled"><NavIcon kind="inventory" /><span>Produtos & Estoque</span><b>03</b></span>
+          <Link className={active === "products" ? "active" : ""} href="/products"><NavIcon kind="inventory" /><span>Produtos & Estoque</span><b>03</b></Link>
           {["OWNER", "ADMIN", "MANAGER", "FINANCE", "VIEWER"].includes(role) && (
             <Link className={active === "reports" ? "active" : ""} href="/reports">
               <NavIcon kind="reports" /><span>Relatórios & BI</span><b>02</b>
@@ -109,8 +109,12 @@ export function ModuleShell({
           <Link className={active === "support" ? "active" : ""} href="/support"><NavIcon kind="support" /><span>Atendimento & SAC</span><b>02</b></Link>
 
           <p className="erp-nav-section">Administração</p>
-          <span className="erp-nav-disabled"><NavIcon kind="finance" /><span>Financeiro</span><b>04</b></span>
-          <span className="erp-nav-disabled"><NavIcon kind="integrations" /><span>Integrações</span><b>04</b></span>
+          {["OWNER", "ADMIN", "MANAGER", "FINANCE", "VIEWER"].includes(role) && (
+            <Link className={active === "finance" ? "active" : ""} href="/finance"><NavIcon kind="finance" /><span>Financeiro</span><b>04</b></Link>
+          )}
+          {["OWNER", "ADMIN"].includes(role) && (
+            <Link className={active === "integrations" ? "active" : ""} href="/integrations"><NavIcon kind="integrations" /><span>Integrações</span><b>04</b></Link>
+          )}
           <Link className={active === "settings" ? "active" : ""} href="/clients/settings">
             <NavIcon kind="settings" />
             <span>Configurações</span>

@@ -62,11 +62,15 @@ O fechamento controlado da primeira etapa está documentado em `docs/MODULE_1_CL
 
 Produto possui nome, SKU, código de barras, categoria/subcategoria, marca/fabricante, descrição, atributos, fotos/variação, custo, preço, unidade, estoque atual/mínimo/máximo, APIs tenant-scoped, auditoria e armazenamento real de imagens. O catálogo automático lê a mesma base de produtos.
 
-**Pendente para ✅:** Produtos & Estoque conforme Stitch.
+A página operacional `/products` já oferece catálogo de produtos, filtros, detalhes, cadastro/edição, subcategorias, controle manual de quantidade e imagens por variação, com edição protegida por `inventory:write`.
+
+**Pendente para ✅:** confronto visual tela a tela de Produtos & Estoque conforme Stitch completo.
 
 ## 6 — Estoque inteligente 🟡
 
 Já existem alerta de estoque baixo, mínimo/máximo, quantidade vendida, faturamento, vendas pagas, última venda, estoque e categorias predominantes por cliente. A base factual da Curva ABC calcula ranking, participação e participação acumulada por período explícito, usando `REVENUE` ou `SOLD_QUANTITY`. Produtos com baixa saída também podem ser identificados quando o usuário informa explicitamente período, métrica (`REVENUE`, `SOLD_QUANTITY` ou `PAID_SALES`) e limiar; nenhum valor padrão é presumido.
+
+A página operacional `/products/intelligence` permite consultar métricas de vendas pagas, participação acumulada por produto e baixa saída com período, métrica e limiar indicados pelo usuário, sem escolher faixas ABC ou limites automáticos.
 
 **Aguardando regra objetiva:** regra automática/padrão de baixa saída, faixas A/B/C e momento da baixa/reserva física. A distribuição ABC não atribui classes enquanto as faixas não forem aprovadas.
 
@@ -102,7 +106,9 @@ O Dashboard Geral agrega comercial, clientes, inatividade, estoque baixo e finan
 
 Contas a receber derivadas de pagamentos reais, contas a pagar, fluxo de caixa realizado, conciliação bancária manual e relatório consolidado estão funcionais. Conciliações também possuem guard cross-tenant no PostgreSQL.
 
-**Pendente para ✅:** interface final. Automação/importação bancária depende de provedor/contrato técnico.
+A página operacional `/finance` expõe contas a receber, contas a pagar, quitação, fluxo de caixa realizado, conciliação bancária manual e relatórios com período explícito, preservando auditoria e isolamento multiempresa.
+
+**Pendente para ✅:** homologação visual final. Automação/importação bancária depende de provedor/contrato técnico.
 
 ## 12 — Promoções e catálogo 🟡
 
@@ -110,11 +116,13 @@ Catálogo automático compartilhável por link, imagens públicas de produto, cu
 
 A base da regra de auto-atacado avançou sem inventar efeito comercial: o perfil comercial detecta factual e exclusivamente sobre vendas `PAID` se houve recompra em até três meses-calendário, preservando os intervalos entre compras. O ERP não aplica automaticamente preço, desconto ou mudança de segmento enquanto esse efeito não estiver definido.
 
-**Aguardando regra:** descontos progressivos, dúzia fechada, promoções, prioridade/empilhamento/vigência/arredondamento e efeito comercial final do auto-atacado. Falta também página visual pública segundo o design system aprovado.
+**Aguardando regra:** descontos progressivos, dúzia fechada, promoções, prioridade/empilhamento/vigência/arredondamento e efeito comercial final do auto-atacado. O link de catálogo agora abre uma página HTML pública em `/catalog/[token]`, com preço de venda, imagens e disponibilidade factual, mantendo a API JSON. Sua aparência é operacional e depende de homologação visual segundo o Stitch aprovado.
 
 ## 13 — Integrações 🟡
 
 A camada tenant-scoped de configuração está preparada para VaxChat, VaxLab, GoPage, ShopVax, WhatsApp, gateway e e-commerce, com estado, referência de segredo, auditoria e isolamento.
+
+O painel operacional `/integrations` permite que OWNER/ADMIN cadastrem, editem e consultem provedores por empresa sem inserir nem exibir segredos. Habilitar um registro **não** equivale a conectar o provedor.
 
 Chamadas reais/webhooks/sincronizações dependem de documentação/API, URLs, autenticação, credenciais e contrato de eventos. Configuração cadastrada não significa integração conectada.
 
