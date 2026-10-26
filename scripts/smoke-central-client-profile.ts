@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { db } from "../lib/db";
 
 const BASE_URL = process.env.APP_URL ?? "http://127.0.0.1:3000";
@@ -49,6 +50,7 @@ async function main() {
   });
   assert.equal(login.status, 200);
   const cookie = cookiePair(login.headers.get("set-cookie"));
+  const adminSessionHash = createHash("sha256").update(cookie.split("=", 2)[1]).digest("hex");
 
   let clientId: string | null = null;
   let categoryId: string | null = null;
@@ -171,6 +173,16 @@ async function main() {
     assert.equal(profile.client.id, clientId);
     assert.equal(profile.client.responsibleSeller.id, sellerMembership.id);
     assert.equal(profile.commercial.purchaseCount, 1);
+    assert.equal(profile.commercial.predominantCategories.length, 1,
+      "O perfil deve mostrar categorias predominantes calculadas de vendas pagas.");
+    assert.equal(profile.commercial.predominantCategories[0].categoryId, categoryId);
+    assert.equal(String(profile.commercial.predominantCategories[0].quantity), "1");
+    assert.equal(String(profile.commercial.predominantCategories[0].revenue), "30");
+    assert.equal(profile.financial.paymentHistory.summary.records, 1);
+    assert.equal(profile.financial.paymentHistory.summary.byMethod.PIX.paidRecords, 1);
+    assert.equal(String(profile.financial.paymentHistory.summary.byMethod.PIX.paidAmount), "30");
+    assert.equal(profile.financial.paymentHistory.payments[0].sale.id, saleId);
+    assert.equal(profile.financial.paymentHistory.payments[0].method, "PIX");
     assert.equal(String(profile.commercial.totalSpent), "30");
     assert.equal(profile.purchases.length, 1);
     assert.equal(profile.purchases[0].id, saleId);
@@ -205,9 +217,10 @@ async function main() {
     console.log("✓ perfil central reúne cadastro, comercial, compras, crédito, vale, CRM e suporte");
     console.log("✓ dados financeiros do cliente usam as contas e movimentos reais já existentes");
     console.log("✓ histórico de compras usa somente o fluxo comercial real");
+    console.log("✓ categorias predominantes e histórico por forma de pagamento reais no perfil do cliente");
     console.log("✓ perfil central permanece isolado entre empresas");
   } finally {
-    await db.session.deleteMany({ where: { userId: admin.id } });
+    await db.session.deleteMany({ where: { userId: admin.id, tokenHash: adminSessionHash } });
     if (secondOrganizationId) await db.organization.deleteMany({ where: { id: secondOrganizationId } });
     if (saleId) await db.sale.deleteMany({ where: { id: saleId } });
     if (productId) await db.product.deleteMany({ where: { id: productId, organizationId: organization.id } });
