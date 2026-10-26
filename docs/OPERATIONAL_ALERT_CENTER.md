@@ -24,3 +24,9 @@ Fonte: `ERP_Pedro_Escopo_Oficial.pdf`, Etapa 1 (aviso de X dias sem compra) e Et
 - elevar o limiar e repor quantidade remove os alertas na próxima consulta, sem alterar vendas.
 
 O teste elimina somente os próprios fixtures e sessões, não as configurações ou dados anteriores da empresa.
+
+## Navegação até a origem
+
+Cada alerta aponta para a entidade exata, com `/clients?client=<id>` e `/products?product=<id>`, em vez de abrir apenas a lista geral. O servidor valida o identificador recebido e a API continua exigindo sessão, autorização e empresa ativa. Um identificador externo não concede acesso à outra organização.
+
+A suíte Playwright desktop/mobile valida os dois caminhos com dados criados e removidos dentro de testes descartáveis.
