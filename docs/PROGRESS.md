@@ -62,7 +62,9 @@ O fechamento controlado da primeira etapa está documentado em `docs/MODULE_1_CL
 
 Produto possui nome, SKU, código de barras, categoria/subcategoria, marca/fabricante, descrição, atributos, fotos/variação, custo, preço, unidade, estoque atual/mínimo/máximo, APIs tenant-scoped, auditoria e armazenamento real de imagens. O catálogo automático lê a mesma base de produtos.
 
-A página operacional `/products` já oferece catálogo de produtos, filtros, detalhes, cadastro/edição, subcategorias, controle manual de quantidade e imagens por variação, com edição protegida por `inventory:write`.\n\n**Pendente para ✅:** confronto visual tela a tela de Produtos & Estoque conforme Stitch completo.
+A página operacional `/products` já oferece catálogo de produtos, filtros, detalhes, cadastro/edição, subcategorias, controle manual de quantidade e imagens por variação, com edição protegida por `inventory:write`.
+
+**Pendente para ✅:** confronto visual tela a tela de Produtos & Estoque conforme Stitch completo.
 
 ## 6 — Estoque inteligente 🟡
 
