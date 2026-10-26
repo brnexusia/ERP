@@ -112,6 +112,15 @@ async function main() {
       data: { name: "Promotion CI secondary", slug: `promotion-ci-${stamp}` },
     });
     secondOrgId = secondOrg.id;
+    await db.membership.create({
+      data: { organizationId: secondOrg.id, userId: owner.id, role: "OWNER" },
+    });
+    await assert.rejects(() => db.promotionDraft.create({
+      data: {
+        organizationId: secondOrg.id, createdByUserId: sellerId!,
+        name: "Criador sem vínculo no tenant", kind: "PROGRESSIVE_VALUE",
+      },
+    }), "PostgreSQL deve impedir autoria de usuário sem vínculo com a empresa.");
     const secondCategory = await db.productCategory.create({
       data: { organizationId: secondOrg.id, name: "Categoria outra empresa" },
     });
