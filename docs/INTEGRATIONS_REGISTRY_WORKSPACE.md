@@ -7,12 +7,14 @@ O operador pode cadastrar `provider`, `key`, `displayName`, marcar o registro co
 ### Restrições de segurança
 
 - A interface **não solicita nem renderiza** tokens, senhas, segredos brutos, configurações JSON ou referência `secretRef`; apenas a indicação booleana `secretConfigured`.
+- A API também proíbe gravar campos de credenciais em `settings` (inclusive em arrays/objetos aninhados) e remove chaves sensíveis ao ler configurações legadas. Segredos devem existir exclusivamente fora desse JSON, por referência opaca `secretRef`.
+- A regra protege chaves estruturais como `apiKey`, `authorization`, `password`, `accessToken`, `refresh_token`, `clientSecret` e equivalentes; ela não verifica se alguém colocou acidentalmente um segredo em um campo semanticamente neutro. O contrato precisa usar segredo em cofre dedicado.
 - A conexão **não acontece pelo cadastro**. O registro habilitado sem conexão comprovada permanece `DISCONNECTED`.
 - Provedores ainda exigem endpoints, credenciais reais, URLs e contratos de eventos. Nenhuma simulação de chamada a VaxChat/VaxLab/ShopVax/GoPage/WhatsApp/gateway/e-commerce substitui integração real.
 - O estado de conexão registrado pelo runtime não certifica funcionamento atual sem healthcheck de provedor.
 
 ### Aceite
 
-`pnpm test:smoke-integration-registry-page` valida acesso owner, 404 a vendedor, 403 via API, inclusão habilitada/desabilitada sem conexão falsa, ausência de `secretRef` no JSON e limpeza de registros de teste. CI testa também build, tipos e isolamento PostgreSQL.
+`pnpm test:smoke-integration-registry-page` valida acesso owner, 404 a vendedor, 403 via API, inclusão habilitada/desabilitada sem conexão falsa, rejeição de `authorization` e `api_key` aninhados, sanitização de registros legados, retorno apenas de `secretConfigured` e limpeza de registros/sessões de teste. CI testa também build, tipos e isolamento PostgreSQL.
 
 O visual definitivo depende da comparação com o Stitch exportável. O escopo de integrações externas não pode ser marcado concluído até contratos e testes reais.
