@@ -56,7 +56,7 @@ A camada funcional e a interface operacional da Etapa 1 estão em homologação.
 | Envio de rastreio e-mail/WhatsApp | Depende de integração/provedor/template | 8/13 |
 | Transportadora e comprovantes | Registro de transportadora + arquivo privado de envio/entrega | 8 |
 | Arquivo privado de comprovante | Storage tenant-scoped, privado e protegido por permissão | 8/14 |
-| Dashboard comercial | Backend agregado, permission-aware, com metas por vendedora | 10 |
+| Dashboard comercial | Backend permission-aware com metas e intervalo explícito para vendas/faturamento; estoque/inatividade permanecem saldos atuais | 10 |
 
 ## Etapa 3 — Estoque e Produtos
 
