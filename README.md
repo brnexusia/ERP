@@ -41,6 +41,8 @@ O ERP não transforma essas lacunas em regra de negócio por suposição.
 - `docs/PROVISIONING.md` — criação controlada de novas empresas;
 - `docs/PRODUCTS_WORKSPACE.md` — operação de produtos, estoque e catálogo público;
 - `docs/INTEGRATIONS_REGISTRY_WORKSPACE.md` — painel de registros de provedores, sem simular conexões reais;
+- `docs/FINANCE_WORKSPACE.md` — operação financeira com conciliação manual e permissões;
+- `docs/PRODUCT_INTELLIGENCE_WORKSPACE.md` — dados de vendas por produto, participação factual e limiar informado;
 - `docs/PRODUCTION_DEPLOYMENT.md` — implantação, persistência, backup e recuperação.
 
 ## Princípio de arquitetura
