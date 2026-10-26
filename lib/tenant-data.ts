@@ -11,7 +11,7 @@ export async function assertOrganizationMembership(userId: string, organizationI
     },
     include: {
       organization: true,
-      user: true,
+      user: { select: { id: true, status: true } },
     },
   });
 
