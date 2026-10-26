@@ -19,7 +19,7 @@ Quando o documento exige uma função mas não fornece fórmula, limiar, priorid
 | Linha de crédito | Limite, utilizado, disponível e movimentos tenant-scoped + operação no perfil central | 4 |
 | Vale do cliente | Saldo e movimentos tenant-scoped + operação no perfil central | 4 |
 | Segmentação por grupo/perfil | `ClientSegment` por empresa + atribuição no perfil e gestão em `/clients/settings` | 4 |
-| Aviso por X dias sem compra | Configuração por empresa + cálculo pela última compra paga + alertas em `/clients` | 4/10 |
+| Aviso por X dias sem compra | Configuração por empresa/cliente + cálculo pela última compra paga e central privada `/alerts` em tempo de consulta | 4/10 |
 | CRM integrado | Atividades, histórico, follow-up e conclusão + timeline operacional no perfil do cliente | 4 |
 | Gestão central do cliente | `/api/clients/:id/central-profile` agrega cadastro, comercial, crédito, vale, CRM, suporte e histórico de pagamentos; `/clients` expõe o perfil operacional | 3/4/8 |
 | Login e senha | Sessão persistida + autenticação + troca autenticada de senha com verificação da senha atual, revogação das sessões paralelas e auditoria | 1 |
@@ -72,10 +72,10 @@ A camada funcional e a interface operacional da Etapa 1 estão em homologação.
 | Catálogo automático | Catálogo lê diretamente o cadastro de produtos | 12 |
 | Link compartilhável | Token público de catálogo | 12 |
 | Estoque mínimo/máximo | `ProductStock` | 5/6 |
-| Alerta de estoque baixo | Derivado quando quantidade <= mínimo | 6 |
+| Alerta de estoque baixo | Derivado quando quantidade <= mínimo; central privada `/alerts`, respeitando RBAC e tenant | 6 |
 | Produtos com baixa saída | Relatório factual por período, métrica e limiar explicitamente informados; regra automática/padrão continua pendente | 6 |
 | Curva ABC | Distribuição factual por período explícito com ranking, participação e acumulado em `REVENUE` ou `SOLD_QUANTITY`; faixas A/B/C ainda pendentes | 6 |
-| Categorias por cliente | Calculadas a partir de compras pagas | 6/10 |
+| Categorias por cliente | Compras pagas agregadas por categoria, quantidade, valor de itens e participação visível no perfil central `/clients` | 6/10 |
 | Desconto progressivo | Regra/fórmula pendente | 12 |
 | Auto-atacado em até 3 meses | Perfil comercial detecta recompra factual em até 3 meses-calendário sobre vendas `PAID`; efeito comercial ainda pendente | 12 |
 | Histórico de formas de pagamento | Endpoint explícito + perfil central com registros pagos/pendentes, valores, vencimento/liquidação e venda/vendedora de origem | 3/8/10 |
@@ -89,11 +89,11 @@ A camada funcional e a interface operacional da Etapa 1 estão em homologação.
 | WhatsApp | Configuração tenant-scoped preparada; operação real pendente | 13 |
 | Gateway de pagamento | Configuração tenant-scoped preparada; provedor/contrato pendentes | 13 |
 | E-commerce | Configuração tenant-scoped preparada; operação real pendente | 13 |
-| Promoções | Fórmula/prioridade/vigência pendentes | 12 |
-| Contas a receber | Derivadas dos pagamentos reais da venda | 11 |
-| Contas a pagar | Cadastro, vencimento e baixa | 11 |
-| Fluxo de caixa | Entradas recebidas - saídas pagas | 11 |
-| Conciliação | Manual e auditada; automação bancária depende de provedor | 11 |
+| Promoções | Tabela operacional de rascunhos por produto, categoria, valor e quantidade, sem precificação; fórmula/prioridade/vigência pendentes | 12 |
+| Contas a receber | Derivadas dos pagamentos reais, consultáveis em `/finance` | 11 |
+| Contas a pagar | Cadastro, vencimento e baixa na interface `/finance` e serviços auditados | 11 |
+| Fluxo de caixa | Entradas recebidas menos saídas pagas, com intervalo informado no painel | 11 |
+| Conciliação | Manual em `/finance`, auditada e isolada por empresa; automação aguarda provedor | 11 |
 | Relatórios financeiros | Consolidados por período | 11 |
 | Domínio próprio | Estrutura de deploy pronta; domínio/DNS/TLS reais pendentes | 14 |
 | Compra/assinatura futura | Provisionamento técnico pronto; planos/cobrança pendentes | 14 |
