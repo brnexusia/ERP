@@ -1,0 +1,27 @@
+.page { min-height: 100vh; padding: 32px clamp(16px, 4vw, 52px) 50px; max-width: 1450px; margin: 0 auto; color: #272727; }
+.header { display: flex; align-items: center; gap: 18px; margin-bottom: 30px; padding: 25px; border: 1px solid #eee7d7; border-radius: 10px; background: linear-gradient(100deg,#fff 58%,#f8f0df); }
+.logo { display: grid; place-items: center; width: 64px; height: 64px; flex: 0 0 auto; border-radius: 12px; background: #987024; color: #fff; font: 32px Georgia,serif; }
+.eyebrow { color: #987024; text-transform: uppercase; letter-spacing: .11em; font-size: 10px; font-weight: 800; }
+.header h1 { margin: 6px 0; font: 30px Georgia,serif; }
+.header p { margin: 0; color: #78736a; font-size: 13px; }
+.titleRow { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 15px; }
+.titleRow h2 { margin: 0; font: 23px Georgia,serif; }
+.titleRow span { color: #837c70; font-size: 12px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(230px,1fr)); gap: 17px; }
+.card { min-width: 0; overflow: hidden; border: 1px solid #eae5dc; border-radius: 10px; background: #fff; box-shadow: 0 7px 24px rgba(70,56,31,.035); }
+.photo { display: grid; place-items: center; aspect-ratio: 4 / 3; overflow: hidden; background: #f7f5f0; }
+.photo img { width: 100%; height: 100%; object-fit: contain; }
+.photo span { color: #bcb5a7; font-size: 65px; }
+.body { padding: 16px; }
+.category { color: #987024; font-size: 11px; font-weight: 700; }
+.body h3 { margin: 8px 0 4px; font-size: 17px; }
+.sku { margin: 0; color: #837c70; font-size: 11px; }
+.description { min-height: 34px; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; color: #555; white-space: pre-line; }
+.footer { margin-top: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+.footer strong { font-size: 17px; }
+.available,.unavailable { padding: 5px 8px; border-radius: 999px; font-size: 10px; font-weight: 700; }
+.available { background: #e9f5eb; color: #2d744a; }
+.unavailable { background: #f7eded; color: #a55050; }
+.empty { border: 1px dashed #dfd7cb; border-radius: 10px; padding: 40px 14px; text-align: center; color: #777; }
+.bottom { margin-top: 42px; padding-top: 16px; border-top: 1px solid #eae5dc; color: #837c70; font-size: 11px; }
+@media (max-width: 600px) { .header { padding: 18px; align-items: flex-start; } .logo { width: 45px; height: 45px; font-size: 24px; } .header h1 { font-size: 23px; } .grid { grid-template-columns: repeat(auto-fill,minmax(150px,1fr)); gap: 10px; } .body { padding: 12px; } .body h3 { font-size: 14px; } .footer strong { font-size: 14px; } }
