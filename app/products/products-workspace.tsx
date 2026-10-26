@@ -1,6 +1,7 @@
 "use client";
 
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import styles from "./products.module.css";
 
 type Category = {
@@ -254,7 +255,8 @@ export function ProductsWorkspace({ canWrite }: { canWrite: boolean }) {
           <h1>Produtos &amp; Estoque</h1>
           <p>Cadastro, categorias, imagens, saldo físico e alertas de mínimo por empresa.</p>
         </div>
-        {canWrite && <button className="primary-button" onClick={openCreate} type="button">+ Novo produto</button>}
+        <div className={styles.actions}><Link href="/products/intelligence" className="secondary-button">Inteligência de produtos</Link>
+        {canWrite && <button className="primary-button" onClick={openCreate} type="button">+ Novo produto</button>}</div>
       </header>
 
       {error && <div className="erp-alert error" role="alert">{error}</div>}
