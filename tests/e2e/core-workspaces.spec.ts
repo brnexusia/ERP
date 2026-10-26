@@ -23,6 +23,21 @@ async function checkNoViewportOverflow(page: Page, name: string) {
   expect(metrics.body, name + " não deve extravasar horizontalmente").toBeLessThanOrEqual(metrics.viewport + 3);
 }
 
+async function checkDashboardPanelSeparation(page: Page) {
+  const rects = await page.locator(".dashboard-grid-main > .erp-panel").evaluateAll((elements) =>
+    elements.map((element) => {
+      const box = element.getBoundingClientRect();
+      return { x: box.x, y: box.y, right: box.right, bottom: box.bottom };
+    }),
+  );
+  expect(rects, "Dashboard deve renderizar os painéis comercial e de canais").toHaveLength(2);
+  const [left, right] = rects;
+  const intersectionWidth = Math.max(0, Math.min(left.right, right.right) - Math.max(left.x, right.x));
+  const intersectionHeight = Math.max(0, Math.min(left.bottom, right.bottom) - Math.max(left.y, right.y));
+  expect(intersectionWidth * intersectionHeight,
+    "Painéis de performance e canais não podem se sobrepor, mesmo sem overflow da página").toBeLessThanOrEqual(1);
+}
+
 test("redireciona visitante anônimo para login", async ({ page }) => {
   await page.goto("/products");
   await expect(page).toHaveURL(/\/login/);
@@ -37,9 +52,10 @@ test("login, intervalo do dashboard e navegação pelos módulos", async ({ page
   await page.getByLabel("Data final").fill("2026-12-31");
   await page.getByRole("button", { name: "Aplicar" }).click();
   await expect(page.locator(".stitch-period-pill")).toContainText("01/01/2026 a 31/12/2026");
-  await page.getByRole("button", { name: "Todo o histórico" }).click();
+  await page.getByRole("button", { name: "Limpar filtro" }).click();
   await expect(page.locator(".stitch-period-pill")).toHaveText("Todo o histórico");
   await checkNoViewportOverflow(page, "Dashboard Geral");
+  await checkDashboardPanelSeparation(page);
   await page.screenshot({ path: `test-results/${testInfo.project.name}-dashboard.png`, fullPage: true });
 
   for (const [path, heading] of [
