@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 type DecimalLike = string | number | null | undefined;
 
 type DashboardData = {
+  period?: { start?: string | null; end?: string | null };
   commercial?: {
     sales?: number;
     revenue?: DecimalLike;
@@ -110,8 +111,17 @@ function initials(name?: string) {
     .toUpperCase();
 }
 
-async function loadDashboard() {
-  const response = await fetch("/api/dashboard", { cache: "no-store" });
+function asISO(date: string, end = false) {
+  return new Date(date + (end ? "T23:59:59.999-03:00" : "T00:00:00.000-03:00")).toISOString();
+}
+
+async function loadDashboard(start = "", end = "") {
+  const params = new URLSearchParams();
+  if (start && end) {
+    params.set("start", asISO(start));
+    params.set("end", asISO(end, true));
+  }
+  const response = await fetch("/api/dashboard" + (params.size ? "?" + params.toString() : ""), { cache: "no-store" });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error(payload?.error ?? "Não foi possível carregar o dashboard.");
@@ -122,12 +132,50 @@ async function loadDashboard() {
 export function DashboardWorkspace({ userName }: { userName: string }) {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [start, setStart] = useState("");
+  const [end, setEnd] = useState("");
+  const [applied, setApplied] = useState({ start: "", end: "" });
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    void loadDashboard()
-      .then(setDashboard)
-      .catch((cause) => setError(cause instanceof Error ? cause.message : "Falha ao carregar dashboard."));
+  const refresh = useCallback(async (first: string, last: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const next = await loadDashboard(first, last);
+      setDashboard(next);
+      setApplied({ start: first, end: last });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Falha ao carregar dashboard.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { void refresh("", ""); }, [refresh]);
+
+  function applyPeriod(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (loading) return;
+    if (!!start !== !!end) {
+      setError("Informe as duas datas ou limpe o filtro para consultar todo o histórico.");
+      return;
+    }
+    if (start && end && end < start) {
+      setError("A data final deve ser igual ou posterior à inicial.");
+      return;
+    }
+    void refresh(start, end);
+  }
+
+  function clearPeriod() {
+    setStart("");
+    setEnd("");
+    void refresh("", "");
+  }
+
+  const periodLabel = applied.start && applied.end
+    ? `${new Date(applied.start + "T12:00:00-03:00").toLocaleDateString("pt-BR")} a ${new Date(applied.end + "T12:00:00-03:00").toLocaleDateString("pt-BR")}`
+    : "Todo o histórico";
 
   const sellers = dashboard?.commercial?.sellers ?? [];
   const maxSellerRevenue = Math.max(1, ...sellers.map((seller) => numeric(seller.revenue)));
@@ -171,24 +219,31 @@ export function DashboardWorkspace({ userName }: { userName: string }) {
           <p>Acompanhe clientes, vendas e alertas importantes em uma única visão.</p>
         </div>
         <div className="dashboard-header-actions">
-          <span className="stitch-period-pill">Período atual</span>
-          <button className="primary-button" type="button" onClick={() => window.location.assign("/clients")}>
-            + Novo cliente
-          </button>
+          <form className="dashboard-period-form" onSubmit={applyPeriod} aria-label="Filtrar o dashboard por período">
+            <label>De<input type="date" value={start} onChange={(event) => setStart(event.target.value)}
+              aria-label="Data inicial" disabled={loading} /></label>
+            <label>Até<input type="date" value={end} min={start || undefined}
+              onChange={(event) => setEnd(event.target.value)}
+              aria-label="Data final" disabled={loading} /></label>
+            <button className="secondary-button" type="submit" disabled={loading}>Aplicar</button>
+            <button className="text-button" type="button" disabled={loading} onClick={clearPeriod}>Todo o histórico</button>
+          </form>
+          <span className="stitch-period-pill" aria-live="polite">{periodLabel}</span>
+          <a className="primary-button" href="/clients">+ Novo cliente</a>
         </div>
       </header>
 
-      {error && <div className="erp-alert error">{error}</div>}
+      {error && <div className="erp-alert error" role="alert">{error}</div>}
 
       {!dashboard ? (
         <section className="erp-panel dashboard-loading">Carregando indicadores...</section>
       ) : (
         <>
-          <section className="dashboard-metrics">
+          <section className="dashboard-metrics" aria-busy={loading}>
             <article className="stitch-metric-card">
               <div className="metric-card-head"><span>Faturamento</span><i>R$</i></div>
               <strong>{money(dashboard.commercial?.revenue)}</strong>
-              <div className="metric-card-foot"><small>Vendas efetivamente pagas</small><b>Atual</b></div>
+              <div className="metric-card-foot"><small>Vendas efetivamente pagas</small><b>Filtro</b></div>
             </article>
             <article className="stitch-metric-card">
               <div className="metric-card-head"><span>Vendas</span><i>↗</i></div>
@@ -208,12 +263,12 @@ export function DashboardWorkspace({ userName }: { userName: string }) {
             <article className="stitch-metric-card">
               <div className="metric-card-head"><span>Estoque baixo</span><i>!</i></div>
               <strong>{dashboard.inventory?.lowStockCount ?? 0}</strong>
-              <div className="metric-card-foot"><small>Produtos pedindo atenção</small><b>Atenção</b></div>
+              <div className="metric-card-foot"><small>Estoque atual, independente do período</small><b>Atenção</b></div>
             </article>
             <article className="stitch-metric-card">
               <div className="metric-card-head"><span>Saldo realizado</span><i>↕</i></div>
               <strong>{money(dashboard.finance?.cashFlow?.net)}</strong>
-              <div className="metric-card-foot"><small>Entradas menos saídas</small><b>Caixa</b></div>
+              <div className="metric-card-foot"><small>Entradas menos saídas no período</small><b>Caixa</b></div>
             </article>
           </section>
 
@@ -331,7 +386,7 @@ export function DashboardWorkspace({ userName }: { userName: string }) {
             <article className="erp-panel stitch-panel">
               <div className="panel-heading">
                 <div>
-                  <p className="erp-kicker">Relacionamento</p>
+                  <p className="erp-kicker">Relacionamento · Situação atual</p>
                   <h2>Clientes para reativar</h2>
                 </div>
                 <span className="status-chip warning">{inactivity.length}</span>
@@ -355,7 +410,7 @@ export function DashboardWorkspace({ userName }: { userName: string }) {
             <article className="erp-panel stitch-panel attention-panel">
               <div className="panel-heading">
                 <div>
-                  <p className="erp-kicker">Atenção necessária</p>
+                  <p className="erp-kicker">Atenção necessária · Saldos atuais</p>
                   <h2>Pendências da operação</h2>
                 </div>
               </div>
