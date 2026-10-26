@@ -9,7 +9,8 @@
 **Branch de inteligência do cliente:** `feat/client-category-insights-20261026` — PR #45  
 **Branch de filtros de período:** `feat/dashboard-period-filters-20261026` — PR #46  
 **Branch de RBAC visual:** `fix/erp-navigation-rbac-20261026` — PR #47  
-**Branch de segurança das integrações:** `fix/erp-integration-settings-secrets-20261026` — PR #48
+**Branch de segurança das integrações:** `fix/erp-integration-settings-secrets-20261026` — PR #48  
+**Branch de teste real em navegador:** `test/erp-browser-e2e-20261026` — PR #49
 
 ## Critério de status
 
@@ -54,6 +55,8 @@
 
 **Evidência da proteção de credenciais do registry:** CI verde [#40378040747](https://github.com/brnexusia/ERP/actions/runs/40378040747), commit `53142294d12822b8bd8e71e4a604b3b637fb935a`.
 
+**Evidência da homologação de browser:** CI verde [#40379133657](https://github.com/brnexusia/ERP/actions/runs/40379133657), commit `30dab355e26d9b3f04abf103d7f61166ea2c7288`. Quatro cenários Chromium (desktop 1440×900 e mobile 390×844), anônimo/login, filtros de período, principais módulos e ausência de overflow horizontal. [Screenshots/relatório do navegador](https://github.com/brnexusia/ERP/actions/runs/40379133657/artifacts/12676653014) (artifact temporário).
+
 > Executar novamente a CI após qualquer alteração. Um pipeline verde não constitui, por si só, homologação visual Stitch, aceite de regras comerciais, prova de carga em VPS real nem certificação de integração externa.
 
 ## Checklist para aceite definitivo
@@ -68,12 +71,13 @@
 - [x] Filtro temporal de indicadores comerciais/financeiros validado com venda paga e liquidação em datas diferentes.
 - [x] Navegação e rotas SSR negam módulos não autorizados, sem conceder novas permissões.
 - [x] Configurações de integrações rejeitam chaves credenciais e redigem dados legados mesmo no GET administrativo.
+- [x] Testes de navegação em Chromium desktop/mobile (4 cenários Playwright), com screenshots para análise posterior; **não** são homologação pixel a pixel do Stitch.
 - [ ] Comparação visual documentada com todas as telas completas exportadas do Stitch, inclusive mobile.
 - [ ] Contratos, credenciais, ambiente de teste e idempotência dos sistemas externos.
 - [ ] Decisões formais faltantes registradas em `docs/DECISIONS_REQUIRED.md`.
 - [ ] Testes de ponta a ponta com dados reais autorizados/anonimizados e aceite operacional de Pedro/Vax/Arles.
 - [ ] Avaliação de segurança, carga, observabilidade, retenção offsite e plano de rollback do VPS final.
-- [ ] Revisão dos PRs e integração controlada sem duplicidades: #48 contém #47 → #46 → #45 → #44 → #43 → #42. Os PRs #38–#41 são insumos/alternativas da consolidação. Nenhum merge automático.
+- [ ] Revisão dos PRs e integração controlada sem duplicidades: #49 contém #48 → #47 → #46 → #45 → #44 → #43 → #42. Os PRs #38–#41 são insumos/alternativas da consolidação. Nenhum merge automático.
 - [ ] Autorização expressa antes de colocar o ERP em produção.
 
 **Conclusão:** etapa de engenharia automatizada validada nos commits acima; **homologação final do produto e implantação permanecem abertas** enquanto houver bloqueios listados.
