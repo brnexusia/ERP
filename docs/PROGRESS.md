@@ -104,6 +104,8 @@ Já existem vendas/faturamento por período, ticket médio geral/novos/antigos, 
 
 O Dashboard Geral agrega comercial, clientes, inatividade, estoque baixo e financeiro e inclui metas por vendedora com identidade, alvo, realizado, percentual, atingimento e estado temporal. O filtro do dashboard seleciona metas por sobreposição de período sem alterar o período próprio de cálculo da meta. O dashboard é permission-aware e tenant-scoped.
 
+A interface do Dashboard Geral permite informar data inicial e final explicitamente, filtra indicadores comerciais/financeiros com as mesmas datas e exibe estado atual para estoque e inatividade. O modo sem filtro indica `Todo o histórico`, sem presumir janela-padrão comercial.
+
 **Pendente:** visual conforme Stitch, comissões após definição de regra e eventual regra automática/padrão de “reduziu compras”. A comparação explícita já funciona, mas o ERP não escolhe sozinho períodos, métrica ou limiar sem aprovação.
 
 ## 11 — Financeiro 🟠
