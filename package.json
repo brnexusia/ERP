@@ -55,7 +55,8 @@
     "test:module-1": "tsx scripts/smoke-auth.ts && tsx scripts/smoke-client-management.ts && tsx scripts/smoke-central-client-profile.ts && tsx scripts/smoke-client-payment-history.ts && tsx scripts/smoke-integrations.ts && tsx scripts/smoke-password-change.ts && tsx scripts/smoke-julia-module1.ts",
     "test:smoke-cheque-returns": "tsx scripts/smoke-cheque-returns.ts",
     "test:smoke-manual-receivables": "tsx scripts/smoke-manual-receivables.ts",
-    "test:smoke-support-workspace": "tsx scripts/smoke-support-workspace.ts"
+    "test:smoke-support-workspace": "tsx scripts/smoke-support-workspace.ts",
+    "test:browser": "playwright test"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
@@ -65,6 +66,7 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
