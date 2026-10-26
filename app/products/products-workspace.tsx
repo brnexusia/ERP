@@ -72,10 +72,10 @@ function attributesObject(raw: string): Record<string, string | number | boolean
   return parsed as Record<string, string | number | boolean>;
 }
 
-export function ProductsWorkspace({ canWrite }: { canWrite: boolean }) {
+export function ProductsWorkspace({ canWrite, initialProductId }: { canWrite: boolean; initialProductId?: string | null }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(initialProductId ?? null);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [onlyLowStock, setOnlyLowStock] = useState(false);
