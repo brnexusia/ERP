@@ -119,6 +119,7 @@ async function main() {
     assert.equal(data.lowStockProducts.some((v: { id: string }) => v.id === stocked.id), false);
     assert.equal(data.summary.total, data.inactiveClients.length + data.lowStockProducts.length);
     const serialized = JSON.stringify(data);
+    assert.ok(!JSON.stringify(data).includes("passwordHash"), "Alerta não pode divulgar hash de usuário.");
     assert.ok(!serialized.includes("NÃO EXIBIR"), "Dados de outro tenant não podem aparecer.");
     assert.ok(!serialized.includes("costPrice") && !serialized.includes("98765.43"),
       "Alertas não expõem custo de aquisição.");
