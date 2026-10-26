@@ -104,7 +104,9 @@ O Dashboard Geral agrega comercial, clientes, inatividade, estoque baixo e finan
 
 Contas a receber derivadas de pagamentos reais, contas a pagar, fluxo de caixa realizado, conciliação bancária manual e relatório consolidado estão funcionais. Conciliações também possuem guard cross-tenant no PostgreSQL.
 
-**Pendente para ✅:** interface final. Automação/importação bancária depende de provedor/contrato técnico.
+A página operacional `/finance` expõe contas a receber, a pagar, fluxo de caixa realizado, conciliação bancária manual e indicadores financeiros com permissões e período informado. Cadastro, quitação e conciliação reutilizam serviços auditados e tenant-scoped.
+
+**Pendente para ✅:** homologação visual final. Automação/importação bancária depende de provedor/contrato técnico.
 
 ## 12 — Promoções e catálogo 🟡
 
