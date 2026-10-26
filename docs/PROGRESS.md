@@ -62,11 +62,15 @@ O fechamento controlado da primeira etapa está documentado em `docs/MODULE_1_CL
 
 Produto possui nome, SKU, código de barras, categoria/subcategoria, marca/fabricante, descrição, atributos, fotos/variação, custo, preço, unidade, estoque atual/mínimo/máximo, APIs tenant-scoped, auditoria e armazenamento real de imagens. O catálogo automático lê a mesma base de produtos.
 
-**Pendente para ✅:** Produtos & Estoque conforme Stitch.
+A página operacional `/products` já oferece catálogo de produtos, filtros, detalhes, cadastro/edição, subcategorias, controle manual de quantidade e imagens por variação, com edição protegida por `inventory:write`.
+
+**Pendente para ✅:** confronto visual tela a tela de Produtos & Estoque conforme Stitch completo.
 
 ## 6 — Estoque inteligente 🟡
 
 Já existem alerta de estoque baixo, mínimo/máximo, quantidade vendida, faturamento, vendas pagas, última venda, estoque e categorias predominantes por cliente. A base factual da Curva ABC calcula ranking, participação e participação acumulada por período explícito, usando `REVENUE` ou `SOLD_QUANTITY`. Produtos com baixa saída também podem ser identificados quando o usuário informa explicitamente período, métrica (`REVENUE`, `SOLD_QUANTITY` ou `PAID_SALES`) e limiar; nenhum valor padrão é presumido.
+
+A interface operacional `/products/intelligence` expõe os três relatórios existentes (vendas de produtos, ranking/distribuição e baixa saída) mediante período, métrica e limiar escolhidos pelo usuário.
 
 **Aguardando regra objetiva:** regra automática/padrão de baixa saída, faixas A/B/C e momento da baixa/reserva física. A distribuição ABC não atribui classes enquanto as faixas não forem aprovadas.
 
@@ -110,7 +114,7 @@ Catálogo automático compartilhável por link, imagens públicas de produto, cu
 
 A base da regra de auto-atacado avançou sem inventar efeito comercial: o perfil comercial detecta factual e exclusivamente sobre vendas `PAID` se houve recompra em até três meses-calendário, preservando os intervalos entre compras. O ERP não aplica automaticamente preço, desconto ou mudança de segmento enquanto esse efeito não estiver definido.
 
-**Aguardando regra:** descontos progressivos, dúzia fechada, promoções, prioridade/empilhamento/vigência/arredondamento e efeito comercial final do auto-atacado. Falta também página visual pública segundo o design system aprovado.
+**Aguardando regra:** descontos progressivos, dúzia fechada, promoções, prioridade/empilhamento/vigência/arredondamento e efeito comercial final do auto-atacado. O link de catálogo agora abre uma página HTML pública em `/catalog/[token]`, com preço de venda, imagens e disponibilidade factual, mantendo a API JSON. Sua aparência é operacional e depende de homologação visual segundo o Stitch aprovado.
 
 ## 13 — Integrações 🟡
 
