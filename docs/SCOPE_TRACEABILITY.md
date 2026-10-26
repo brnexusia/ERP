@@ -19,7 +19,7 @@ Quando o documento exige uma função mas não fornece fórmula, limiar, priorid
 | Linha de crédito | Limite, utilizado, disponível e movimentos tenant-scoped + operação no perfil central | 4 |
 | Vale do cliente | Saldo e movimentos tenant-scoped + operação no perfil central | 4 |
 | Segmentação por grupo/perfil | `ClientSegment` por empresa + atribuição no perfil e gestão em `/clients/settings` | 4 |
-| Aviso por X dias sem compra | Configuração por empresa + cálculo pela última compra paga + alertas em `/clients` | 4/10 |
+| Aviso por X dias sem compra | Configuração por empresa/cliente + cálculo pela última compra paga e central privada `/alerts` em tempo de consulta | 4/10 |
 | CRM integrado | Atividades, histórico, follow-up e conclusão + timeline operacional no perfil do cliente | 4 |
 | Gestão central do cliente | `/api/clients/:id/central-profile` agrega cadastro, comercial, crédito, vale, CRM, suporte e histórico de pagamentos; `/clients` expõe o perfil operacional | 3/4/8 |
 | Login e senha | Sessão persistida + autenticação + troca autenticada de senha com verificação da senha atual, revogação das sessões paralelas e auditoria | 1 |
@@ -72,7 +72,7 @@ A camada funcional e a interface operacional da Etapa 1 estão em homologação.
 | Catálogo automático | Catálogo lê diretamente o cadastro de produtos | 12 |
 | Link compartilhável | Token público de catálogo | 12 |
 | Estoque mínimo/máximo | `ProductStock` | 5/6 |
-| Alerta de estoque baixo | Derivado quando quantidade <= mínimo | 6 |
+| Alerta de estoque baixo | Derivado quando quantidade <= mínimo; central privada `/alerts`, respeitando RBAC e tenant | 6 |
 | Produtos com baixa saída | Relatório factual por período, métrica e limiar explicitamente informados; regra automática/padrão continua pendente | 6 |
 | Curva ABC | Distribuição factual por período explícito com ranking, participação e acumulado em `REVENUE` ou `SOLD_QUANTITY`; faixas A/B/C ainda pendentes | 6 |
 | Categorias por cliente | Calculadas a partir de compras pagas | 6/10 |
