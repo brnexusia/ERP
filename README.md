@@ -48,6 +48,7 @@ O ERP não transforma essas lacunas em regra de negócio por suposição.
 - `docs/CLIENT_CATEGORY_INSIGHTS.md` — análise de categorias e histórico efetivo de pagamentos no perfil do cliente;
 - `docs/DASHBOARD_PERIOD_FILTER.md` — seleção de período sem distorcer o estoque/inatividade atual;
 - `docs/RBAC_NAVIGATION_AUDIT.md` — alinhamento entre links de navegação e autorização nas páginas;
+- `docs/BROWSER_E2E_HOMOLOGATION.md` — navegação real em Chromium desktop/mobile, screenshots e limites da homologação;
 - `docs/HOMOLOGACAO_ERP_2026-10-26.md` — evidências da CI por etapa, lacunas de aceite e gate de liberação;
 - `docs/PRODUCTION_DEPLOYMENT.md` — implantação, persistência, backup e recuperação.
 
