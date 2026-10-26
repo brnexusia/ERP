@@ -226,7 +226,7 @@ export function DashboardWorkspace({ userName }: { userName: string }) {
               onChange={(event) => setEnd(event.target.value)}
               aria-label="Data final" disabled={loading} /></label>
             <button className="secondary-button" type="submit" disabled={loading}>Aplicar</button>
-            <button className="text-button" type="button" disabled={loading} onClick={clearPeriod}>Todo o histórico</button>
+            <button className="text-button" type="button" disabled={loading} onClick={clearPeriod}>Limpar filtro</button>
           </form>
           <span className="stitch-period-pill" aria-live="polite">{periodLabel}</span>
           <a className="primary-button" href="/clients">+ Novo cliente</a>
