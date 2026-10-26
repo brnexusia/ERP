@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import type { MembershipRole } from "@prisma/client";
+import { hasPermission } from "@/lib/auth/permissions";
 import { LogoutButton } from "@/app/logout-button";
 
 type ModuleShellProps = {
@@ -7,7 +9,7 @@ type ModuleShellProps = {
   active: "dashboard" | "clients" | "settings" | "commissions" | "sales" | "receivables" | "support" | "reports" | "products" | "integrations" | "finance" | "promotions" | "alerts";
   organizationName: string;
   userName: string;
-  role: string;
+  role: MembershipRole;
 };
 
 type NavIconProps = {
@@ -90,9 +92,11 @@ export function ModuleShell({
 
           <p className="erp-nav-section">Operação</p>
           <Link className={active === "sales" ? "active" : ""} href="/sales"><NavIcon kind="sales" /><span>Vendas & Pedidos</span><b>02</b></Link>
-          <Link className={active === "products" ? "active" : ""} href="/products"><NavIcon kind="inventory" /><span>Produtos & Estoque</span><b>03</b></Link>
+          {hasPermission(role, "inventory:read") && (
+            <Link className={active === "products" ? "active" : ""} href="/products"><NavIcon kind="inventory" /><span>Produtos & Estoque</span><b>03</b></Link>
+          )}
           <Link className={active === "alerts" ? "active" : ""} href="/alerts"><NavIcon kind="support" /><span>Central de alertas</span><b>01/03</b></Link>
-          {["OWNER", "ADMIN", "MANAGER", "FINANCE", "VIEWER"].includes(role) && (
+          {hasPermission(role, "reports:read") && hasPermission(role, "sales:read") && hasPermission(role, "clients:read") && (
             <Link className={active === "reports" ? "active" : ""} href="/reports">
               <NavIcon kind="reports" /><span>Relatórios & BI</span><b>02</b>
             </Link>
@@ -102,7 +106,7 @@ export function ModuleShell({
               <NavIcon kind="reports" /><span>Comissões · prévia</span><b>02</b>
             </Link>
           )}
-          {["OWNER", "ADMIN", "MANAGER", "FINANCE", "VIEWER"].includes(role) && (
+          {hasPermission(role, "finance:read") && (
             <Link className={active === "receivables" ? "active" : ""} href="/receivables">
               <NavIcon kind="finance" /><span>Cobranças avulsas</span><b>02</b>
             </Link>
@@ -110,13 +114,13 @@ export function ModuleShell({
           <Link className={active === "support" ? "active" : ""} href="/support"><NavIcon kind="support" /><span>Atendimento & SAC</span><b>02</b></Link>
 
           <p className="erp-nav-section">Administração</p>
-          {["OWNER", "ADMIN", "MANAGER", "FINANCE", "VIEWER"].includes(role) && (
+          {hasPermission(role, "finance:read") && (
             <Link className={active === "finance" ? "active" : ""} href="/finance"><NavIcon kind="finance" /><span>Financeiro</span><b>04</b></Link>
           )}
-          {["OWNER", "ADMIN"].includes(role) && (
+          {hasPermission(role, "integrations:manage") && (
             <Link className={active === "integrations" ? "active" : ""} href="/integrations"><NavIcon kind="integrations" /><span>Integrações</span><b>04</b></Link>
           )}
-          {["OWNER", "ADMIN"].includes(role) && (
+          {hasPermission(role, "organization:manage") && (
             <Link className={active === "promotions" ? "active" : ""} href="/promotions"><NavIcon kind="sales" /><span>Promoções · rascunhos</span><b>04</b></Link>
           )}
           <Link className={active === "settings" ? "active" : ""} href="/clients/settings">
