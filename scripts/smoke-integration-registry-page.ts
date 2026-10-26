@@ -16,6 +16,7 @@ async function main() {
     data: { name: "Integrations UI Seller", email: `integration-ui-seller-${Date.now()}@example.test` },
   });
   let integrationId: string | null = null;
+  let ownerSessionHash: string | null = null;
   const key = `registry-ui-${Date.now()}`;
   try {
     await db.membership.create({ data: { organizationId: org.id, userId: seller.id, role: "SELLER" } });
@@ -44,6 +45,7 @@ async function main() {
     assert.equal(login.status, 200);
     const ownerCookie = login.headers.get("set-cookie")?.split(";", 1)[0];
     assert.ok(ownerCookie);
+    ownerSessionHash = createHash("sha256").update(ownerCookie.split("=", 2)[1]).digest("hex");
     const page = await fetch(base + "/integrations", { headers: { Cookie: ownerCookie } });
     assert.equal(page.status, 200);
     const html = await page.text();
@@ -67,14 +69,71 @@ async function main() {
     assert.equal(updated.status, 200);
     assert.equal((await updated.json()).integration.status, "DISCONNECTED",
       "Habilitar registro não pode afirmar conexão real.");
+    const rejectCredentials = await fetch(base + "/api/integrations", {
+      method: "POST", headers: { Cookie: ownerCookie, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        provider: "VAXCHAT", key, displayName: "Registro",
+        settings: { env: "test", headers: { authorization: "Bearer SENSITIVE-CANARY-VALUE" } },
+      }),
+    });
+    assert.equal(rejectCredentials.status, 400,
+      "Credenciais não podem ser salvas em campos de configuração visíveis.");
+    const rejectApiKey = await fetch(base + "/api/integrations", {
+      method: "POST", headers: { Cookie: ownerCookie, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        provider: "VAXCHAT", key, displayName: "Registro",
+        settings: { connection: [{ api_key: "SENSITIVE-CANARY-VALUE" }] },
+      }),
+    });
+    assert.equal(rejectApiKey.status, 400,
+      "Detecção deve identificar segredos aninhados em arrays.");
+
+    await db.integration.update({
+      where: { id: integrationId! },
+      data: {
+        settings: {
+          displayMode: "manual",
+          nested: [{ publicFlag: true, clientSecret: "LEGACY-SECRET-CANARY-VALUE" }],
+          refresh_token: "LEGACY-SECRET-CANARY-VALUE",
+        },
+      },
+    });
+    const readBack = await fetch(base + "/api/integrations", {
+      headers: { Cookie: ownerCookie },
+    });
+    assert.equal(readBack.status, 200);
+    const body = await readBack.text();
+    assert.ok(!body.includes("LEGACY-SECRET-CANARY-VALUE") &&
+      !body.includes("refresh_token") && !body.includes("clientSecret"),
+    "Segredos legados devem ser removidos até em respostas já persistidas.");
+    const loaded = JSON.parse(body).integrations.find((entry: { id: string }) => entry.id === integrationId);
+    assert.ok(loaded);
+    assert.equal(loaded.settings.displayMode, "manual");
+    assert.equal(loaded.settings.nested[0].publicFlag, true);
+
+    const safeUpdate = await fetch(base + "/api/integrations", {
+      method: "POST", headers: { Cookie: ownerCookie, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        provider: "VAXCHAT", key, displayName: "Registro",
+        settings: { environment: "test", apiBaseUrl: "https://api.example.test" },
+        secretRef: "vault/erp/ci/opaque-only",
+      }),
+    });
+    assert.equal(safeUpdate.status, 200);
+    const result = (await safeUpdate.json()).integration;
+    assert.equal(result.secretConfigured, true);
+    assert.equal(result.settings.apiBaseUrl, "https://api.example.test");
+    assert.ok(!JSON.stringify(result).includes("vault/erp/ci/opaque-only"),
+      "Referência de segredo é privada, mesmo para administradores.");
     console.log("✓ Registro integrado no painel, sem segredo em respostas");
+    console.log("✓ Campos de segredo em configurações rejeitados; campos legados redigidos no GET");
     console.log("✓ Ausência de sessão e acesso de vendedor bloqueados");
     console.log("✓ Habilitar registro não simula conexão com VaxChat");
   } finally {
     if (integrationId) await db.integration.deleteMany({ where: { organizationId: org.id, id: integrationId } });
     await db.session.deleteMany({ where: { userId: seller.id } });
     await db.user.delete({ where: { id: seller.id } });
-    await db.session.deleteMany({ where: { userId: owner.id } });
+    if (ownerSessionHash) await db.session.deleteMany({ where: { tokenHash: ownerSessionHash } });
     await db.$disconnect();
   }
 }
