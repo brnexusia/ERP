@@ -6,7 +6,7 @@ Implementação tecnicamente executável sem inventar essas decisões:
 - Modelo PostgreSQL `PromotionDraft` com `organizationId`, criador, nome, tipo, produto/categoria opcionais conforme o tipo e observações.
 - Quatro tipos de rascunho: `PRODUCT`, `CATEGORY`, `PROGRESSIVE_VALUE`, `PROGRESSIVE_QUANTITY`. Um rascunho **não** possui preço calculado, desconto em percentual, ativação nem vigência.
 - `GET /api/promotions`, `POST /api/promotions`, `DELETE /api/promotions/[id]` e painel `/promotions` exclusivo a OWNER/ADMIN (permissão `organization:manage`).
-- Registro auditado de criação e exclusão. As ligações de produto/categoria são conferidas por empresa na aplicação e no PostgreSQL com triggers de isolamento.
+- Registro auditado de criação e exclusão. As ligações de produto/categoria são conferidas por empresa na aplicação e no PostgreSQL com triggers de isolamento. O PostgreSQL também exige que o usuário criador seja membro do tenant registrado no rascunho.
 - Sem integração com `Sale`, `SaleItem`, preços, catálogo público ou checkout. Nenhum rascunho pode alterar valores ou influenciar uma venda.
 
 ## Homologação técnica
