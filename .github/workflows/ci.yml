@@ -182,3 +182,4 @@ jobs:
           pnpm test:smoke-product-intelligence-page
           pnpm test:smoke-promotion-drafts
           pnpm test:smoke-alert-center
+          pnpm test:smoke-page-rbac
