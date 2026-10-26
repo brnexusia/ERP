@@ -6,7 +6,10 @@
 **Branch de integração:** `feat/erp-unified-regression-hardening-20261026` — PR #42  
 **Branch incremental:** `feat/promotion-draft-registry-20261026` — PR #43
 **Branch de alertas:** `feat/operational-alert-center-20261026` — PR #44
-**Branch de inteligência do cliente:** `feat/client-category-insights-20261026` — PR #45
+**Branch de inteligência do cliente:** `feat/client-category-insights-20261026` — PR #45  
+**Branch de filtros de período:** `feat/dashboard-period-filters-20261026` — PR #46  
+**Branch de RBAC visual:** `fix/erp-navigation-rbac-20261026` — PR #47  
+**Branch de segurança das integrações:** `fix/erp-integration-settings-secrets-20261026` — PR #48
 
 ## Critério de status
 
@@ -45,6 +48,12 @@
 
 **Evidência de categorias e pagamentos no perfil central:** CI verde [#40362915382](https://github.com/brnexusia/ERP/actions/runs/40362915382), commit `896d1861647c6306e825a7863db05324c085fb16`.
 
+**Evidência dos filtros reais do Dashboard:** CI verde [#40376239209](https://github.com/brnexusia/ERP/actions/runs/40376239209), commit `cee856d2ffd60a255b911fddbdf0386f11454c47`.
+
+**Evidência de RBAC SSR e menu:** CI verde [#40377290752](https://github.com/brnexusia/ERP/actions/runs/40377290752), commit `9fa2512d32313ac471e4f2ad5819a339ae9bc556`.
+
+**Evidência da proteção de credenciais do registry:** CI verde [#40378040747](https://github.com/brnexusia/ERP/actions/runs/40378040747), commit `53142294d12822b8bd8e71e4a604b3b637fb935a`.
+
 > Executar novamente a CI após qualquer alteração. Um pipeline verde não constitui, por si só, homologação visual Stitch, aceite de regras comerciais, prova de carga em VPS real nem certificação de integração externa.
 
 ## Checklist para aceite definitivo
@@ -56,12 +65,15 @@
 - [x] Cadastro de intenções de promoções sem aplicação comercial não autorizada.
 - [x] Alertas in-app de cliente inativo/estoque mínimo, sem exposição de custo ou dados cross-tenant.
 - [x] Categorias predominantes e histórico dos meios de pagamento reais visíveis no perfil central.
+- [x] Filtro temporal de indicadores comerciais/financeiros validado com venda paga e liquidação em datas diferentes.
+- [x] Navegação e rotas SSR negam módulos não autorizados, sem conceder novas permissões.
+- [x] Configurações de integrações rejeitam chaves credenciais e redigem dados legados mesmo no GET administrativo.
 - [ ] Comparação visual documentada com todas as telas completas exportadas do Stitch, inclusive mobile.
 - [ ] Contratos, credenciais, ambiente de teste e idempotência dos sistemas externos.
 - [ ] Decisões formais faltantes registradas em `docs/DECISIONS_REQUIRED.md`.
 - [ ] Testes de ponta a ponta com dados reais autorizados/anonimizados e aceite operacional de Pedro/Vax/Arles.
 - [ ] Avaliação de segurança, carga, observabilidade, retenção offsite e plano de rollback do VPS final.
-- [ ] Revisão dos PRs e merge controlado após as dependências (`#45` depende de `#44`, que depende de `#43`, que depende de `#42`; os PRs `#38–#41` são alternativas/insumos da consolidação).
+- [ ] Revisão dos PRs e integração controlada sem duplicidades: #48 contém #47 → #46 → #45 → #44 → #43 → #42. Os PRs #38–#41 são insumos/alternativas da consolidação. Nenhum merge automático.
 - [ ] Autorização expressa antes de colocar o ERP em produção.
 
 **Conclusão:** etapa de engenharia automatizada validada nos commits acima; **homologação final do produto e implantação permanecem abertas** enquanto houver bloqueios listados.
