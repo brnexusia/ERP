@@ -5,6 +5,8 @@
 **Fonte visual obrigatória:** telas e design system do Stitch aprovado (ainda sem pacote exportável completo no repositório)  
 **Branch de integração:** `feat/erp-unified-regression-hardening-20261026` — PR #42  
 **Branch incremental:** `feat/promotion-draft-registry-20261026` — PR #43
+**Branch de alertas:** `feat/operational-alert-center-20261026` — PR #44
+**Branch de inteligência do cliente:** `feat/client-category-insights-20261026` — PR #45
 
 ## Critério de status
 
@@ -17,9 +19,9 @@
 
 | Etapa | Cobertura técnica exercitada | Gate ainda pendente |
 |---|---|---|
-| **1. Gestão de Clientes** | Cadastro, CPF/CNPJ/endereço, crédito, vale, segmentação, inatividade com dias configurados, CRM, perfil central, login, RBAC, isolamento de empresa e smoke `test:module-1` / cadeia de smokes no CI | VaxChat/VaxLab reais, comparação visual Stitch e aceite funcional de operação |
+| **1. Gestão de Clientes** | Cadastro, CPF/CNPJ/endereço, crédito, vale, segmentação, inatividade por dias configurados na central `/alerts`, CRM, perfil central, login, RBAC, isolamento de empresa e smoke `test:module-1` / cadeia de smokes no CI | VaxChat/VaxLab reais, comparação visual Stitch e aceite funcional de operação |
 | **2. Vendas, Relatórios e Comissões** | Fluxo orçamento → pedido → pagamento, canais, pagamentos, vencimentos, perfil da vendedora, metas explícitas, descontos aprovados, cheques, comissões auditadas, SAC, entregas, dashboard e relatórios; smoke integrado CI | Contratos de envio de rastreio por e-mail/WhatsApp; fórmula de comissão conforme decisões aplicáveis; validação visual e negócio |
-| **3. Produtos e Estoque** | Categorias, produtos, fotos, estoque e limites, catálogo público com custo oculto, indicadores por período, curva de participação factual e baixa saída parametrizada; smoke UI e verificação seller/tenant | Faixas ABC, limiares automáticos, baixa física/reserva de estoque, descontos progressivos e aceite Stitch |
+| **3. Produtos e Estoque** | Categorias, produtos, fotos, estoque e limites, alerta automático in-app de estoque mínimo, catálogo público com custo oculto, indicadores por período, curva factual, baixa saída parametrizada, análise de categorias no perfil do cliente e histórico real das formas de pagamento; smoke UI e verificação seller/tenant | Faixas ABC, limiares automáticos, baixa física/reserva de estoque, descontos progressivos e aceite Stitch |
 | **4. Integrações, Promoções e Financeiro** | Configuração isolada de provedores, financeiro e conciliação manual, fluxos de caixa e relatórios; rascunhos de promoções por produto/categoria/valor/quantidade com isolamento e auditoria; smoke CI | Integrações reais, política de precificação promoções, automação bancária se solicitada, domínio/DNS/TLS/VPS e aceite visual |
 
 ## Garantias que a CI efetivamente exercita
@@ -39,6 +41,10 @@
 
 **Evidência da etapa de rascunhos e proteções multiempresa:** CI verde [#40355778435](https://github.com/brnexusia/ERP/actions/runs/40355778435), commit `a6431b006dc35b67d389998bfed702c793563349`.
 
+**Evidência da Central de Alertas:** CI verde [#40361886771](https://github.com/brnexusia/ERP/actions/runs/40361886771), commit `7331f4177f13d22bc9839b96fe84e2df69782b67`.
+
+**Evidência de categorias e pagamentos no perfil central:** CI verde [#40362915382](https://github.com/brnexusia/ERP/actions/runs/40362915382), commit `896d1861647c6306e825a7863db05324c085fb16`.
+
 > Executar novamente a CI após qualquer alteração. Um pipeline verde não constitui, por si só, homologação visual Stitch, aceite de regras comerciais, prova de carga em VPS real nem certificação de integração externa.
 
 ## Checklist para aceite definitivo
@@ -48,12 +54,14 @@
 - [x] Suite técnica integrada, migrações e mecanismos de recuperação testados nos commits citados.
 - [x] Redação de custos para papéis sem acesso gerencial, testada em consulta de produtos e estoque baixo.
 - [x] Cadastro de intenções de promoções sem aplicação comercial não autorizada.
+- [x] Alertas in-app de cliente inativo/estoque mínimo, sem exposição de custo ou dados cross-tenant.
+- [x] Categorias predominantes e histórico dos meios de pagamento reais visíveis no perfil central.
 - [ ] Comparação visual documentada com todas as telas completas exportadas do Stitch, inclusive mobile.
 - [ ] Contratos, credenciais, ambiente de teste e idempotência dos sistemas externos.
 - [ ] Decisões formais faltantes registradas em `docs/DECISIONS_REQUIRED.md`.
 - [ ] Testes de ponta a ponta com dados reais autorizados/anonimizados e aceite operacional de Pedro/Vax/Arles.
 - [ ] Avaliação de segurança, carga, observabilidade, retenção offsite e plano de rollback do VPS final.
-- [ ] Revisão dos PRs e merge controlado após as dependências (`#43` depende de `#42`; os PRs `#38–#41` são alternativas/insumos desta integração).
+- [ ] Revisão dos PRs e merge controlado após as dependências (`#45` depende de `#44`, que depende de `#43`, que depende de `#42`; os PRs `#38–#41` são alternativas/insumos da consolidação).
 - [ ] Autorização expressa antes de colocar o ERP em produção.
 
 **Conclusão:** etapa de engenharia automatizada validada nos commits acima; **homologação final do produto e implantação permanecem abertas** enquanto houver bloqueios listados.
