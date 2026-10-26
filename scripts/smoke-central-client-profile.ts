@@ -171,6 +171,8 @@ async function main() {
     const profile = (await profileResponse.json()).profile;
 
     assert.equal(profile.client.id, clientId);
+    assert.ok(!JSON.stringify(profile).includes("passwordHash"), "Perfil central não expõe credenciais");
+    assert.ok(!JSON.stringify(profile).includes("passwordResetToken"), "Perfil central não expõe tokens");
     assert.equal(profile.client.responsibleSeller.id, sellerMembership.id);
     assert.equal(profile.commercial.purchaseCount, 1);
     assert.equal(profile.commercial.predominantCategories.length, 1,
