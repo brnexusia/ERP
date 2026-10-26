@@ -365,7 +365,7 @@ export function ProductsWorkspace({ canWrite }: { canWrite: boolean }) {
           {canWrite && selected.costPrice !== undefined && <div><dt>Preço de custo</dt><dd>{money(selected.costPrice)}</dd></div>}
         </dl>
         <p className={styles.description}>{selected.description}</p>
-        {selected.technicalAttributes && <pre className={styles.attributes}>{JSON.stringify(selected.technicalAttributes, null, 2)}</pre>}
+        {selected.technicalAttributes != null && <pre className={styles.attributes}>{JSON.stringify(selected.technicalAttributes, null, 2)}</pre>}
         {selected.photos.length > 0 && <div className={styles.photos}>{selected.photos.map((item) => (
           <figure key={item.id}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
