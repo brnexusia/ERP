@@ -47,3 +47,26 @@ CREATE TRIGGER tenant_guard_promotion_product
 CREATE TRIGGER tenant_guard_promotion_category
   BEFORE INSERT OR UPDATE ON "PromotionDraft"
   FOR EACH ROW EXECUTE FUNCTION erp_enforce_same_organization('ProductCategory', 'categoryId');
+
+-- An author must belong to the draft's tenant; foreign keys to User alone
+-- do not express this multi-tenant invariant.
+CREATE OR REPLACE FUNCTION erp_enforce_promotion_creator_membership()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM "Membership"
+    WHERE "organizationId" = NEW."organizationId"
+      AND "userId" = NEW."createdByUserId"
+  ) THEN
+    RAISE EXCEPTION 'promotion creator not a member of organization %', NEW."organizationId"
+      USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER tenant_guard_promotion_creator
+  BEFORE INSERT OR UPDATE ON "PromotionDraft"
+  FOR EACH ROW EXECUTE FUNCTION erp_enforce_promotion_creator_membership();
