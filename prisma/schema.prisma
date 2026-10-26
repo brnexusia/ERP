@@ -213,8 +213,8 @@ model User {
   commissionAdjustmentsRequested CommissionAdjustment[] @relation("CommissionAdjustmentRequester")
   commissionAdjustmentsDecided   CommissionAdjustment[] @relation("CommissionAdjustmentDecider")
   manualReceivablesCreated ClientManualReceivable[] @relation("ManualReceivableCreator")
-  manualReceiptsRecorded ClientManualReceipt[]
-  promotionDraftsCreated PromotionDraft[] @relation("PromotionDraftCreator") @relation("ManualReceiptRecorder")
+  manualReceiptsRecorded ClientManualReceipt[] @relation("ManualReceiptRecorder")
+  promotionDraftsCreated PromotionDraft[] @relation("PromotionDraftCreator")
 }
 
 model Membership {
