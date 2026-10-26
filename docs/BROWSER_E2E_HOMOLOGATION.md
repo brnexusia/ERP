@@ -23,3 +23,6 @@ O escopo oficial exige ERP web funcional, responsivo e interface fiel ao Stitch.
 ## Critérios de aceite
 
 Pipeline verde, screenshots inspecionáveis, sem erros em rotas protegidas para OWNER, sem overflow horizontal ou sobreposição entre os painéis principais do Dashboard Geral. A homologação visual exata só fecha com assets Stitch aprovados.
+## Navegação contextual dos alertas
+
+`tests/e2e/alert-deep-links.spec.ts` exercita a tela de alertas com cliente e estoque temporários e confere a abertura dos detalhes corretos após clicar em **Consultar cliente** e **Consultar estoque**, em Chromium desktop e mobile. Capturas e traces são anexados ao job em caso de erro; dados criados para o teste são limpos ao final.
