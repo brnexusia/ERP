@@ -50,6 +50,8 @@ Linha de crédito com limite/utilizado/disponível/movimentos, vale com saldo/mo
 
 A interface de cliente expõe segmentação, crédito, vale e CRM; `/clients/settings` expõe configuração de inatividade, grupos e a prontidão de VaxChat/VaxLab.
 
+A central operacional `/alerts` reúne a detecção in-app de clientes que alcançaram o prazo configurado e produtos com estoque baixo, sem serviço externo de mensagens ou nova regra automática de negócio.
+
 **Pendente para ✅:** homologação visual final conforme Stitch completo e chamadas/sincronizações reais de VaxChat/VaxLab.
 
 ## Gate da Etapa 1 — Gestão de Clientes 🔵
