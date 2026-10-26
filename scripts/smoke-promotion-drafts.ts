@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { db } from "../lib/db";
 import { hashPassword } from "../lib/auth/password";
 
@@ -24,11 +25,13 @@ async function main() {
   assert.equal(login.status, 200);
   const cookie = login.headers.get("set-cookie")?.split(";", 1)[0];
   assert.ok(cookie);
+  const ownerSessionHash = createHash("sha256").update(cookie.split("=", 2)[1]).digest("hex");
   const stamp = Date.now();
   let categoryId: string | null = null;
   let productId: string | null = null;
   let secondOrgId: string | null = null;
   let secondCategoryId: string | null = null;
+  let secondDraftId: string | null = null;
   let sellerId: string | null = null;
   const draftIds: string[] = [];
   try {
@@ -71,6 +74,7 @@ async function main() {
     assert.equal(productResponse.status, 201);
     productId = (await productResponse.json()).product.id;
     const saleCountBefore = await db.sale.count({ where: { organizationId: org.id } });
+    const productPriceBefore = (await db.product.findUniqueOrThrow({ where: { id: productId } })).salePrice;
     const candidates = [
       { name: "Rascunho produto", kind: "PRODUCT", productId },
       { name: "Rascunho categoria", kind: "CATEGORY", categoryId },
@@ -91,6 +95,12 @@ async function main() {
     assert.ok(draftIds.every((id) => listing.drafts.some((p: { id: string }) => p.id === id)));
     assert.equal(await db.sale.count({ where: { organizationId: org.id } }), saleCountBefore,
       "Cadastrar rascunho não cria ou altera venda.");
+    const productPriceAfter = (await db.product.findUniqueOrThrow({ where: { id: productId } })).salePrice;
+    assert.equal(productPriceAfter.toFixed(2), productPriceBefore.toFixed(2),
+      "Registrar promoções não pode alterar o preço de venda.");
+    assert.equal((await json("/api/promotions", sellerCookie, "POST", {
+      name: "Tentativa não autorizada", kind: "PRODUCT", productId,
+    })).status, 403, "Vendedora não pode criar rascunhos.");
 
     assert.equal((await json("/api/promotions", cookie, "POST", {
       name: "Preço não aprovado", kind: "PRODUCT", productId, discountPercent: 10,
@@ -106,6 +116,18 @@ async function main() {
       data: { organizationId: secondOrg.id, name: "Categoria outra empresa" },
     });
     secondCategoryId = secondCategory.id;
+    const secondDraft = await db.promotionDraft.create({
+      data: { organizationId: secondOrg.id, createdByUserId: owner.id,
+        name: "Rascunho segundo tenant", kind: "CATEGORY", categoryId: secondCategory.id },
+    });
+    secondDraftId = secondDraft.id;
+    assert.equal((await json(`/api/promotions/${secondDraft.id}`, cookie, "DELETE")).status, 404,
+      "Administrador da primeira empresa não pode excluir rascunho da segunda.");
+    assert.ok(!(await json("/api/promotions", cookie).then((r) => r.json())).drafts.some(
+      (draft: { id: string }) => draft.id === secondDraft.id,
+    ), "Listagem não pode expor promoções de outra empresa.");
+    assert.equal((await json(`/api/promotions/${draftIds[0]}`, sellerCookie, "DELETE")).status, 403,
+      "Vendedora não pode excluir rascunhos.");
     assert.equal((await json("/api/promotions", cookie, "POST", {
       name: "Cross-tenant", kind: "CATEGORY", categoryId: secondCategoryId,
     })).status, 404);
@@ -132,7 +154,7 @@ async function main() {
       await db.membership.deleteMany({ where: { userId: sellerId } });
       await db.user.delete({ where: { id: sellerId } });
     }
-    await db.session.deleteMany({ where: { userId: owner.id } });
+    await db.session.deleteMany({ where: { tokenHash: ownerSessionHash } });
     await db.$disconnect();
   }
 }
