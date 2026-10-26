@@ -189,7 +189,7 @@ export async function getClientCommercialProfile(context: ClientAccessContext, c
     include: {
       address: true,
       segment: true,
-      responsibleSeller: { include: { user: true } },
+      responsibleSeller: { include: { user: { select: { id: true, name: true } } } },
       crmEntries: {
         include: { createdBy: { select: { id: true, name: true } } },
         orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }],
@@ -205,7 +205,7 @@ export async function getClientCommercialProfile(context: ClientAccessContext, c
       stage: "PAID",
     },
     include: {
-      seller: { include: { user: true } },
+      seller: { include: { user: { select: { id: true, name: true } } } },
       items: {
         include: {
           product: {
