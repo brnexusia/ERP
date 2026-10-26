@@ -89,7 +89,7 @@ A camada funcional e a interface operacional da Etapa 1 estão em homologação.
 | WhatsApp | Configuração tenant-scoped preparada; operação real pendente | 13 |
 | Gateway de pagamento | Configuração tenant-scoped preparada; provedor/contrato pendentes | 13 |
 | E-commerce | Configuração tenant-scoped preparada; operação real pendente | 13 |
-| Promoções | Fórmula/prioridade/vigência pendentes | 12 |
+| Promoções | Tabela operacional de rascunhos por produto, categoria, valor e quantidade, sem precificação; fórmula/prioridade/vigência pendentes | 12 |
 | Contas a receber | Derivadas dos pagamentos reais, consultáveis em `/finance` | 11 |
 | Contas a pagar | Cadastro, vencimento e baixa na interface `/finance` e serviços auditados | 11 |
 | Fluxo de caixa | Entradas recebidas menos saídas pagas, com intervalo informado no painel | 11 |
