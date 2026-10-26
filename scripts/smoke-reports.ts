@@ -156,6 +156,53 @@ async function main() {
     assert.equal(inactivity.inactivityDays, 1);
     assert.ok(inactivity.alerts.some((entry: { client: { id: string } }) => entry.client.id === clientId));
 
+    const workspace = await requestJson("/reports", cookie);
+    assert.equal(workspace.status, 200, "Relatórios & BI devem carregar para usuário autorizado.");
+    assert.match(await workspace.text(), /Relatórios &amp; BI|Relatórios & BI/);
+    const anonymousWorkspace = await fetch(`${BASE_URL}/reports`, { redirect: "manual" });
+    assert.ok([302, 303, 307, 308].includes(anonymousWorkspace.status),
+      "Relatórios não podem ser abertos sem autenticação.");
+    const unrestrictedOverview = await requestJson("/api/reports/commercial", cookie);
+    assert.equal(unrestrictedOverview.status, 200,
+      "O relatório precisa aceitar todo o histórico sem período predefinido.");
+    const invalidRange = await requestJson(
+      "/api/reports/commercial?start=2026-10-31T23%3A59%3A59.000Z&end=2026-01-01T00%3A00%3A00.000Z",
+      cookie,
+    );
+    assert.equal(invalidRange.status, 400, "Datas invertidas precisam ser rejeitadas pelo servidor.");
+
+    const rankingResponse = await requestJson(
+      "/api/reports/clients/ranking?start=2026-01-01T00%3A00%3A00.000Z&end=2027-01-01T00%3A00%3A00.000Z",
+      cookie,
+    );
+    assert.equal(rankingResponse.status, 200);
+    assert.ok((await rankingResponse.json()).report.ranking
+      .some((row: { client: { id: string } }) => row.client.id === clientId));
+    const lifecycleResponse = await requestJson("/api/reports/clients/classification", cookie);
+    assert.equal(lifecycleResponse.status, 200);
+    const classified = (await lifecycleResponse.json()).report.clients.find(
+      (row: { client: { id: string } }) => row.client.id === clientId,
+    );
+    assert.equal(classified.customerType, "NEW");
+
+    const comparisonArgs = new URLSearchParams({
+      metric: "REVENUE",
+      previousStart: new Date(Date.now() - 5 * 86_400_000).toISOString(),
+      previousEnd: new Date(Date.now() - 1 * 86_400_000).toISOString(),
+      currentStart: new Date(Date.now() - 12 * 3_600_000).toISOString(),
+      currentEnd: new Date().toISOString(),
+    });
+    const comparisonResponse = await requestJson(
+      "/api/reports/clients/purchase-comparison?" + comparisonArgs.toString(), cookie,
+    );
+    assert.equal(comparisonResponse.status, 200);
+    const previousBuyer = (await comparisonResponse.json()).report.clients.find(
+      (row: { client: { id: string } }) => row.client.id === clientId,
+    );
+    assert.equal(previousBuyer.selectedMetric.direction, "REDUCED");
+    assert.equal(Number(previousBuyer.selectedMetric.previousValue), 40);
+    assert.equal(Number(previousBuyer.selectedMetric.currentValue), 0);
+
     const reportResponse = await requestJson(
       "/api/reports/commercial?start=2026-01-01T00%3A00%3A00.000Z&end=2027-01-01T00%3A00%3A00.000Z",
       cookie,
@@ -174,6 +221,7 @@ async function main() {
     console.log("✓ categoria predominante e histórico de pagamento validados");
     console.log("✓ alerta automático por X dias sem compra validado");
     console.log("✓ faturamento, ticket médio, canal e performance por vendedora validados");
+    console.log("✓ página Relatórios & BI, acesso restrito, ranking, carteira e comparação explícita");
   } finally {
     await db.session.deleteMany({ where: { userId: admin.id } });
     if (saleId) await db.sale.deleteMany({ where: { id: saleId } });
