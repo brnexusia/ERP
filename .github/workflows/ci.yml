@@ -175,4 +175,4 @@ jobs:
           fi
 
           pnpm test:smoke-auth
-          pnpm test:smoke-client-management
+          pnpm test:smoke-client-management\n          pnpm test:smoke-product-workspace
