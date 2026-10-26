@@ -39,6 +39,17 @@ O ERP não transforma essas lacunas em regra de negócio por suposição.
 - `docs/DECISIONS_REQUIRED.md` — regras ainda não definidas pelo escopo;
 - `docs/ARCHITECTURE.md` — arquitetura, isolamento, storage e segurança;
 - `docs/PROVISIONING.md` — criação controlada de novas empresas;
+- `docs/PRODUCTS_WORKSPACE.md` — operação de produtos, estoque e catálogo público;
+- `docs/INTEGRATIONS_REGISTRY_WORKSPACE.md` — painel de registros de provedores, sem simular conexões reais;
+- `docs/FINANCE_WORKSPACE.md` — operação financeira com conciliação manual e permissões;
+- `docs/PRODUCT_INTELLIGENCE_WORKSPACE.md` — dados de vendas por produto, participação factual e limiar informado;
+- `docs/PROMOTION_DRAFT_REGISTRY.md` — rascunhos auditados de promoções sem aplicação de preço;
+- `docs/OPERATIONAL_ALERT_CENTER.md` — central privada de inatividade e estoque mínimo com detecção na consulta;
+- `docs/CLIENT_CATEGORY_INSIGHTS.md` — análise de categorias e histórico efetivo de pagamentos no perfil do cliente;
+- `docs/DASHBOARD_PERIOD_FILTER.md` — seleção de período sem distorcer o estoque/inatividade atual;
+- `docs/RBAC_NAVIGATION_AUDIT.md` — alinhamento entre links de navegação e autorização nas páginas;
+- `docs/BROWSER_E2E_HOMOLOGATION.md` — navegação real em Chromium desktop/mobile, screenshots e limites da homologação;
+- `docs/HOMOLOGACAO_ERP_2026-10-26.md` — evidências da CI por etapa, lacunas de aceite e gate de liberação;
 - `docs/PRODUCTION_DEPLOYMENT.md` — implantação, persistência, backup e recuperação.
 
 ## Princípio de arquitetura

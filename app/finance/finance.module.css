@@ -1,0 +1,16 @@
+.gridForm { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; margin: 8px 0 20px; }
+.gridForm label, .reconcile label { flex: 1 1 160px; display: grid; gap: 6px; min-width: 0; color: var(--erp-muted); font-size: 10px; font-weight: 700; }
+.gridForm input, .gridForm select, .reconcile input, .reconcile select { width: 100%; height: 38px; border-radius: 6px; border: 1px solid var(--erp-line-strong); background: #fff; color: var(--erp-text); padding: 0 10px; font-size: 11px; }
+.gridForm button { white-space: nowrap; }
+.gridForm input:focus-visible, .gridForm select:focus-visible, .reconcile input:focus-visible, .reconcile select:focus-visible { outline: 2px solid var(--erp-gold); outline-offset: 1px; }
+.summary { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; }
+.summary > div { display: grid; gap: 10px; }
+.summary span { color: var(--erp-muted); font-size: 10px; }
+.summary strong { font: 17px Georgia,serif; overflow-wrap: anywhere; }
+.hint { color: var(--erp-muted); margin: 0 0 15px; font-size: 10px; line-height: 1.6; }
+.reconcile { margin-top: 18px; padding: 15px; background: var(--erp-surface-soft); border-radius: 8px; border: 1px solid var(--erp-line); display: flex; flex-wrap: wrap; gap: 11px; align-items: end; }
+.reconcile h3,.reconcile p { flex: 1 1 100%; }
+.reconcile h3 { margin: 0; font-size: 14px; }
+.reconcile .actions { display: flex; flex: 1 1 100%; justify-content: flex-end; gap: 8px; }
+@media(max-width:900px) { .summary { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media(max-width:550px) { .summary { grid-template-columns: 1fr; } .gridForm button { flex: 1 1 100%; } .reconcile label { flex: 1 1 100%; } .reconcile .actions button { flex: 1; } }
