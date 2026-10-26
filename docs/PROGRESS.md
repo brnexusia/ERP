@@ -22,7 +22,7 @@ Estados: ⬜ Não iniciado · 🟡 Em construção · 🟠 Funcional · 🔵 Em 
 | 12 | Promoções e catálogo | 🟡 Em construção |
 | 13 | Integrações | 🟡 Em construção |
 | 14 | Preparação como produto | 🟡 Em construção |
-| 15 | Homologação final | ⬜ Não iniciado |
+| 15 | Homologação final | 🔵 Em homologação |
 
 ## 1 — Fundação ✅
 
@@ -140,9 +140,13 @@ Multiempresa, gestão de usuários, proteção do último `OWNER`, provisionamen
 
 **Pendente:** VPS real, domínio/DNS/TLS, e-mail empresarial, política final offsite/retention, planos/cobrança/assinatura e provisionamento acionado por contratação.
 
-## 15 — Homologação final ⬜
+## 15 — Homologação final 🔵
 
-Só começa quando as dependências necessárias estiverem resolvidas. Deve cobrir E2E, permissões, isolamento, consistência, arquivos/recuperação, erros/duplicidades, segurança, performance, responsividade, comparação tela a tela com Stitch e integrações externas reais.
+A **homologação técnica automatizada começou**: CI executa migrações PostgreSQL, verificação de consistência multiempresa/RBAC, TypeScript, build, checks de Compose e scripts operacionais, recuperação real de banco e arquivos, teste do fluxo completo de venda/pagamento, clientes, produtos, relatórios, financeiro e smoke dos novos workspaces.
+
+A rodada de 26/10/2026 acrescentou filtros explícitos ao Dashboard Geral, comparando faturamento por data de venda com fluxo de caixa por data de liquidação, proteção SSR de páginas por função e rejeição/redação de segredos de integrações. Evidências e critérios de fechamento: `docs/HOMOLOGACAO_ERP_2026-10-26.md`.
+
+**Ainda não homologado para produção:** comparação visual tela a tela com o Stitch exportável, testes reais dos provedores, decisão sobre regras comerciais pendentes, aprovação do fluxo operacional com dados autorizados, teste de carga, ensaio de rollback e verificação da VPS/domínio definitivo. CI verde **não equivale** a homologação visual ou aceite comercial.
 
 ## Evidências recentes
 
