@@ -144,7 +144,9 @@ Multiempresa, gestão de usuários, proteção do último `OWNER`, provisionamen
 
 A **homologação técnica automatizada começou**: CI executa migrações PostgreSQL, verificação de consistência multiempresa/RBAC, TypeScript, build, checks de Compose e scripts operacionais, recuperação real de banco e arquivos, teste do fluxo completo de venda/pagamento, clientes, produtos, relatórios, financeiro e smoke dos novos workspaces.
 
-A rodada de 26/10/2026 acrescentou filtros explícitos ao Dashboard Geral, comparando faturamento por data de venda com fluxo de caixa por data de liquidação, proteção SSR de páginas por função e rejeição/redação de segredos de integrações. Evidências e critérios de fechamento: `docs/HOMOLOGACAO_ERP_2026-10-26.md`.
+A rodada de 26/10/2026 acrescentou filtros explícitos ao Dashboard Geral, comparando faturamento por data de venda com fluxo de caixa por data de liquidação, proteção SSR de páginas por função e rejeição/redação de segredos de integrações.
+
+A suíte de homologação automática também roda 4 testes Playwright em Chromium (desktop/mobile), exercitando login, intervalo do dashboard, navegação aos módulos e ausência de overflow horizontal. Capturas e traces são preservados como artifact temporário. Isso confirma funcionamento básico do viewport, **não** paridade visual com Stitch. Evidências e critérios de fechamento: `docs/HOMOLOGACAO_ERP_2026-10-26.md`.
 
 **Ainda não homologado para produção:** comparação visual tela a tela com o Stitch exportável, testes reais dos provedores, decisão sobre regras comerciais pendentes, aprovação do fluxo operacional com dados autorizados, teste de carga, ensaio de rollback e verificação da VPS/domínio definitivo. CI verde **não equivale** a homologação visual ou aceite comercial.
 
