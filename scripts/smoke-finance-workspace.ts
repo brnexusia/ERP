@@ -51,8 +51,8 @@ async function main() {
     assert.equal(blockedApi.status, 403, "Vendedor também não pode ler o financeiro pela API.");
     for (const path of ["/api/finance/payables", "/api/finance/receivables",
       "/api/finance/cash-flow", "/api/finance/bank-entries", "/api/finance/reports"]) {
-      const result = await fetch(base + path, { headers: { Cookie: cookie } });
-      assert.equal(result.status, 200, `Falha de integração da UI: ${path}`);
+      const apiResponse: Response = await fetch(base + path, { headers: { Cookie: cookie } });
+      assert.equal(apiResponse.status, 200, `Falha de integração da UI: ${path}`);
     }
     console.log("✓ Financeiro operacional e endpoints conectados");
     console.log("✓ Anônimo redirecionado; SELLER barrado no SSR e API");
