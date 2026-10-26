@@ -3069,3 +3069,137 @@ a {
   .support-kind-filter { flex: 1; }
   .support-form-actions button { width: 100%; }
 }
+
+/* Módulo 2: operational sales reports, current ERP/Stitch component language */
+.reports-page .erp-panel { margin-bottom: 16px; }
+.reports-period-form {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.reports-period-form label, .reports-comparison-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--erp-muted);
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 0;
+}
+.reports-period-form input, .reports-comparison-form input,
+.reports-comparison-form select {
+  min-width: 0;
+  width: 100%;
+  height: 37px;
+  border: 1px solid var(--erp-line-strong);
+  border-radius: 6px;
+  padding: 0 10px;
+  background: #fff;
+  color: var(--erp-text);
+  font-size: 11px;
+}
+.reports-period-form input:focus-visible, .reports-comparison-form input:focus-visible,
+.reports-comparison-form select:focus-visible {
+  outline: 2px solid var(--erp-gold);
+  outline-offset: 1px;
+}
+.reports-period-form label { min-width: 160px; }
+.reports-helper {
+  margin: 12px 0 0;
+  color: var(--erp-muted);
+  font-size: 10px;
+  line-height: 1.6;
+}
+.reports-two-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 16px;
+}
+.reports-bar-list { display: grid; gap: 16px; padding: 9px 0; }
+.reports-bar-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 7px;
+  font-size: 10px;
+}
+.reports-bar-meta strong { font-size: 11px; }
+.reports-bar-meta span { color: var(--erp-muted); }
+.reports-bar-track, .reports-mini-track {
+  background: #ece8df;
+  height: 9px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.reports-bar-track > div, .reports-mini-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--erp-gold);
+}
+.reports-mini-track { width: 100px; height: 6px; }
+.reports-ticket-rows {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+.reports-ticket-rows > div {
+  border: 1px solid var(--erp-line);
+  background: var(--erp-surface-soft);
+  border-radius: 7px;
+  padding: 15px 12px;
+}
+.reports-ticket-rows span, .reports-ticket-rows small { display: block; color: var(--erp-muted); font-size: 10px; }
+.reports-ticket-rows strong { display: block; margin: 8px 0 6px; font-size: 18px; }
+.reports-section-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.reports-section-top h2 { margin: 4px 0 0; font-size: 16px; }
+.reports-lifecycle-grid {
+  display: grid;
+  grid-template-columns: repeat(5,minmax(0,1fr));
+  gap: 8px;
+  margin: 10px 0 4px;
+}
+.reports-lifecycle-grid > div {
+  min-width: 0;
+  padding: 14px 12px;
+  border: 1px solid var(--erp-line);
+  background: var(--erp-surface-soft);
+  border-radius: 7px;
+}
+.reports-lifecycle-grid span { display: block; color: var(--erp-muted); font-size: 10px; line-height: 1.5; }
+.reports-lifecycle-grid strong { display: block; margin-top: 8px; font-size: 17px; overflow-wrap: anywhere; }
+.reports-comparison-form {
+  display: grid;
+  grid-template-columns: repeat(5,minmax(0,1fr)) auto;
+  align-items: end;
+  gap: 9px;
+  margin-top: 16px;
+}
+.reports-comparison-summary { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.reports-negative-change { color: var(--erp-danger); font-weight: 700; }
+@media (max-width: 1220px) {
+  .reports-comparison-form { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .reports-lifecycle-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+}
+@media (max-width: 780px) {
+  .reports-two-columns { grid-template-columns: 1fr; }
+  .reports-comparison-form { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .reports-lifecycle-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .reports-period-form label { min-width: 0; flex: 1 1 140px; }
+}
+@media (max-width: 520px) {
+  .reports-comparison-form, .reports-lifecycle-grid, .reports-ticket-rows {
+    grid-template-columns: 1fr;
+  }
+  .reports-period-form button, .reports-comparison-form button { width: 100%; }
+}
