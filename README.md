@@ -43,6 +43,7 @@ O ERP não transforma essas lacunas em regra de negócio por suposição.
 - `docs/INTEGRATIONS_REGISTRY_WORKSPACE.md` — painel de registros de provedores, sem simular conexões reais;
 - `docs/FINANCE_WORKSPACE.md` — operação financeira com conciliação manual e permissões;
 - `docs/PRODUCT_INTELLIGENCE_WORKSPACE.md` — dados de vendas por produto, participação factual e limiar informado;
+- `docs/PROMOTION_DRAFT_REGISTRY.md` — rascunhos auditados de promoções sem aplicação de preço;
 - `docs/PRODUCTION_DEPLOYMENT.md` — implantação, persistência, backup e recuperação.
 
 ## Princípio de arquitetura
