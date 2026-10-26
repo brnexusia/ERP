@@ -23,6 +23,7 @@
     "test:smoke-integration-registry-page": "tsx scripts/smoke-integration-registry-page.ts",
     "test:smoke-finance-workspace": "tsx scripts/smoke-finance-workspace.ts",
     "test:smoke-product-intelligence-page": "tsx scripts/smoke-product-intelligence-page.ts",
+    "test:smoke-promotion-drafts": "tsx scripts/smoke-promotion-drafts.ts",
     "test:smoke-product-media": "tsx scripts/smoke-product-media.ts",
     "test:smoke-sales": "tsx scripts/smoke-sales.ts",
     "test:smoke-sale-timeline": "tsx scripts/smoke-sale-timeline.ts",
