@@ -74,6 +74,10 @@ async function main() {
     });
     assert.equal(createClient.status, 201, `Cadastro falhou: ${createClient.status}`);
     const createClientBody = await createClient.json();
+    assert.ok(!JSON.stringify(createClientBody).includes("passwordHash"), "Cadastro não pode retornar hash de senha da vendedora.");
+    const clientsRead = await jsonRequest("/api/clients", cookie);
+    assert.equal(clientsRead.status, 200);
+    assert.ok(!JSON.stringify(await clientsRead.json()).includes("passwordHash"), "Listagem de clientes não pode retornar hash de senha.");
     clientId = createClientBody.client.id;
 
     const createSegment = await jsonRequest("/api/client-segments", cookie, {
