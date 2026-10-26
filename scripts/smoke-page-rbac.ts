@@ -17,7 +17,7 @@ async function login(email: string, password: string) {
 async function visit(path: string, cookie: string) {
   return fetch(base + path, { headers: { Cookie: cookie }, redirect: "manual" });
 }
-async function createMember(organizationId: string, role: "FINANCE" | "MANAGER", stamp: number) {
+async function createMember(organizationId: string, role: "FINANCE" | "MANAGER" | "SUPPORT", stamp: number) {
   const email = `erp-ui-role-${role.toLowerCase()}-${stamp}@example.test`;
   const password = `ci-only-ui-role-${stamp}`;
   const user = await db.user.create({
@@ -39,6 +39,8 @@ async function main() {
     temporaryIds.push(finance.userId);
     const manager = await createMember(org.id, "MANAGER", stamp);
     temporaryIds.push(manager.userId);
+    const support = await createMember(org.id, "SUPPORT", stamp);
+    temporaryIds.push(support.userId);
 
     assert.equal((await visit("/products", finance.cookie)).status, 404,
       "FINANCE não tem inventory:read e não deve abrir página de produtos.");
@@ -57,24 +59,32 @@ async function main() {
 
     assert.equal((await visit("/products", manager.cookie)).status, 200,
       "MANAGER tem inventory:read.");
-    assert.equal((await visit("/reports", manager.cookie)).status, 404,
-      "MANAGER sem reports:read não deve contornar RBAC no servidor.");
+    assert.equal((await visit("/reports", manager.cookie)).status, 200,
+      "MANAGER já possui reports:read na política de permissões aprovada.");
     const managerDashboard = await visit("/", manager.cookie);
     assert.equal(managerDashboard.status, 200);
     const managerHtml = await managerDashboard.text();
     assert.ok(managerHtml.includes('href="/products"'));
-    assert.ok(!managerHtml.includes('href="/reports"'),
-      "Sidebar deve refletir permissionamento real de reports:read.");
+    assert.ok(managerHtml.includes('href="/reports"'),
+      "Sidebar deve refletir reports:read concedido a MANAGER.");
     assert.ok(managerHtml.includes('href="/finance"'),
       "MANAGER tem finance:read para o painel.");
     assert.ok(!managerHtml.includes('href="/integrations"'));
+
+    assert.equal((await visit("/reports", support.cookie)).status, 404,
+      "SUPPORT sem reports:read não tem acesso a relatórios.");
+    assert.equal((await visit("/finance", support.cookie)).status, 404);
+    const supportHtml = await (await visit("/", support.cookie)).text();
+    assert.ok(supportHtml.includes('href="/products"'));
+    assert.ok(!supportHtml.includes('href="/reports"'));
+    assert.ok(!supportHtml.includes('href="/finance"'));
 
     assert.ok([302, 303, 307, 308].includes((await fetch(base + "/products", {
       redirect: "manual",
     })).status), "Sessões anônimas devem ser redirecionadas.");
 
     console.log("✓ Navegação por função corresponde às permissões server-side");
-    console.log("✓ FINANCE não acessa produtos; MANAGER sem reports:read não acessa relatórios");
+    console.log("✓ FINANCE não acessa produtos, MANAGER acessa relatórios, SUPPORT não acessa relatórios/financeiro");
     console.log("✓ Proteção de API independente de ocultação visual e redirect anônimo");
   } finally {
     await db.session.deleteMany({ where: { userId: { in: temporaryIds } } });
