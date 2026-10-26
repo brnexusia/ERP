@@ -188,7 +188,19 @@ async function main() {
     assert.equal(String(included.commercial.revenue), "50",
       "Filtro deve incluir a venda paga há dois dias.");
     assert.equal(included.commercial.sales, 1);
-    assert.equal(String(included.finance.cashFlow.inflow), "50");
+    assert.equal(String(included.finance.cashFlow.inflow), "0",
+      "Fluxo de caixa considera a liquidação efetiva; a venda paga há dois dias foi liquidada agora.");
+
+    const settlementWindow = new URLSearchParams({
+      start: new Date(Date.now() - 86_400_000).toISOString(),
+      end: new Date(Date.now() + 86_400_000).toISOString(),
+    });
+    const settlement = (await (await requestJson("/api/dashboard?" +
+      settlementWindow.toString(), adminCookie)).json()).dashboard;
+    assert.equal(settlement.commercial.sales, 0,
+      "A data da venda paga não deve ser trocada pela data de liquidação bancária.");
+    assert.equal(String(settlement.finance.cashFlow.inflow), "50",
+      "Entrada no caixa deve seguir a data efetiva de liquidação.");
 
     const futureRange = new URLSearchParams({
       start: new Date(Date.now() + 2 * 86_400_000).toISOString(),
