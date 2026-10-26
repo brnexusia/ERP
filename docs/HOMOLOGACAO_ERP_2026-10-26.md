@@ -12,6 +12,8 @@
 **Branch de segurança das integrações:** `fix/erp-integration-settings-secrets-20261026` — PR #48  
 **Branch de teste real em navegador:** `test/erp-browser-e2e-20261026` — PR #49
 
+**Branch de homologação e segurança consolidada:** `feat/erp-unified-acceptance-security-20261026` — inclui PRs #46–#49 e correções do PR #50, com testes de segredo em APIs e verificador estático de projeções de usuário. Os PRs sobrepostos não devem ser mesclados em duplicidade.
+
 ## Critério de status
 
 - **Validado tecnicamente:** implementado, executado em ambiente descartável do GitHub Actions, com pipeline verde para o commit indicado.
@@ -81,3 +83,9 @@
 - [ ] Autorização expressa antes de colocar o ERP em produção.
 
 **Conclusão:** etapa de engenharia automatizada validada nos commits acima; **homologação final do produto e implantação permanecem abertas** enquanto houver bloqueios listados.
+
+## Última revisão de segurança e CI unificada
+
+A branch consolidada integra os testes de navegador Playwright desktop/mobile, RBAC por páginas, proteção de segredos em integração, filtros reais do dashboard e a correção da serialização indevida do `User.passwordHash` em respostas de clientes, vendas e financeiro. O comando `pnpm test:security-projections` protege as rotas e serviços de retorno de objeto de usuário integral.
+
+A homologação visual **não está concluída**: capturas automáticas sem referência Stitch exportável não demonstram equivalência de design. Publicação, provedores externos reais e políticas comerciais específicas seguem dependentes de insumos/aceite.
