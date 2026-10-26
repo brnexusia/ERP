@@ -71,6 +71,9 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Verify API user projections and credential hygiene
+        run: pnpm test:security-projections
+
       - name: Validate operational shell scripts
         shell: bash
         run: bash -n ops/*.sh
