@@ -56,7 +56,8 @@
     "test:smoke-cheque-returns": "tsx scripts/smoke-cheque-returns.ts",
     "test:smoke-manual-receivables": "tsx scripts/smoke-manual-receivables.ts",
     "test:smoke-support-workspace": "tsx scripts/smoke-support-workspace.ts",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "test:security-projections": "tsx scripts/verify-user-projections.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
