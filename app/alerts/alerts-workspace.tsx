@@ -92,7 +92,7 @@ export function AlertsWorkspace() {
             {item.responsibleSellerName && <p>Contato comercial: {item.responsibleSellerName}</p>}
             <p>{item.lastPurchaseAt ? `Última compra: ${new Date(item.lastPurchaseAt).toLocaleDateString("pt-BR")}` : "Sem compra registrada — referência: cadastro"}</p>
           </div>
-          <Link href="/clients">Consultar cliente</Link>
+          <Link href={`/clients?client=${encodeURIComponent(item.id)}`}>Consultar cliente</Link>
         </article>)}
         {clients.length === 0 && <p className={styles.empty}>
           {query ? "Nenhum cliente corresponde à pesquisa." : "Nenhum cliente atingiu os dias de inatividade configurados."}
@@ -107,7 +107,7 @@ export function AlertsWorkspace() {
           <div><h3>{item.name}</h3>
             <p>SKU {item.sku} · quantidade: {item.quantity} {item.unitMeasure} · mínimo: {item.minimum} {item.unitMeasure}</p>
           </div>
-          <Link href="/products">Consultar estoque</Link>
+          <Link href={`/products?product=${encodeURIComponent(item.id)}`}>Consultar estoque</Link>
         </article>)}
         {products.length === 0 && <p className={styles.empty}>
           {query ? "Nenhum produto corresponde à pesquisa." : "Nenhum produto está no estoque mínimo ou abaixo."}
