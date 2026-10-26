@@ -118,6 +118,8 @@ A base da regra de auto-atacado avançou sem inventar efeito comercial: o perfil
 
 A camada tenant-scoped de configuração está preparada para VaxChat, VaxLab, GoPage, ShopVax, WhatsApp, gateway e e-commerce, com estado, referência de segredo, auditoria e isolamento.
 
+O painel operacional `/integrations` permite que OWNER/ADMIN cadastrem, editem e consultem provedores por empresa sem inserir nem exibir segredos. Habilitar um registro **não** equivale a conectar o provedor.
+
 Chamadas reais/webhooks/sincronizações dependem de documentação/API, URLs, autenticação, credenciais e contrato de eventos. Configuração cadastrada não significa integração conectada.
 
 ## 14 — Preparação como produto 🟡
