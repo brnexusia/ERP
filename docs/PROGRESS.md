@@ -116,6 +116,8 @@ Catálogo automático compartilhável por link, imagens públicas de produto, cu
 
 A base da regra de auto-atacado avançou sem inventar efeito comercial: o perfil comercial detecta factual e exclusivamente sobre vendas `PAID` se houve recompra em até três meses-calendário, preservando os intervalos entre compras. O ERP não aplica automaticamente preço, desconto ou mudança de segmento enquanto esse efeito não estiver definido.
 
+A tabela administrativa `/promotions` permite registrar rascunhos por produto, categoria e progressivas por valor/quantidade, auditados e isolados por empresa, sem alterar preços ou pedidos.
+
 **Aguardando regra:** descontos progressivos, dúzia fechada, promoções, prioridade/empilhamento/vigência/arredondamento e efeito comercial final do auto-atacado. O link de catálogo agora abre uma página HTML pública em `/catalog/[token]`, com preço de venda, imagens e disponibilidade factual, mantendo a API JSON. Sua aparência é operacional e depende de homologação visual segundo o Stitch aprovado.
 
 ## 13 — Integrações 🟡
