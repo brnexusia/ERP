@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { redactCommercialRates } from "@/modules/sales/response-privacy";
 import { getSessionContext } from "@/lib/auth/session";
 import { PermissionDeniedError } from "@/lib/auth/permissions";
 import { reportPeriodSchema } from "@/modules/reports/schema";
@@ -25,7 +26,7 @@ export async function GET(request: Request, context: RouteContext) {
   const { membershipId } = await context.params;
 
   try {
-    return NextResponse.json({ profile: await getSellerProfile(session, membershipId, parsed.data) });
+    return NextResponse.json(redactCommercialRates(session.role, { profile: await getSellerProfile(session, membershipId, parsed.data) }));
   } catch (error) {
     if (error instanceof PermissionDeniedError) {
       return NextResponse.json({ error: error.message }, { status: 403 });
