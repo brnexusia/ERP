@@ -152,6 +152,10 @@ async function main() {
     assert.ok(!JSON.stringify(quote).includes("passwordHash"), "Venda não pode incluir hash de senha da vendedora.");
     saleId = quote.id;
     assert.equal(quote.stage, "QUOTE");
+    assert.equal(Object.hasOwn(quote.seller, "commissionPercent"), false,
+      "O vínculo público da vendedora na venda não deve expor a taxa de comissão.");
+    assert.equal(Object.hasOwn(quote.client.responsibleSeller, "commissionPercent"), false,
+      "Dados aninhados do cliente na venda não devem expor a taxa da vendedora.");
     assert.equal(quote.representativeId, representativeId);
     assert.equal(String(quote.representativeRate), "5");
     assert.equal(quote.sellerMembershipId, sellerMembership.id);
