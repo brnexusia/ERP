@@ -74,6 +74,9 @@ jobs:
       - name: Verify API user projections and credential hygiene
         run: pnpm test:security-projections
 
+      - name: Verify inactivity date boundaries
+        run: pnpm test:inactivity-dates
+
       - name: Validate operational shell scripts
         shell: bash
         run: bash -n ops/*.sh
