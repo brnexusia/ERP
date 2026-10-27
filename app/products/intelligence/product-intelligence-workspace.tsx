@@ -15,10 +15,11 @@ type BaseEntry = {
 type MetricReport = { products: BaseEntry[] };
 type AbcReport = {
   metric: "REVENUE" | "SOLD_QUANTITY";
-  totalMetricValue: string; classificationStatus: "PENDING_THRESHOLDS";
+  totalMetricValue: string; classificationStatus: "PENDING_THRESHOLDS" | "EXPLICIT_THRESHOLDS";
+  thresholds: { classAUpToPercent: number; classBUpToPercent: number } | null;
   products: Array<BaseEntry & { rank: number; selectedMetric: {
     metric: string; value: string; sharePercent: string; cumulativeSharePercent: string;
-  }; abcClass: "PENDING_THRESHOLDS" }>;
+  }; abcClass: "PENDING_THRESHOLDS" | "UNCLASSIFIED" | "A" | "B" | "C" }>;
 };
 type LowReport = {
   summary: { totalProducts: number; lowOutput: number; aboveThreshold: number };
@@ -43,6 +44,8 @@ export function ProductIntelligenceWorkspace() {
   const [mode, setMode] = useState<Mode>("METRICS");
   const [metric, setMetric] = useState<Metric>("REVENUE");
   const [threshold, setThreshold] = useState("");
+  const [abcA, setAbcA] = useState("");
+  const [abcB, setAbcB] = useState("");
   const [view, setView] = useState<Mode | null>(null);
   const [metrics, setMetrics] = useState<MetricReport | null>(null);
   const [abc, setAbc] = useState<AbcReport | null>(null);
@@ -60,6 +63,12 @@ export function ProductIntelligenceWorkspace() {
         !Number.isFinite(Number(threshold)) || Number(threshold) < 0)) {
       setError("Informe um limiar numérico não negativo."); return;
     }
+    if (mode === "ABC" && (abcA.trim() !== "" || abcB.trim() !== "") &&
+      !(abcA.trim() !== "" && abcB.trim() !== "" &&
+        Number.isFinite(Number(abcA)) && Number.isFinite(Number(abcB)) &&
+        Number(abcA) > 0 && Number(abcA) < Number(abcB) && Number(abcB) < 100)) {
+      setError("Informe ambos os limites cumulativos com 0 < A < B < 100, ou deixe ambos em branco."); return;
+    }
     setBusy(true); setError(null);
     setView(null); setMetrics(null); setAbc(null); setLow(null);
     const params = new URLSearchParams({
@@ -69,6 +78,10 @@ export function ProductIntelligenceWorkspace() {
       if (mode === "ABC") {
         if (metric === "PAID_SALES") { setError("A distribuição utiliza faturamento ou quantidade vendida."); return; }
         params.set("metric", metric);
+        if (abcA.trim() !== "" && abcB.trim() !== "") {
+          params.set("classAUpToPercent", abcA);
+          params.set("classBUpToPercent", abcB);
+        }
         const result = await api<{ report: AbcReport }>(`/api/reports/products/abc-distribution?${params}`);
         setAbc(result.report);
       } else if (mode === "LOW_OUTPUT") {
@@ -101,7 +114,7 @@ export function ProductIntelligenceWorkspace() {
       {error && <div className="erp-alert error" role="alert">{error}</div>}
       <section className="erp-panel">
         <div className="panel-heading"><h2>Critérios da consulta</h2></div>
-        <p className={styles.hint}>Período e métricas são informados em cada consulta. O ERP não presume limiares ou classes A/B/C.</p>
+        <p className={styles.hint}>Período e métricas são informados em cada consulta. O ERP não presume limiares ou classes A/B/C. Opcionalmente, informe ambos os limites cumulativos para classificar somente este relatório.</p>
         <form className={styles.form} onSubmit={(event) => void submit(event)}>
           <label>Tipo de relatório<select value={mode} onChange={(event) => {
             const next = event.target.value as Mode;
@@ -121,6 +134,12 @@ export function ProductIntelligenceWorkspace() {
             <option value="SOLD_QUANTITY">Quantidade vendida</option>
             {mode === "LOW_OUTPUT" && <option value="PAID_SALES">Vendas pagas</option>}
           </select></label>}
+          {mode === "ABC" && <>
+            <label>Classe A até (% acumulado, opcional)<input type="number" min="0.0001" max="99.9998" step="any"
+              value={abcA} onChange={(event) => setAbcA(event.target.value)} placeholder="Sem padrão" /></label>
+            <label>Classe B até (% acumulado, opcional)<input type="number" min="0.0002" max="99.9999" step="any"
+              value={abcB} onChange={(event) => setAbcB(event.target.value)} placeholder="Sem padrão" /></label>
+          </>}
           {mode === "LOW_OUTPUT" && <label>Limiar máximo informado<input required inputMode="decimal" type="number" min="0" step="any"
             value={threshold} onChange={(event) => setThreshold(event.target.value)} /></label>}
           <button type="submit" className="primary-button" disabled={busy}>{busy ? "Consultando..." : "Consultar"}</button>
@@ -129,7 +148,10 @@ export function ProductIntelligenceWorkspace() {
       {view === "ABC" && abc && <section className="erp-panel">
         <div className="panel-heading"><h2>Distribuição factual de produtos</h2></div>
         <p className={styles.hint}>Total na métrica: {abc.metric === "REVENUE" ? currency(abc.totalMetricValue) : number(abc.totalMetricValue)}.
-          Percentuais e participação acumulada são calculados somente das vendas pagas. Faixas A/B/C permanecem pendentes de definição.</p>
+          Percentuais e participação acumulada são calculados somente das vendas pagas.
+          {abc.classificationStatus === "EXPLICIT_THRESHOLDS" && abc.thresholds
+            ? ` Classificação apenas desta consulta: A até ${number(abc.thresholds.classAUpToPercent)}%, B até ${number(abc.thresholds.classBUpToPercent)}%, C acima disso. Sem vendas: não classificado.`
+            : " Faixas A/B/C não informadas: classificação pendente."}</p>
       </section>}
       {view === "LOW_OUTPUT" && low && <div className="metric-grid">
         <div className="metric-card"><span>Produtos analisados</span><strong>{low.summary.totalProducts}</strong></div>
@@ -143,7 +165,7 @@ export function ProductIntelligenceWorkspace() {
         <div className="client-table-wrap">
           <table className="client-table">
             <thead><tr><th>Produto</th><th>Quantidade vendida</th><th>Faturamento</th><th>Vendas pagas</th>
-              <th>Última venda</th>{view === "ABC" && <><th>Participação</th><th>Acumulado</th></>}
+              <th>Última venda</th>{view === "ABC" && <><th>Participação</th><th>Acumulado</th><th>Classe</th></>}
               {view === "LOW_OUTPUT" && <><th>Métrica observada</th><th>Resultado</th></>}
             </tr></thead>
             <tbody>{view === "ABC" ? abc?.products.map((row) =>
@@ -151,7 +173,9 @@ export function ProductIntelligenceWorkspace() {
                 <td>{number(row.soldQuantity)}</td><td>{currency(row.revenue)}</td>
                 <td>{row.paidSales}</td><td>{date(row.lastSaleAt)}</td>
                 <td>{number(row.selectedMetric.sharePercent)}%</td>
-                <td>{number(row.selectedMetric.cumulativeSharePercent)}%</td></tr>) :
+                <td>{number(row.selectedMetric.cumulativeSharePercent)}%</td>
+                <td>{row.abcClass === "PENDING_THRESHOLDS" ? "Sem faixas" :
+                  row.abcClass === "UNCLASSIFIED" ? "Sem vendas" : row.abcClass}</td></tr>) :
             view === "LOW_OUTPUT" ? low?.products.map((row) =>
               <tr key={row.product.id}><td>{row.product.name}<small>{row.product.sku}</small></td>
                 <td>{number(row.soldQuantity)}</td><td>{currency(row.revenue)}</td><td>{row.paidSales}</td>
