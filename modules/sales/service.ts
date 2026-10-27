@@ -30,10 +30,10 @@ function saleInclude() {
     client: {
       include: {
         segment: true,
-        responsibleSeller: { include: { user: { select: { id: true, name: true } } } },
+        responsibleSeller: { select: { id: true, userId: true, role: true, user: { select: { id: true, name: true } } } },
       },
     },
-    seller: { include: { user: { select: { id: true, name: true } } } },
+    seller: { select: { id: true, userId: true, role: true, user: { select: { id: true, name: true } } } },
     representative: true,
     items: {
       include: {
@@ -97,7 +97,7 @@ async function getClientForSale(
 ) {
   const client = await tx.client.findFirst({
     where: { id: clientId, organizationId },
-    include: { responsibleSeller: { include: { user: { select: { id: true, name: true } } } } },
+    include: { responsibleSeller: { select: { id: true, userId: true, role: true, user: { select: { id: true, name: true } } } } },
   });
   if (!client) throw new SaleNotFoundError("Cliente não encontrado.");
   return client;
@@ -201,7 +201,7 @@ export async function assignResponsibleSeller(
       where: { id: client.id },
       data: { responsibleSellerMembershipId: input.membershipId },
       include: {
-        responsibleSeller: { include: { user: { select: { id: true, name: true } } } },
+        responsibleSeller: { select: { id: true, userId: true, role: true, user: { select: { id: true, name: true } } } },
       },
     });
 
