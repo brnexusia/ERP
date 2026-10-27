@@ -31,6 +31,10 @@ export async function getProductAbcDistribution(
     new Prisma.Decimal(0),
   );
 
+  const requestedBands = input.classAUpToPercent !== undefined &&
+    input.classBUpToPercent !== undefined
+    ? { classAUpToPercent: input.classAUpToPercent, classBUpToPercent: input.classBUpToPercent }
+    : null;
   let cumulativeValue = new Prisma.Decimal(0);
 
   return {
@@ -41,7 +45,9 @@ export async function getProductAbcDistribution(
     },
     metric: input.metric,
     totalMetricValue,
-    classificationStatus: "PENDING_THRESHOLDS" as const,
+    classificationStatus: requestedBands ? "EXPLICIT_THRESHOLDS" as const : "PENDING_THRESHOLDS" as const,
+    thresholds: requestedBands,
+    classificationSource: requestedBands ? "EXPLICIT_REQUEST" as const : null,
     products: ranked.map((entry, index) => {
       cumulativeValue = cumulativeValue.add(entry.metricValue);
       const sharePercent = totalMetricValue.isZero()
@@ -57,6 +63,17 @@ export async function getProductAbcDistribution(
             .mul(100)
             .toDecimalPlaces(4, Prisma.Decimal.ROUND_HALF_UP);
 
+      // Do not assign class to a product without contribution; no metric
+      // recorded in the chosen period is different from a low-performing
+      // product with nonzero contribution.
+      const rawCumulativePercent = totalMetricValue.isZero() ? new Prisma.Decimal(0)
+        : cumulativeValue.div(totalMetricValue).mul(100);
+      const abcClass = !requestedBands ? "PENDING_THRESHOLDS" as const
+        : entry.metricValue.isZero() ? "UNCLASSIFIED" as const
+        : rawCumulativePercent.lte(requestedBands.classAUpToPercent) ? "A" as const
+        : rawCumulativePercent.lte(requestedBands.classBUpToPercent) ? "B" as const
+        : "C" as const;
+
       return {
         rank: index + 1,
         product: entry.product,
@@ -71,7 +88,7 @@ export async function getProductAbcDistribution(
           sharePercent,
           cumulativeSharePercent,
         },
-        abcClass: "PENDING_THRESHOLDS" as const,
+        abcClass,
       };
     }),
   };

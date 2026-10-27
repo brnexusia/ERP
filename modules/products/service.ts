@@ -369,7 +369,9 @@ export async function listLowStockProducts(context: ProductAccessContext) {
     orderBy: { name: "asc" },
   });
 
-  return products.filter((product) => product.stock && product.stock.quantity.lte(product.stock.minimum)).map(withStockStatus);
+  return products
+    .filter((product) => product.stock && product.stock.quantity.lte(product.stock.minimum))
+    .map((product) => redactCostsForRole(withStockStatus(product), context.role));
 }
 
 export async function ensureCatalogShare(context: ProductAccessContext) {

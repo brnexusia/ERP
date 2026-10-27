@@ -20,9 +20,9 @@ Quando o escopo define **o que** deve existir, mas não define a regra necessár
 
 ## 3. Curva ABC
 
-**Já existe:** faturamento, quantidade vendida e estoque por produto. Também existe distribuição factual por período explícito com ranking, participação e participação acumulada, usando `REVENUE` ou `SOLD_QUANTITY` conforme escolha do usuário.
+**Já existe:** faturamento, quantidade vendida e estoque por produto; distribuição factual por período com ranking, participação e acumulado em `REVENUE` ou `SOLD_QUANTITY`. Classes A/B/C também podem ser calculadas **somente na consulta específica** quando o usuário informa ambos os limites cumulativos A/B válidos; sem limites continuam pendentes. Itens sem venda na métrica/período não são classificados.
 
-**Falta definir:** faixas A/B/C e qualquer regra final de classificação, incluindo eventual peso combinado, frequência/padrão de período e política de recálculo. Nenhum padrão de mercado será adotado silenciosamente.
+**Falta definir para classificação oficial/automática:** faixas A/B/C aprovadas e persistidas por empresa, eventual peso combinado, frequência/padrão de período e política de recálculo. O sistema não pressupõe percentuais de mercado nem efeitos sobre estoque/preços.
 
 ## 4. Comissões
 
