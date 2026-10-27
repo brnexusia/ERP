@@ -35,7 +35,7 @@ function clientInclude() {
   return {
     address: true,
     segment: true,
-    responsibleSeller: { include: { user: true } },
+    responsibleSeller: { select: { id: true, userId: true, role: true, user: { select: { id: true, name: true } } } },
     representative: true,
   };
 }

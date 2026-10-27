@@ -28,6 +28,13 @@ enum MembershipRole {
   VIEWER
 }
 
+enum PromotionDraftKind {
+  PRODUCT
+  CATEGORY
+  PROGRESSIVE_VALUE
+  PROGRESSIVE_QUANTITY
+}
+
 enum IntegrationStatus {
   DISCONNECTED
   CONNECTED
@@ -143,6 +150,7 @@ model Organization {
   memberships           Membership[]
   auditLogs             AuditLog[]
   integrations          Integration[]
+  promotionDrafts       PromotionDraft[]
   activeSessions        Session[]
   clients               Client[]
   clientAddresses       ClientAddress[]
@@ -206,6 +214,7 @@ model User {
   commissionAdjustmentsDecided   CommissionAdjustment[] @relation("CommissionAdjustmentDecider")
   manualReceivablesCreated ClientManualReceivable[] @relation("ManualReceivableCreator")
   manualReceiptsRecorded ClientManualReceipt[] @relation("ManualReceiptRecorder")
+  promotionDraftsCreated PromotionDraft[] @relation("PromotionDraftCreator")
 }
 
 model Membership {
@@ -492,6 +501,7 @@ model ProductCategory {
   children         ProductCategory[] @relation("CategoryTree")
   products         Product[]         @relation("ProductCategory")
   subcategoryItems Product[]         @relation("ProductSubcategory")
+  promotionDrafts PromotionDraft[]   @relation("PromotionDraftCategory")
 
   @@unique([organizationId, parentId, name])
   @@index([organizationId, parentId, name])
@@ -520,6 +530,7 @@ model Product {
   photos       ProductPhoto[]
   stock        ProductStock?
   saleItems    SaleItem[]
+  promotionDrafts PromotionDraft[] @relation("PromotionDraftProduct")
 
   @@unique([organizationId, sku])
   @@unique([organizationId, barcode])
@@ -941,4 +952,30 @@ model BankReconciliation {
   @@index([organizationId, bankEntryId, reconciledAt])
   @@index([organizationId, salePaymentId, reconciledAt])
   @@index([organizationId, accountPayableId, reconciledAt])
+}
+
+/**
+ * Administrative promotion registry only: no price formula, stacking, eligibility,
+ * auto-activation, effective date or rule engine until business approval.
+ */
+model PromotionDraft {
+  id              String             @id @default(cuid())
+  organizationId  String
+  createdByUserId String
+  name            String
+  kind            PromotionDraftKind
+  productId       String?
+  categoryId      String?
+  notes           String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User             @relation("PromotionDraftCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  product      Product?         @relation("PromotionDraftProduct", fields: [productId], references: [id], onDelete: Restrict)
+  category     ProductCategory? @relation("PromotionDraftCategory", fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, kind, createdAt])
+  @@index([organizationId, productId])
+  @@index([organizationId, categoryId])
 }
