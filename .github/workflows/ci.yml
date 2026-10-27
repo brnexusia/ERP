@@ -192,6 +192,7 @@ jobs:
           pnpm test:smoke-promotion-drafts
           pnpm test:smoke-alert-center
           pnpm test:smoke-page-rbac
+          pnpm test:smoke-commercial-rate-privacy
           pnpm test:browser
 
       - name: Attach browser screenshots and trace evidence
