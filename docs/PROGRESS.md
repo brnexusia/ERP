@@ -74,9 +74,9 @@ A página operacional `/products` já oferece catálogo de produtos, filtros, de
 
 Já existem alerta de estoque baixo, mínimo/máximo, quantidade vendida, faturamento, vendas pagas, última venda, estoque e categorias predominantes por cliente. A base factual da Curva ABC calcula ranking, participação e participação acumulada por período explícito, usando `REVENUE` ou `SOLD_QUANTITY`. Produtos com baixa saída também podem ser identificados quando o usuário informa explicitamente período, métrica (`REVENUE`, `SOLD_QUANTITY` ou `PAID_SALES`) e limiar; nenhum valor padrão é presumido.
 
-A página operacional `/products/intelligence` permite consultar métricas de vendas pagas, participação acumulada por produto e baixa saída com período, métrica e limiar indicados pelo usuário, sem escolher faixas ABC ou limites automáticos.
+A página operacional `/products/intelligence` permite consultar métricas de vendas pagas, participação acumulada, baixa saída por limiar escolhido e classificação A/B/C opcional quando o operador informa explicitamente os limites cumulativos A e B da consulta. Não existe classificação padrão persistida ou automática.
 
-**Aguardando regra objetiva:** regra automática/padrão de baixa saída, faixas A/B/C e momento da baixa/reserva física. A distribuição ABC não atribui classes enquanto as faixas não forem aprovadas.
+**Aguardando regra objetiva:** regra automática/padrão de baixa saída, faixas A/B/C oficiais por empresa, periodicidade e momento da baixa/reserva física. Sem limites informados pelo usuário, a distribuição ABC não atribui classes.
 
 ## 7 — Fluxo comercial 🟠
 
