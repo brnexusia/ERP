@@ -329,7 +329,7 @@ export async function listInactivityAlerts(context: ClientAccessContext) {
     db.clientModuleSettings.findUnique({ where: { organizationId: context.organizationId } }),
     db.client.findMany({
       where: { organizationId: context.organizationId },
-      include: { segment: true, representative: true, responsibleSeller: { select: { id: true, userId: true, role: true, user: { select: { id: true, name: true } } } } },
+      include: { segment: true, representative: { select: { id: true, name: true, whatsapp: true } }, responsibleSeller: { select: { id: true, userId: true, role: true, user: { select: { id: true, name: true } } } } },
     }),
     db.sale.groupBy({
       by: ["clientId"],
