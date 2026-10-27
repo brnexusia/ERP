@@ -46,11 +46,25 @@ export const abcDistributionSchema = z
     metric: z.enum(["REVENUE", "SOLD_QUANTITY"]),
     start: requiredDateSchema,
     end: requiredDateSchema,
+    // Optional, query-local ABC bands: no unapproved company-wide defaults.
+    classAUpToPercent: z.coerce.number().finite().optional(),
+    classBUpToPercent: z.coerce.number().finite().optional(),
   })
-  .refine(
-    (value) => value.end >= value.start,
-    { message: "A data final deve ser posterior ou igual à inicial.", path: ["end"] },
-  );
+  .superRefine((value, ctx) => {
+    if (value.end < value.start) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["end"],
+        message: "A data final deve ser posterior ou igual à inicial." });
+    }
+    const a = value.classAUpToPercent;
+    const b = value.classBUpToPercent;
+    if ((a === undefined) !== (b === undefined)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["classBUpToPercent"],
+        message: "Informe os dois limites de classe A e B, ou nenhum deles." });
+    } else if (a !== undefined && b !== undefined && !(a > 0 && a < b && b < 100)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["classBUpToPercent"],
+        message: "Limites inválidos: é obrigatório 0 < A < B < 100." });
+    }
+  });
 
 export const lowOutputSchema = z
   .object({

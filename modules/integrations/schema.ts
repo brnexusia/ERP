@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { findUnsafeSettingsPath } from "@/modules/integrations/settings-safety";
 
 export const integrationProviders = [
   "VAXCHAT",
@@ -17,6 +18,16 @@ export const integrationConfigSchema = z.object({
   settings: z.record(z.unknown()).nullable().optional(),
   secretRef: z.string().trim().min(1).max(250).nullable().optional(),
   enabled: z.boolean().optional().default(true),
+}).superRefine((input, context) => {
+  if (input.settings == null) return;
+  const secretPath = findUnsafeSettingsPath(input.settings);
+  if (secretPath) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["settings", ...secretPath],
+      message: "Metadados da integração não devem conter credenciais. Use apenas a referência de segredo separada.",
+    });
+  }
 });
 
 export type IntegrationConfigInput = z.infer<typeof integrationConfigSchema>;
