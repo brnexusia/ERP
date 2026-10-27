@@ -115,6 +115,29 @@ async function main() {
     assert.equal(data.permissions.inventory, true);
     assert.ok(data.inactiveClients.some((v: { id: string }) => v.id === alertedClient.id));
     assert.equal(data.inactiveClients.some((v: { id: string }) => v.id === activeClient.id), false);
+
+    // Previously the central/commercial profile incorrectly reported no
+    // inactivity for never-purchased clients, even while the alert feed
+    // correctly treated the registration date as the baseline.
+    const inactiveProfileResponse = await get(
+      `/api/clients/${alertedClient.id}/commercial-profile`, ownerCookie,
+    );
+    assert.equal(inactiveProfileResponse.status, 200);
+    const inactiveProfile = (await inactiveProfileResponse.json()).profile;
+    assert.equal(inactiveProfile.commercial.purchaseCount, 0);
+    assert.equal(inactiveProfile.commercial.lastPurchaseAt, null);
+    assert.ok(inactiveProfile.commercial.daysWithoutPurchase >= 4);
+    assert.equal(inactiveProfile.commercial.inactivityAlert, true,
+      "O perfil do cliente sem compras deve concordar com a central de alertas.");
+
+    const activeProfileResponse = await get(
+      `/api/clients/${activeClient.id}/commercial-profile`, ownerCookie,
+    );
+    assert.equal(activeProfileResponse.status, 200);
+    const activeProfile = (await activeProfileResponse.json()).profile;
+    assert.equal(activeProfile.commercial.lastPurchaseAt, null);
+    assert.ok(activeProfile.commercial.daysWithoutPurchase >= 0);
+    assert.equal(activeProfile.commercial.inactivityAlert, false);
     assert.ok(data.lowStockProducts.some((v: { id: string }) => v.id === low.id));
     assert.equal(data.lowStockProducts.some((v: { id: string }) => v.id === stocked.id), false);
     assert.equal(data.summary.total, data.inactiveClients.length + data.lowStockProducts.length);
@@ -145,12 +168,21 @@ async function main() {
     const refreshed = (await (await get("/api/alerts", ownerCookie)).json()).alerts;
     assert.equal(refreshed.inactiveClients.some((v: { id: string }) => v.id === alertedClient.id), false,
       "Alerta deve desaparecer quando o limite de inatividade deixar de ser atingido.");
+    const refreshedProfileResponse = await get(
+      `/api/clients/${alertedClient.id}/commercial-profile`, ownerCookie,
+    );
+    assert.equal(refreshedProfileResponse.status, 200);
+    const refreshedProfile = (await refreshedProfileResponse.json()).profile;
+    assert.equal(refreshedProfile.commercial.inactivityDaysConfigured, 10);
+    assert.equal(refreshedProfile.commercial.inactivityAlert, false,
+      "Atualizar o prazo deve limpar alerta no perfil comercial e no feed.");
     assert.equal(refreshed.lowStockProducts.some((v: { id: string }) => v.id === low.id), false,
       "Alerta deve desaparecer quando o estoque for normalizado.");
     assert.equal(await db.sale.count({ where: { organizationId: tenant.id, id: "__alert_no_sale__" } }), 0);
     console.log("✓ alertas in-app de inatividade/estoque em tempo real com thresholds aprovados");
     console.log("✓ tenant isolation, role SELLER e sigilo de custo");
     console.log("✓ normalização de critérios remove alertas sem mutações comerciais");
+    console.log("✓ perfil comercial e central de alertas são consistentes para clientes com zero compras");
   } finally {
     if (sellerId) {
       await db.session.deleteMany({ where: { userId: sellerId } });
