@@ -74,7 +74,7 @@ A camada funcional e a interface operacional da Etapa 1 estão em homologação.
 | Estoque mínimo/máximo | `ProductStock` | 5/6 |
 | Alerta de estoque baixo | Derivado quando quantidade <= mínimo; central privada `/alerts`, respeitando RBAC e tenant | 6 |
 | Produtos com baixa saída | Relatório factual por período, métrica e limiar explicitamente informados; regra automática/padrão continua pendente | 6 |
-| Curva ABC | Distribuição factual por período explícito com ranking, participação e acumulado em `REVENUE` ou `SOLD_QUANTITY`; faixas A/B/C ainda pendentes | 6 |
+| Curva ABC | Ranking, participação e acumulado em `REVENUE` ou `SOLD_QUANTITY`, mais classes A/B/C somente quando o operador informa dois limites percentuais na própria consulta; política padrão ainda pendente | 6 |
 | Categorias por cliente | Compras pagas agregadas por categoria, quantidade, valor de itens e participação visível no perfil central `/clients` | 6/10 |
 | Desconto progressivo | Regra/fórmula pendente | 12 |
 | Auto-atacado em até 3 meses | Perfil comercial detecta recompra factual em até 3 meses-calendário sobre vendas `PAID`; efeito comercial ainda pendente | 12 |
