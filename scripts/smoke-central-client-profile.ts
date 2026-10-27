@@ -174,6 +174,8 @@ async function main() {
     assert.ok(!JSON.stringify(profile).includes("passwordHash"), "Perfil central não expõe credenciais");
     assert.ok(!JSON.stringify(profile).includes("passwordResetToken"), "Perfil central não expõe tokens");
     assert.equal(profile.client.responsibleSeller.id, sellerMembership.id);
+    assert.equal(Object.hasOwn(profile.client.responsibleSeller, "commissionPercent"), false,
+      "Perfil do cliente não pode expor a taxa de comissão do vínculo de vendedora.");
     assert.equal(profile.commercial.purchaseCount, 1);
     assert.equal(profile.commercial.predominantCategories.length, 1,
       "O perfil deve mostrar categorias predominantes calculadas de vendas pagas.");
