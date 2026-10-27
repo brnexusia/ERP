@@ -36,7 +36,7 @@ function clientInclude() {
     address: true,
     segment: true,
     responsibleSeller: { select: { id: true, userId: true, role: true, user: { select: { id: true, name: true } } } },
-    representative: true,
+    representative: { select: { id: true, name: true, whatsapp: true } },
   };
 }
 
