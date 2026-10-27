@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { redactCommercialRates } from "@/modules/sales/response-privacy";
 import { getSessionContext } from "@/lib/auth/session";
 import { saleCreateSchema } from "@/modules/sales/schema";
 import { createQuote, listSales } from "@/modules/sales/service";
@@ -9,7 +10,7 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
 
   try {
-    return NextResponse.json({ sales: await listSales(session) });
+    return NextResponse.json(redactCommercialRates(session.role, { sales: await listSales(session) }));
   } catch (error) {
     const response = saleErrorResponse(error);
     if (response) return response;
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    return NextResponse.json({ sale: await createQuote(session, parsed.data) }, { status: 201 });
+    return NextResponse.json(redactCommercialRates(session.role, { sale: await createQuote(session, parsed.data) }), { status: 201 });
   } catch (error) {
     const response = saleErrorResponse(error);
     if (response) return response;
