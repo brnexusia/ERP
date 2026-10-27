@@ -49,6 +49,7 @@ O ERP não transforma essas lacunas em regra de negócio por suposição.
 - `docs/DASHBOARD_PERIOD_FILTER.md` — seleção de período sem distorcer o estoque/inatividade atual;
 - `docs/RBAC_NAVIGATION_AUDIT.md` — alinhamento entre links de navegação e autorização nas páginas;
 - `docs/ABC_EXPLICIT_CLASSES.md` — classificação ABC por faixas escolhidas na consulta, sem política comercial automática;
+- `docs/SELLER_MEMBERSHIP_PRIVACY.md` — redução de exposição de taxas comerciais em vínculos de vendedoras;
 - `docs/SECURITY_PROJECTIONS_GATE.md` — política de projeção segura de usuários, auditoria e CI;
 - `docs/BROWSER_E2E_HOMOLOGATION.md` — navegação real em Chromium desktop/mobile, screenshots e limites da homologação;
 - `docs/HOMOLOGACAO_ERP_2026-10-26.md` — evidências da CI por etapa, lacunas de aceite e gate de liberação;
