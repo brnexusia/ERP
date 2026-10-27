@@ -52,7 +52,7 @@ A interface de cliente expõe segmentação, crédito, vale e CRM; `/clients/set
 
 O perfil central do cliente também mostra agora categorias compradas (quantidade/valor/participação em itens das vendas pagas) e formas de pagamento efetivas (resumo por método e histórico de lançamentos, status, vencimento, liquidação e vendedora), sem criar fórmula comercial adicional.
 
-A central operacional `/alerts` reúne a detecção in-app de clientes que alcançaram o prazo configurado e produtos com estoque baixo, com navegação diretamente ao cadastro/produto correspondente. Não há serviço externo de mensagens nem nova regra automática de negócio.
+A central operacional `/alerts` reúne a detecção in-app de clientes que alcançaram o prazo configurado e produtos com estoque baixo, com navegação diretamente ao cadastro/produto correspondente. Não há serviço externo de mensagens nem nova regra automática de negócio. O alerta do cliente e o perfil comercial agora compartilham a mesma contagem de dias desde a última compra paga ou desde o cadastro quando não há compras, evitando divergências entre as duas telas.
 
 **Pendente para ✅:** homologação visual final conforme Stitch completo e chamadas/sincronizações reais de VaxChat/VaxLab.
 
