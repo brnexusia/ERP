@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { redactCommercialRates } from "@/modules/sales/response-privacy";
 import { getSessionContext } from "@/lib/auth/session";
 import { PermissionDeniedError } from "@/lib/auth/permissions";
 import { ClientNotFoundError } from "@/modules/clients/service";
@@ -13,7 +14,7 @@ export async function GET(_request: Request, context: RouteContext) {
   const { id } = await context.params;
 
   try {
-    return NextResponse.json({ profile: await getClientCentralProfile(session, id) });
+    return NextResponse.json(redactCommercialRates(session.role, { profile: await getClientCentralProfile(session, id) }));
   } catch (error) {
     if (error instanceof PermissionDeniedError) {
       return NextResponse.json({ error: error.message }, { status: 403 });
