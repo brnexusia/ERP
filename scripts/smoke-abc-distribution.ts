@@ -209,6 +209,38 @@ async function main() {
     assert.ok(Number(revenueA.selectedMetric.sharePercent) > 0);
     assert.ok(Number(revenueA.selectedMetric.cumulativeSharePercent) > 0);
 
+    // Classes require operator-supplied boundaries, never silent defaults.
+    const explicitPath = reportPath("REVENUE", start, end) + "&classAUpToPercent=75&classBUpToPercent=90";
+    const classifiedResponse = await requestJson(explicitPath, cookie);
+    assert.equal(classifiedResponse.status, 200);
+    const classified = (await classifiedResponse.json()).report;
+    assert.equal(classified.classificationStatus, "EXPLICIT_THRESHOLDS");
+    assert.equal(classified.classificationSource, "EXPLICIT_REQUEST");
+    assert.deepEqual(classified.thresholds, { classAUpToPercent: 75, classBUpToPercent: 90 });
+    const classifiedA = classified.products.find((entry: { product: { id: string } }) => entry.product.id === productA);
+    const classifiedB = classified.products.find((entry: { product: { id: string } }) => entry.product.id === productB);
+    assert.equal(classifiedA.abcClass, "A", "75% acumulados até A devem ser classe A.");
+    assert.equal(classifiedB.abcClass, "C", "100% acumulados acima de B devem ser classe C.");
+    // Moving the A boundary must produce different results rather than relying
+    // on any global classification policy.
+    const alternative = await requestJson(
+      reportPath("REVENUE", start, end) + "&classAUpToPercent=70&classBUpToPercent=90",
+      cookie,
+    );
+    assert.equal(alternative.status, 200);
+    const alternativeRows = (await alternative.json()).report.products;
+    assert.equal(alternativeRows.find((entry: { product: { id: string } }) => entry.product.id === productA).abcClass, "B");
+    for (const suffix of [
+      "&classAUpToPercent=75",
+      "&classAUpToPercent=90&classBUpToPercent=75",
+      "&classAUpToPercent=0&classBUpToPercent=90",
+      "&classAUpToPercent=75&classBUpToPercent=100",
+      "&classAUpToPercent=abc&classBUpToPercent=90",
+    ]) {
+      const bad = await requestJson(reportPath("REVENUE", start, end) + suffix, cookie);
+      assert.equal(bad.status, 400, "Faixas ausentes, inválidas ou invertidas devem ser rejeitadas.");
+    }
+
     const quantityResponse = await requestJson(reportPath("SOLD_QUANTITY", start, end), cookie);
     assert.equal(quantityResponse.status, 200, `Distribuição por quantidade falhou: ${quantityResponse.status}`);
     const quantityReport = (await quantityResponse.json()).report;
@@ -259,7 +291,7 @@ async function main() {
 
     console.log("✓ distribuição factual por receita e quantidade vendida usa apenas vendas PAID");
     console.log("✓ ranking e participação acumulada respeitam período explícito");
-    console.log("✓ classes A/B/C permanecem pendentes sem faixas inventadas");
+    console.log("✓ classes A/B/C somente com faixas explícitas e validação de fronteiras; sem faixas continuam pendentes");
     console.log("✓ distribuição permanece isolada entre empresas");
   } finally {
     await db.session.deleteMany({ where: { userId: admin.id } });

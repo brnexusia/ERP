@@ -149,6 +149,7 @@ async function main() {
     });
     assert.equal(quoteResponse.status, 201, `Orçamento falhou: ${quoteResponse.status}`);
     const quote = (await quoteResponse.json()).sale;
+    assert.ok(!JSON.stringify(quote).includes("passwordHash"), "Venda não pode incluir hash de senha da vendedora.");
     saleId = quote.id;
     assert.equal(quote.stage, "QUOTE");
     assert.equal(quote.representativeId, representativeId);

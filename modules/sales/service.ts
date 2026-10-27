@@ -30,10 +30,10 @@ function saleInclude() {
     client: {
       include: {
         segment: true,
-        responsibleSeller: { include: { user: true } },
+        responsibleSeller: { include: { user: { select: { id: true, name: true } } } },
       },
     },
-    seller: { include: { user: true } },
+    seller: { include: { user: { select: { id: true, name: true } } } },
     representative: true,
     items: {
       include: {
@@ -82,7 +82,7 @@ async function getSellerMembership(
       role: "SELLER",
       user: { status: "ACTIVE" },
     },
-    include: { user: true },
+    include: { user: { select: { id: true, name: true, status: true } } },
   });
   if (!membership) {
     throw new SaleRuleError("Vendedora responsável inválida para esta empresa.");
@@ -97,7 +97,7 @@ async function getClientForSale(
 ) {
   const client = await tx.client.findFirst({
     where: { id: clientId, organizationId },
-    include: { responsibleSeller: { include: { user: true } } },
+    include: { responsibleSeller: { include: { user: { select: { id: true, name: true } } } } },
   });
   if (!client) throw new SaleNotFoundError("Cliente não encontrado.");
   return client;
@@ -177,7 +177,7 @@ export async function listSellers(context: ClientAccessContext) {
       role: "SELLER",
       user: { status: "ACTIVE" },
     },
-    include: { user: true },
+    include: { user: { select: { id: true, name: true, status: true } } },
     orderBy: { user: { name: "asc" } },
   });
   if (["OWNER", "ADMIN", "MANAGER", "FINANCE"].includes(context.role)) return sellers;
@@ -201,7 +201,7 @@ export async function assignResponsibleSeller(
       where: { id: client.id },
       data: { responsibleSellerMembershipId: input.membershipId },
       include: {
-        responsibleSeller: { include: { user: true } },
+        responsibleSeller: { include: { user: { select: { id: true, name: true } } } },
       },
     });
 

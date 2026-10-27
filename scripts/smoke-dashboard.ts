@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { db } from "../lib/db";
 
 const BASE_URL = process.env.APP_URL ?? "http://127.0.0.1:3000";
@@ -52,6 +53,7 @@ async function main() {
   const sellerEmail = `dashboard-seller-${suffix}@example.test`;
   const sellerPassword = `dashboard-${suffix}-password`;
   const adminCookie = await login(adminEmail, adminPassword);
+  const adminSessionHash = createHash("sha256").update(adminCookie.split("=", 2)[1]).digest("hex");
 
   let sellerUserId: string | null = null;
   let sellerMembershipId: string | null = null;
@@ -177,6 +179,50 @@ async function main() {
       "Produto em estoque baixo deve aparecer no dashboard.",
     );
     assert.equal(String(dashboard.finance.cashFlow.inflow), "50");
+    const startOfPastWindow = new Date(Date.now() - 3 * 86_400_000).toISOString();
+    const endOfPastWindow = new Date(Date.now() - 1 * 86_400_000).toISOString();
+    const pastRange = new URLSearchParams({ start: startOfPastWindow, end: endOfPastWindow });
+    const includedResponse = await requestJson("/api/dashboard?" + pastRange.toString(), adminCookie);
+    assert.equal(includedResponse.status, 200, "Filtro com venda real precisa retornar sucesso.");
+    const included = (await includedResponse.json()).dashboard;
+    assert.equal(String(included.commercial.revenue), "50",
+      "Filtro deve incluir a venda paga há dois dias.");
+    assert.equal(included.commercial.sales, 1);
+    assert.equal(String(included.finance.cashFlow.inflow), "0",
+      "Fluxo de caixa considera a liquidação efetiva; a venda paga há dois dias foi liquidada agora.");
+
+    const settlementWindow = new URLSearchParams({
+      start: new Date(Date.now() - 86_400_000).toISOString(),
+      end: new Date(Date.now() + 86_400_000).toISOString(),
+    });
+    const settlement = (await (await requestJson("/api/dashboard?" +
+      settlementWindow.toString(), adminCookie)).json()).dashboard;
+    assert.equal(settlement.commercial.sales, 0,
+      "A data da venda paga não deve ser trocada pela data de liquidação bancária.");
+    assert.equal(String(settlement.finance.cashFlow.inflow), "50",
+      "Entrada no caixa deve seguir a data efetiva de liquidação.");
+
+    const futureRange = new URLSearchParams({
+      start: new Date(Date.now() + 2 * 86_400_000).toISOString(),
+      end: new Date(Date.now() + 3 * 86_400_000).toISOString(),
+    });
+    const excludedResponse = await requestJson("/api/dashboard?" + futureRange.toString(), adminCookie);
+    assert.equal(excludedResponse.status, 200);
+    const excluded = (await excludedResponse.json()).dashboard;
+    assert.equal(excluded.commercial.sales, 0,
+      "Período sem vendas não pode exibir faturamento histórico.");
+    assert.equal(String(excluded.commercial.revenue), "0");
+    assert.equal(excluded.clients.topBuyers.length, 0);
+    assert.equal(excluded.inventory.lowStock.some((entry: { id: string }) => entry.id === productId), true,
+      "Estoque é um saldo atual e não deve variar com o período das vendas.");
+
+    const reversedRange = new URLSearchParams({
+      start: "2026-10-26T00:00:00.000-03:00",
+      end: "2026-10-20T23:59:59.999-03:00",
+    });
+    assert.equal((await requestJson("/api/dashboard?" + reversedRange.toString(), adminCookie)).status, 400,
+      "Intervalos invertidos precisam ser recusados.");
+
 
     const sellerCookie = await login(sellerEmail, sellerPassword);
     const sellerDashboardResponse = await requestJson("/api/dashboard", sellerCookie);
@@ -212,11 +258,13 @@ async function main() {
     assert.equal(String(isolated.finance.cashFlow.inflow), "0");
 
     console.log("✓ dashboard geral agrega dados comerciais, clientes, estoque e financeiro reais");
+    console.log("✓ filtros de período mostram apenas vendas pagas na janela; estoque permanece saldo atual");
     console.log("✓ dashboard respeita permissões e omite o financeiro da vendedora");
     console.log("✓ alertas de inatividade e estoque baixo reaproveitam regras já aprovadas");
     console.log("✓ dashboard permanece isolado entre empresas");
   } finally {
-    await db.session.deleteMany({ where: { userId: { in: [admin.id, ...(sellerUserId ? [sellerUserId] : [])] } } });
+    await db.session.deleteMany({ where: { tokenHash: adminSessionHash } });
+    if (sellerUserId) await db.session.deleteMany({ where: { userId: sellerUserId } });
     if (secondOrganizationId) await db.organization.deleteMany({ where: { id: secondOrganizationId } });
     if (saleId) await db.sale.deleteMany({ where: { id: saleId } });
     if (productId) await db.product.deleteMany({ where: { id: productId, organizationId: organization.id } });
