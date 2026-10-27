@@ -30,3 +30,9 @@ O teste elimina somente os próprios fixtures e sessões, não as configuraçõe
 Cada alerta aponta para a entidade exata, com `/clients?client=<id>` e `/products?product=<id>`, em vez de abrir apenas a lista geral. O servidor valida o identificador recebido e a API continua exigindo sessão, autorização e empresa ativa. Um identificador externo não concede acesso à outra organização.
 
 A suíte Playwright desktop/mobile valida os dois caminhos com dados criados e removidos dentro de testes descartáveis.
+
+## Consistência entre central e perfil do cliente (regressão 27/10/2026)
+
+Uma divergência foi corrigida para clientes sem compras pagas: a Central de Alertas já usava a data de cadastro, mas o perfil comercial retornava `daysWithoutPurchase=null` e `inactivityAlert=false`. Ambos agora calculam o prazo a partir da última compra paga ou, quando não há compra, da data do cadastro, por uma única função compartilhada (`modules/reports/inactivity.ts`). `lastPurchaseAt` continua `null` quando nunca houve compra; um período sem compras não é inventado. Sem prazo configurado no cliente ou na empresa, o status nunca gera alerta automático.
+
+Os testes `pnpm test:inactivity-dates` exercitam fronteiras, compra recente e ausência de configuração. O `smoke-alert-center` verifica a mesma classificação pela API de alertas e pela API do perfil comercial, inclusive após alteração do prazo.
