@@ -244,12 +244,20 @@ export async function setClientCreditLimit(
   });
 }
 
+// Manual balance changes are financial operations, not ordinary client edits.
+// Sales payments keep using their own atomic credit/vale ledger workflow.
+function requireFinancialMovementRole(context: ClientAccessContext) {
+  if (!["OWNER", "ADMIN", "MANAGER", "FINANCE"].includes(context.role)) {
+    throw new PermissionDeniedError("finance:write");
+  }
+}
+
 export async function addClientCreditMovement(
   context: ClientAccessContext,
   clientId: string,
   input: CreditMovementInput,
 ) {
-  assertAnyPermission(context.role, ["clients:write", "finance:write"]);
+  requireFinancialMovementRole(context);
   const delta = new Prisma.Decimal(input.amountDelta);
 
   return runSerializable(async (tx) => {
@@ -346,7 +354,7 @@ export async function addClientValeMovement(
   clientId: string,
   input: ValeMovementInput,
 ) {
-  assertAnyPermission(context.role, ["clients:write", "finance:write"]);
+  requireFinancialMovementRole(context);
   const delta = new Prisma.Decimal(input.amountDelta);
 
   return runSerializable(async (tx) => {
