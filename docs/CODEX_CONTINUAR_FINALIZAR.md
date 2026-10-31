@@ -1,0 +1,46 @@
+# PROMPT PRINCIPAL — CODEX | ERP PEDRO | CONTINUAR AS 4 ETAPAS ATÉ HOMOLOGAR
+Atualizado em 31/10/2026. **NÃO construir novo ERP, NÃO recriar o repositório e NÃO assumir acesso ao histórico do ChatGPT.**
+
+## Objetivo e fontes
+Assuma a responsabilidade pela continuidade do ERP web Pedro, idealizado inicialmente para a operação do cliente e preparado para evolução a produto comercial Vax + Arles. Repositório **oficial de código**: https://github.com/brnexusia/ERP (`main`). Não confundir com `ERP2` (cópia independente) nem com o projeto `CRM` de assessoria de atacado.
+
+Leia na ordem:
+- `docs/references/ERP_Pedro_Escopo_Oficial.texto.md`: transcrição do documento-fonte oficial `ERP_Pedro_Escopo_Oficial(1).pdf`, 11 páginas, consolidado em 15/09/2026. Texto já está no Git para não depender deste chat; imagens embutidas não estão nele.
+- `docs/references/README.md`, `docs/PROGRESS.md`, `docs/SCOPE_TRACEABILITY.md`, `docs/DECISIONS_REQUIRED.md`, `docs/ARCHITECTURE.md`, `docs/MODULE_1_CLOSEOUT.md`, `docs/MODULE2_INTEGRATION_ACCEPTANCE.md`, `docs/PRODUCTION_DEPLOYMENT.md`, `docs/PROVISIONING.md`, `README.md`; todos os demais `docs/*`, testes, migrations, CI e issues.
+- **Google Stitch é a referência visual oficial, obrigatória e superior a qualquer interpretação pessoal.** Localize pelo Google Drive plugin/links do projeto o PDF original, as telas e o design system Stitch aprovados: Dashboard Geral, Clientes & CRM e Produtos & Estoque, mais componentes, sidebar, tipografia, gráficos, tabelas, formulários e estados. Primeiro verifique a disponibilidade real das ferramentas do plugin; se faltar acesso, registre exatamente o bloqueio visual. Nunca declarar fidelidade sem comparação tela a tela.
+- Usar GitHub para inspecionar/editar código e histórico; Google Drive apenas como biblioteca de fontes. Não copiar arquivos brutos grandes ou pessoais para repositório público. Se o plugin existir mas não fornecer ferramentas funcionais na sessão Codex, registrar indisponibilidade; um plugin instalado não comprova acesso.
+
+## Escopo de produto obrigatório: quatro etapas de referência (30 dias cada / 120 dias como planejamento histórico, NÃO prazo estimado agora)
+### ETAPA 1 — Clientes, CRM e estrutura web
+Cadastro completo cliente pessoa/empresa (nome/razão, CPF/CNPJ, endereço, WhatsApp, e-mail), histórico de compras; crédito por cliente com limite, utilizado, disponível e histórico; vale/saldo/movimentos; grupos/segmentos; aviso de inatividade por X dias; CRM com atividades, relacionamento e follow-ups; perfil unificado do cliente; autenticação, usuários e papéis; integrações iniciais VaxChat e VaxLab.
+### ETAPA 2 — Comercial, vendedores, comissões, relatórios e entrega
+Análises de compradores novos/recorrentes, quem compra mais/reduziu/parou; carteira e responsável; perfil comercial para vendedora; jornada **orçamento → pedido → pagamento** preservando mesmo registro, cliente, vendedora, itens e histórico; Pix/cartão/boleto/cheque à vista/pré-datado; quantidades, valores e canais WhatsApp/site/loja física; performance, metas, comissões conforme regra aprovada, ticket médio com período/novos/antigos; suporte e SAC, pós-venda/reclamações; retirada/Correios/transportadora, rastreio, comprovantes; dashboards e relatórios.
+### ETAPA 3 — Produtos e estoque
+Produtos com nome, SKU, código de barras, marca, categoria/subcategoria, atributos, custo/venda, unidade, descrição, fotos e variações; estoque mínimo/máximo e alertas; catálogo automático com link; baixa saída, curva ABC, preferências de categorias por cliente; descontos progressivos conforme regra; auto-atacado/recompra até três meses; histórico das formas de pagamento.
+### ETAPA 4 — Integrações, promoções e financeiro
+GoPage, ShopVax, WhatsApp, gateways e e-commerce por adapters configuráveis; regras de promoções por categoria/produto/quantidade/valor; contas a receber/pagar, fluxo de caixa, conciliação bancária, relatórios; domínio próprio, VPS, backups/restauração, usuário por empresa e arquitetura pronta para comercialização futura com multi-tenant e provisionamento.
+
+## Arquitetura já existente — PRESERVAR
+Stack atual: Next.js 15, React 19, TypeScript, PostgreSQL, Prisma, Docker/Compose e pnpm. Tenant por `Organization`/`Membership`, RBAC com papéis OWNER/ADMIN/MANAGER/SELLER/FINANCE/SUPPORT/VIEWER, sessões, auditoria, armazenamento de arquivos privado/público, guards de isolamento no PostgreSQL, backup de banco e arquivos, restauração com checksum, saúde de banco/storage e scripts de teste. Nunca usar `organizationId` vindo do frontend como autorização; não enfraquecer tenant isolation nem transformar testes de smoke em mocks falsamente verdes.
+
+## Estado observado em 31/10/2026 — ponto de partida, sujeito a auditoria
+O último GitHub Actions `ERP CI` do `main` passou, mas a homologação completa não ocorreu. `docs/PROGRESS.md` descreve fundação fechada, gestão de clientes e crédito/vale/CRM em homologação; produtos/estoque, fluxo comercial, pagamentos/entrega e financeiro com bases funcionais; design, inteligência, comissões, relatórios, promoções, integrações, preparação comercial com pendências. Novos commits podem ter mudado o estado: conferir testes e arquivos reais antes de marcar um módulo como pronto.
+Bloqueios documentados:
+- Stitch completo ausente na evidência do repositório; UI provisória não equivale a aceite visual.
+- VaxChat/VaxLab, GoPage/ShopVax, WhatsApp, gateways e envio de rastreio: configuração não prova integração real; precisa contrato técnico, credenciais autorizadas e testes ponta a ponta.
+- Fórmula de comissão (base, reversões, momento), critérios ABC, baixa saída padrão, redução de compra automática, momento de reserva/baixa do estoque, descontos e promoções, efeito comercial de auto-atacado: **não inventar padrão de negócio**. Implementar matemática factual configurável já aprovada e registrar decisões pendentes para automação.
+- Ambiente de produção, DNS/TLS, domínio, política de assinatura/cobrança, backup offsite e processo comercial devem ser efetivamente verificados, não supostos.
+
+## Execução mandatória
+1. Faça inventário das ferramentas instaladas, confirme GitHub/Drive/Stitch e ambiente; leia escopo, matriz de rastreabilidade, docs de decisão e estado real do código/PRs/issues. Não pedir que se reconte a conversa.
+2. Monte matriz completa requisito por requisito: implementado e validado / parcial / não iniciado / dependência externa / exige decisão. Evidência = caminho do código + teste/resultado + tela quando aplicável. Não confundir `docs/PROGRESS.md` com prova.
+3. Reproduza ambiente e teste baseline conforme `package.json`: `pnpm db:generate`, `pnpm typecheck`, `pnpm build`, `pnpm test:foundation`, `pnpm test:module-1`, `pnpm test:smoke-client-management`, outros scripts pertinentes e CI. Respeite requisitos de PostgreSQL e migrations; não rodar `db:push` destrutivamente em produção.
+4. Conserte e complete os 4 módulos já presentes, evitando regressões: clientes, crédito/vale, CRM; fluxo orçamento→pedido→pagamento/estoque, suporte/entrega; dashboards/metas/comissões decididas; catálogo e financeiro; integrações e provisionamento. Escreva testes unitários, API e e2e para cenários felizes, limites, concorrência, duplicação, cross-tenant, autorização e reversões.
+5. Reproduza **exatamente** Stitch: shell, sidebar, layout, cores, fontes, espaçamento, responsividade, dashboards, produtos, clientes, formulários, estados de loading/empty/error e acessibilidade; novas telas reutilizam design system oficial. Compare capturas, registre evidência por tela. Não substituir Stitch por design inventado.
+6. Integrações por adapters, com segredos protegidos, retry/idempotência, logs, limites e contratos; quando sem credenciais, implementar modo de teste claro e documentar pendência sem declarar integração real.
+7. Segurança/qualidade: isolamento no servidor e banco, autorização por papel, documentos CPF/CNPJ e dados privados, uploads e comprovantes, auditoria, CSRF/origem, sessões, vazamento de segredos, reconciliação de valores, race conditions, recuperação de falhas, performance e multiempresa. Corrigir root cause.
+8. Atualizar migrações e docs com rastreabilidade; mudanças pequenas por commits/PRs; rever CI após cada conjunto. Nunca sobrescrever dados reais, restaurar backups, cobrar clientes, publicar produção ou mudar domínio sem autorização e rollback.
+9. Homologação final: executar jornadas reais em ambiente de teste, usuários distintos/duas empresas, negócio ponta a ponta, visual Stitch, backup+restore, HTTPS, healthcheck, logs, dados persistentes, validação externa quando disponível. Documentar SHA, comandos, logs, resultados, prints e pendências.
+10. Retornar um relatório objetivo: requisitos concluídos com evidência, scripts realmente executados, commits/PRs, pendências externas bloqueantes e motivos, riscos e como reproduzir. Evitar afirmações `100%` até reunir provas de todas as etapas.
+
+**Regra final:** este pedido é para **continuar e finalizar o sistema que já existe**, sem reiniciar. Execute e corrija tudo que puder com as ferramentas disponíveis; não se limite a descrever um plano. Nunca invente regra de negócio, aprovação, credenciais, integração externa ou homologação visual.
