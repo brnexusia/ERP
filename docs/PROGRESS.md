@@ -54,7 +54,7 @@ O perfil central do cliente também mostra agora categorias compradas (quantidad
 
 A central operacional `/alerts` reúne a detecção in-app de clientes que alcançaram o prazo configurado e produtos com estoque baixo, com navegação diretamente ao cadastro/produto correspondente. Não há serviço externo de mensagens nem nova regra automática de negócio. O alerta do cliente e o perfil comercial agora compartilham a mesma contagem de dias desde a última compra paga ou desde o cadastro quando não há compras, evitando divergências entre as duas telas.
 
-**Pendente para ✅:** homologação visual final conforme Stitch completo e chamadas/sincronizações reais de VaxChat/VaxLab.
+**Pendente para ✅:** homologação visual final conforme Stitch completo e chamadas/sincronizações reais de VaxChat/VaxLab. Movimentações manuais de crédito e vale exigem agora OWNER/ADMIN/MANAGER/FINANCE; vendedores e suporte continuam podendo operar o CRM, mas não alterar saldos manualmente.
 
 ## Gate da Etapa 1 — Gestão de Clientes 🔵
 
