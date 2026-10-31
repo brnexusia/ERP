@@ -77,6 +77,9 @@ jobs:
       - name: Verify inactivity date boundaries
         run: pnpm test:inactivity-dates
 
+      - name: Verify three-month repurchase calendar boundaries
+        run: pnpm test:repurchase-month-boundaries
+
       - name: Validate operational shell scripts
         shell: bash
         run: bash -n ops/*.sh
