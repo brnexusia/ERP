@@ -60,7 +60,8 @@
     "test:security-projections": "tsx scripts/verify-user-projections.ts",
     "test:inactivity-dates": "tsx scripts/verify-inactivity.ts",
     "test:smoke-commercial-rate-privacy": "tsx scripts/smoke-commercial-rate-privacy.ts",
-    "test:repurchase-month-boundaries": "tsx scripts/verify-repurchase-month-boundaries.ts"
+    "test:repurchase-month-boundaries": "tsx scripts/verify-repurchase-month-boundaries.ts",
+    "test:smoke-client-financial-rbac": "tsx scripts/smoke-client-financial-rbac.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
