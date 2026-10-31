@@ -202,7 +202,7 @@ export function ClientsWorkspace({ role, initialClientId }: { role: string; init
 
   const canWriteClients = ["OWNER", "ADMIN", "MANAGER", "SELLER", "SUPPORT"].includes(role);
   const canManageCreditLimit = ["OWNER", "ADMIN", "MANAGER"].includes(role);
-  const canMoveFinancial = canWriteClients || role === "FINANCE";
+  const canMoveFinancial = ["OWNER", "ADMIN", "MANAGER", "FINANCE"].includes(role);
 
   const loadSummary = useCallback(async () => {
     setLoading(true);
