@@ -47,7 +47,7 @@ O realizado usa somente vendas `PAID`. O ERP calcula realizado, percentual de at
 
 ## 6. Auto-atacado
 
-**Já existe:** histórico real de compras e datas por cliente, além do sinal factual de recompra em até três meses-calendário baseado somente em vendas `PAID`, com intervalos preservados.
+**Já existe:** histórico real de compras e datas por cliente, além do sinal factual de recompra em até três meses-calendário baseado somente em vendas `PAID`, com intervalos preservados. O limite dos três meses respeita o último dia válido do mês de destino (por exemplo, 31/08 → 30/11), sem avançar indevidamente para o mês seguinte.
 
 **Falta definir:** efeito comercial da classificação, eventual quantidade mínima de recompras, duração/expiração da condição e interação com preços, descontos e promoções.
 
