@@ -4,6 +4,7 @@ import { assertPermission } from "@/lib/auth/permissions";
 import type { ClientAccessContext } from "@/modules/clients/service";
 import type { ReportPeriod } from "@/modules/reports/schema";
 import { getClientInactivityState } from "@/modules/reports/inactivity";
+import { addUtcCalendarMonthsClamped } from "@/modules/reports/calendar-months";
 
 export class ReportNotFoundError extends Error {
   constructor(message: string) {
@@ -25,12 +26,6 @@ function decimalAverage(total: Prisma.Decimal, count: number) {
   return count === 0 ? new Prisma.Decimal(0) : total.div(count).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
 }
 
-function addUtcMonths(date: Date, months: number) {
-  const result = new Date(date.getTime());
-  result.setUTCMonth(result.getUTCMonth() + months);
-  return result;
-}
-
 function getRepurchaseWithinThreeMonthsSignal(paidPurchaseDates: Date[]) {
   const dates = [...paidPurchaseDates].sort((a, b) => a.getTime() - b.getTime());
   const intervals = [] as Array<{
@@ -48,7 +43,7 @@ function getRepurchaseWithinThreeMonthsSignal(paidPurchaseDates: Date[]) {
       previousPurchaseAt,
       repurchaseAt,
       daysBetween,
-      withinThreeMonths: repurchaseAt <= addUtcMonths(previousPurchaseAt, 3),
+      withinThreeMonths: repurchaseAt <= addUtcCalendarMonthsClamped(previousPurchaseAt, 3),
     });
   }
 
