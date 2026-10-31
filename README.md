@@ -48,6 +48,7 @@ O ERP não transforma essas lacunas em regra de negócio por suposição.
 - `docs/CLIENT_CATEGORY_INSIGHTS.md` — análise de categorias e histórico efetivo de pagamentos no perfil do cliente;
 - `docs/DASHBOARD_PERIOD_FILTER.md` — seleção de período sem distorcer o estoque/inatividade atual;
 - `docs/RBAC_NAVIGATION_AUDIT.md` — alinhamento entre links de navegação e autorização nas páginas;
+- `docs/FINANCIAL_MOVEMENTS_RBAC.md` — permissão mínima para alterações manuais de crédito e vale;
 - `docs/REPURCHASE_CALENDAR_BOUNDARIES.md` — datas-limite precisas da recompra factual em três meses-calendário;
 - `docs/ABC_EXPLICIT_CLASSES.md` — classificação ABC por faixas escolhidas na consulta, sem política comercial automática;
 - `docs/COMMERCIAL_RATE_API_PRIVACY.md` — confidencialidade de percentuais comerciais nas APIs, com smoke de perfis;
