@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { assertPermission } from "@/lib/auth/permissions";
 import type { ClientAccessContext } from "@/modules/clients/service";
 import type { ReportPeriod } from "@/modules/reports/schema";
+import { getClientInactivityState } from "@/modules/reports/inactivity";
+import { addUtcCalendarMonthsClamped } from "@/modules/reports/calendar-months";
 
 export class ReportNotFoundError extends Error {
   constructor(message: string) {
@@ -24,12 +26,6 @@ function decimalAverage(total: Prisma.Decimal, count: number) {
   return count === 0 ? new Prisma.Decimal(0) : total.div(count).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
 }
 
-function addUtcMonths(date: Date, months: number) {
-  const result = new Date(date.getTime());
-  result.setUTCMonth(result.getUTCMonth() + months);
-  return result;
-}
-
 function getRepurchaseWithinThreeMonthsSignal(paidPurchaseDates: Date[]) {
   const dates = [...paidPurchaseDates].sort((a, b) => a.getTime() - b.getTime());
   const intervals = [] as Array<{
@@ -47,7 +43,7 @@ function getRepurchaseWithinThreeMonthsSignal(paidPurchaseDates: Date[]) {
       previousPurchaseAt,
       repurchaseAt,
       daysBetween,
-      withinThreeMonths: repurchaseAt <= addUtcMonths(previousPurchaseAt, 3),
+      withinThreeMonths: repurchaseAt <= addUtcCalendarMonthsClamped(previousPurchaseAt, 3),
     });
   }
 
@@ -76,7 +72,7 @@ export async function getCommercialDashboard(context: ClientAccessContext, perio
     },
     include: {
       client: { select: { id: true, name: true } },
-      seller: { include: { user: true } },
+      seller: { select: { id: true, userId: true, role: true, user: { select: { id: true, name: true } } } },
     },
     orderBy: { paidAt: "asc" },
   });
@@ -189,7 +185,7 @@ export async function getClientCommercialProfile(context: ClientAccessContext, c
     include: {
       address: true,
       segment: true,
-      responsibleSeller: { include: { user: true } },
+      responsibleSeller: { select: { id: true, userId: true, role: true, user: { select: { id: true, name: true } } } },
       crmEntries: {
         include: { createdBy: { select: { id: true, name: true } } },
         orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }],
@@ -205,7 +201,7 @@ export async function getClientCommercialProfile(context: ClientAccessContext, c
       stage: "PAID",
     },
     include: {
-      seller: { include: { user: true } },
+      seller: { select: { id: true, userId: true, role: true, user: { select: { id: true, name: true } } } },
       items: {
         include: {
           product: {
@@ -262,16 +258,13 @@ export async function getClientCommercialProfile(context: ClientAccessContext, c
   const settings = await db.clientModuleSettings.findUnique({
     where: { organizationId: context.organizationId },
   });
-  const now = new Date();
-  const daysWithoutPurchase = lastPurchaseAt
-    ? Math.floor((now.getTime() - lastPurchaseAt.getTime()) / 86_400_000)
-    : null;
   const inactivityThreshold = client.inactivityDaysOverride ?? settings?.inactivityDays ?? null;
-  const inactivityAlert = Boolean(
-    inactivityThreshold &&
-      daysWithoutPurchase !== null &&
-      daysWithoutPurchase >= inactivityThreshold,
-  );
+  const { daysWithoutPurchase, inactivityAlert } = getClientInactivityState({
+    createdAt: client.createdAt,
+    lastPurchaseAt,
+    inactivityThreshold,
+    now: new Date(),
+  });
   const sellerServiceCounts = new Map<string, { name: string; count: number }>();
   const topProducts = new Map<string, { productId: string; name: string; quantity: Prisma.Decimal }>();
   for (const sale of purchases) {
@@ -331,7 +324,7 @@ export async function listInactivityAlerts(context: ClientAccessContext) {
     db.clientModuleSettings.findUnique({ where: { organizationId: context.organizationId } }),
     db.client.findMany({
       where: { organizationId: context.organizationId },
-      include: { segment: true, representative: true, responsibleSeller: { include: { user: true } } },
+      include: { segment: true, representative: { select: { id: true, name: true, whatsapp: true } }, responsibleSeller: { select: { id: true, userId: true, role: true, user: { select: { id: true, name: true } } } } },
     }),
     db.sale.groupBy({
       by: ["clientId"],
@@ -359,18 +352,20 @@ export async function listInactivityAlerts(context: ClientAccessContext) {
     select: { id: true, user: { select: { id: true, name: true } } },
   });
   const sellerNames = new Map(sellerRows.map((row) => [row.id, row.user]));
-  const now = Date.now();
+  const now = new Date();
 
   return {
     inactivityDays: settings?.inactivityDays ?? null,
     alerts: clients.flatMap((client) => {
       const threshold = client.inactivityDaysOverride ?? settings?.inactivityDays ?? null;
-      if (!threshold) return [];
       const lastPurchaseAt = lastPurchaseByClient.get(client.id) ?? null;
-      // Clients who never purchased use registration date; existing customers are preserved.
-      const anchor = lastPurchaseAt ?? client.createdAt;
-      const daysWithoutPurchase = Math.floor((now - anchor.getTime()) / 86_400_000);
-      if (daysWithoutPurchase < threshold) return [];
+      const { daysWithoutPurchase, inactivityAlert } = getClientInactivityState({
+        createdAt: client.createdAt,
+        lastPurchaseAt,
+        inactivityThreshold: threshold,
+        now,
+      });
+      if (!inactivityAlert) return [];
       const frequentSellerId = topSellerByClient.get(client.id)?.membershipId;
       const sellerToNotify = frequentSellerId
         ? sellerNames.get(frequentSellerId) ?? null

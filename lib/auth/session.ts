@@ -18,7 +18,7 @@ export async function createSession(userId: string, organizationId: string) {
       },
     },
     include: {
-      user: true,
+      user: { select: { id: true, status: true } },
       organization: true,
     },
   });
@@ -66,7 +66,7 @@ export async function getSessionContext() {
   const session = await db.session.findUnique({
     where: { tokenHash },
     include: {
-      user: true,
+      user: { select: { id: true, status: true, name: true, email: true } },
       activeOrganization: true,
     },
   });

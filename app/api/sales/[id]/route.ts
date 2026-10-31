@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { redactCommercialRates } from "@/modules/sales/response-privacy";
 import { getSessionContext } from "@/lib/auth/session";
 import { saleQuoteUpdateSchema } from "@/modules/sales/schema";
 import { getSale, updateQuote } from "@/modules/sales/service";
@@ -14,7 +15,7 @@ export async function GET(_request: Request, context: RouteContext) {
   try {
     const sale = await getSale(session, id);
     if (!sale) return NextResponse.json({ error: "Venda não encontrada." }, { status: 404 });
-    return NextResponse.json({ sale });
+    return NextResponse.json(redactCommercialRates(session.role, { sale }));
   } catch (error) {
     const response = saleErrorResponse(error);
     if (response) return response;
@@ -36,7 +37,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   try {
-    return NextResponse.json({ sale: await updateQuote(session, id, parsed.data) });
+    return NextResponse.json(redactCommercialRates(session.role, { sale: await updateQuote(session, id, parsed.data) }));
   } catch (error) {
     const response = saleErrorResponse(error);
     if (response) return response;
