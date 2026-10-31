@@ -22,7 +22,7 @@ Estados: ⬜ Não iniciado · 🟡 Em construção · 🟠 Funcional · 🔵 Em 
 | 12 | Promoções e catálogo | 🟡 Em construção |
 | 13 | Integrações | 🟡 Em construção |
 | 14 | Preparação como produto | 🟡 Em construção |
-| 15 | Homologação final | ⬜ Não iniciado |
+| 15 | Homologação final | 🔵 Em homologação |
 
 ## 1 — Fundação ✅
 
@@ -50,7 +50,11 @@ Linha de crédito com limite/utilizado/disponível/movimentos, vale com saldo/mo
 
 A interface de cliente expõe segmentação, crédito, vale e CRM; `/clients/settings` expõe configuração de inatividade, grupos e a prontidão de VaxChat/VaxLab.
 
-**Pendente para ✅:** homologação visual final conforme Stitch completo e chamadas/sincronizações reais de VaxChat/VaxLab.
+O perfil central do cliente também mostra agora categorias compradas (quantidade/valor/participação em itens das vendas pagas) e formas de pagamento efetivas (resumo por método e histórico de lançamentos, status, vencimento, liquidação e vendedora), sem criar fórmula comercial adicional.
+
+A central operacional `/alerts` reúne a detecção in-app de clientes que alcançaram o prazo configurado e produtos com estoque baixo, com navegação diretamente ao cadastro/produto correspondente. Não há serviço externo de mensagens nem nova regra automática de negócio. O alerta do cliente e o perfil comercial agora compartilham a mesma contagem de dias desde a última compra paga ou desde o cadastro quando não há compras, evitando divergências entre as duas telas.
+
+**Pendente para ✅:** homologação visual final conforme Stitch completo e chamadas/sincronizações reais de VaxChat/VaxLab. Movimentações manuais de crédito e vale exigem agora OWNER/ADMIN/MANAGER/FINANCE; vendedores e suporte continuam podendo operar o CRM, mas não alterar saldos manualmente.
 
 ## Gate da Etapa 1 — Gestão de Clientes 🔵
 
@@ -62,13 +66,17 @@ O fechamento controlado da primeira etapa está documentado em `docs/MODULE_1_CL
 
 Produto possui nome, SKU, código de barras, categoria/subcategoria, marca/fabricante, descrição, atributos, fotos/variação, custo, preço, unidade, estoque atual/mínimo/máximo, APIs tenant-scoped, auditoria e armazenamento real de imagens. O catálogo automático lê a mesma base de produtos.
 
-**Pendente para ✅:** Produtos & Estoque conforme Stitch.
+A página operacional `/products` já oferece catálogo de produtos, filtros, detalhes, cadastro/edição, subcategorias, controle manual de quantidade e imagens por variação, com edição protegida por `inventory:write`.
+
+**Pendente para ✅:** confronto visual tela a tela de Produtos & Estoque conforme Stitch completo.
 
 ## 6 — Estoque inteligente 🟡
 
 Já existem alerta de estoque baixo, mínimo/máximo, quantidade vendida, faturamento, vendas pagas, última venda, estoque e categorias predominantes por cliente. A base factual da Curva ABC calcula ranking, participação e participação acumulada por período explícito, usando `REVENUE` ou `SOLD_QUANTITY`. Produtos com baixa saída também podem ser identificados quando o usuário informa explicitamente período, métrica (`REVENUE`, `SOLD_QUANTITY` ou `PAID_SALES`) e limiar; nenhum valor padrão é presumido.
 
-**Aguardando regra objetiva:** regra automática/padrão de baixa saída, faixas A/B/C e momento da baixa/reserva física. A distribuição ABC não atribui classes enquanto as faixas não forem aprovadas.
+A página operacional `/products/intelligence` permite consultar métricas de vendas pagas, participação acumulada, baixa saída por limiar escolhido e classificação A/B/C opcional quando o operador informa explicitamente os limites cumulativos A e B da consulta. Não existe classificação padrão persistida ou automática.
+
+**Aguardando regra objetiva:** regra automática/padrão de baixa saída, faixas A/B/C oficiais por empresa, periodicidade e momento da baixa/reserva física. Sem limites informados pelo usuário, a distribuição ABC não atribui classes.
 
 ## 7 — Fluxo comercial 🟠
 
@@ -96,13 +104,17 @@ Já existem vendas/faturamento por período, ticket médio geral/novos/antigos, 
 
 O Dashboard Geral agrega comercial, clientes, inatividade, estoque baixo e financeiro e inclui metas por vendedora com identidade, alvo, realizado, percentual, atingimento e estado temporal. O filtro do dashboard seleciona metas por sobreposição de período sem alterar o período próprio de cálculo da meta. O dashboard é permission-aware e tenant-scoped.
 
+A interface do Dashboard Geral permite informar data inicial e final explicitamente, filtra indicadores comerciais/financeiros com as mesmas datas e exibe estado atual para estoque e inatividade. O modo sem filtro indica `Todo o histórico`, sem presumir janela-padrão comercial.
+
 **Pendente:** visual conforme Stitch, comissões após definição de regra e eventual regra automática/padrão de “reduziu compras”. A comparação explícita já funciona, mas o ERP não escolhe sozinho períodos, métrica ou limiar sem aprovação.
 
 ## 11 — Financeiro 🟠
 
 Contas a receber derivadas de pagamentos reais, contas a pagar, fluxo de caixa realizado, conciliação bancária manual e relatório consolidado estão funcionais. Conciliações também possuem guard cross-tenant no PostgreSQL.
 
-**Pendente para ✅:** interface final. Automação/importação bancária depende de provedor/contrato técnico.
+A página operacional `/finance` expõe contas a receber, contas a pagar, quitação, fluxo de caixa realizado, conciliação bancária manual e relatórios com período explícito, preservando auditoria e isolamento multiempresa.
+
+**Pendente para ✅:** homologação visual final. Automação/importação bancária depende de provedor/contrato técnico.
 
 ## 12 — Promoções e catálogo 🟡
 
@@ -110,11 +122,15 @@ Catálogo automático compartilhável por link, imagens públicas de produto, cu
 
 A base da regra de auto-atacado avançou sem inventar efeito comercial: o perfil comercial detecta factual e exclusivamente sobre vendas `PAID` se houve recompra em até três meses-calendário, preservando os intervalos entre compras. O ERP não aplica automaticamente preço, desconto ou mudança de segmento enquanto esse efeito não estiver definido.
 
-**Aguardando regra:** descontos progressivos, dúzia fechada, promoções, prioridade/empilhamento/vigência/arredondamento e efeito comercial final do auto-atacado. Falta também página visual pública segundo o design system aprovado.
+A tabela administrativa `/promotions` permite registrar rascunhos por produto, categoria e progressivas por valor/quantidade, auditados e isolados por empresa, sem alterar preços ou pedidos.
+
+**Aguardando regra:** descontos progressivos, dúzia fechada, promoções, prioridade/empilhamento/vigência/arredondamento e efeito comercial final do auto-atacado. O link de catálogo agora abre uma página HTML pública em `/catalog/[token]`, com preço de venda, imagens e disponibilidade factual, mantendo a API JSON. Sua aparência é operacional e depende de homologação visual segundo o Stitch aprovado.
 
 ## 13 — Integrações 🟡
 
 A camada tenant-scoped de configuração está preparada para VaxChat, VaxLab, GoPage, ShopVax, WhatsApp, gateway e e-commerce, com estado, referência de segredo, auditoria e isolamento.
+
+O painel operacional `/integrations` permite que OWNER/ADMIN cadastrem, editem e consultem provedores por empresa sem inserir nem exibir segredos. Habilitar um registro **não** equivale a conectar o provedor.
 
 Chamadas reais/webhooks/sincronizações dependem de documentação/API, URLs, autenticação, credenciais e contrato de eventos. Configuração cadastrada não significa integração conectada.
 
@@ -124,9 +140,15 @@ Multiempresa, gestão de usuários, proteção do último `OWNER`, provisionamen
 
 **Pendente:** VPS real, domínio/DNS/TLS, e-mail empresarial, política final offsite/retention, planos/cobrança/assinatura e provisionamento acionado por contratação.
 
-## 15 — Homologação final ⬜
+## 15 — Homologação final 🔵
 
-Só começa quando as dependências necessárias estiverem resolvidas. Deve cobrir E2E, permissões, isolamento, consistência, arquivos/recuperação, erros/duplicidades, segurança, performance, responsividade, comparação tela a tela com Stitch e integrações externas reais.
+A **homologação técnica automatizada começou**: CI executa migrações PostgreSQL, verificação de consistência multiempresa/RBAC, TypeScript, build, checks de Compose e scripts operacionais, recuperação real de banco e arquivos, teste do fluxo completo de venda/pagamento, clientes, produtos, relatórios, financeiro e smoke dos novos workspaces.
+
+A rodada de 26/10/2026 acrescentou filtros explícitos ao Dashboard Geral, comparando faturamento por data de venda com fluxo de caixa por data de liquidação, proteção SSR de páginas por função e rejeição/redação de segredos de integrações.
+
+A suíte de homologação automática também roda 4 testes Playwright em Chromium (desktop/mobile), exercitando login, intervalo do dashboard, navegação aos módulos e ausência de overflow horizontal. Capturas e traces são preservados como artifact temporário. Isso confirma funcionamento básico do viewport, **não** paridade visual com Stitch. Evidências e critérios de fechamento: `docs/HOMOLOGACAO_ERP_2026-10-26.md`.
+
+**Ainda não homologado para produção:** comparação visual tela a tela com o Stitch exportável, testes reais dos provedores, decisão sobre regras comerciais pendentes, aprovação do fluxo operacional com dados autorizados, teste de carga, ensaio de rollback e verificação da VPS/domínio definitivo. CI verde **não equivale** a homologação visual ou aceite comercial.
 
 ## Evidências recentes
 
