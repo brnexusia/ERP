@@ -62,6 +62,10 @@ O fechamento controlado da primeira etapa está documentado em `docs/MODULE_1_CL
 
 **Regra de ordem:** a Etapa 2 não deve ser tratada como novo foco de construção enquanto a Etapa 1 não tiver os bloqueios externos resolvidos. O código já existente de etapas posteriores é preservado, mas não justifica declarar a Etapa 1 como ✅ antes do Stitch completo e das integrações Vax reais.
 
+## Gate técnico da Etapa 2 — Vendas, Relatórios e Comissões
+
+O checklist de homologação com os **13 requisitos oficiais** e suas evidências está em `docs/MODULE_2_CLOSEOUT.md`. O comando `pnpm test:module-2` agrega os testes integrados de vendas, pagamentos, perfil do cliente, relatórios, metas, comissões, SAC e logística. A suíte Chromium (`pnpm test:browser`) agora exerce também `/sales`, `/reports`, `/commissions` e `/support` em desktop/mobile, com screenshots e verificação de responsividade. Esses gates comprovam comportamento técnico, **não** aprovação comercial ou paridade Stitch. Fechamento do Módulo 2 depende ainda de política de comissões validada, envio real de rastreio via provedores, aceite operacional e design.
+
 ## 5 — Produtos e estrutura de estoque 🟠
 
 Produto possui nome, SKU, código de barras, categoria/subcategoria, marca/fabricante, descrição, atributos, fotos/variação, custo, preço, unidade, estoque atual/mínimo/máximo, APIs tenant-scoped, auditoria e armazenamento real de imagens. O catálogo automático lê a mesma base de produtos.
