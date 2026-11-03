@@ -49,8 +49,8 @@ test("módulo 2: vendas, BI, comissões e SAC funcionam no navegador e em mobile
   await expect(page.getByRole("heading", { name: "Relatórios & BI", level: 1 })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Vendas por canal", level: 2 })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Desempenho por vendedora", level: 2 })).toBeVisible();
-  await page.getByLabel("Início").fill("2026-01-01");
-  await page.getByLabel("Fim").fill("2026-12-31");
+  await page.getByLabel("Início", { exact: true }).fill("2026-01-01");
+  await page.getByLabel("Fim", { exact: true }).fill("2026-12-31");
   await page.getByRole("button", { name: "Atualizar relatório" }).click();
   await expect(page.getByRole("heading", { name: "Ranking de compradores", level: 2 })).toBeVisible();
   await noViewportOverflow(page, "Relatórios e BI");
