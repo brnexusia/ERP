@@ -61,7 +61,8 @@
     "test:inactivity-dates": "tsx scripts/verify-inactivity.ts",
     "test:smoke-commercial-rate-privacy": "tsx scripts/smoke-commercial-rate-privacy.ts",
     "test:repurchase-month-boundaries": "tsx scripts/verify-repurchase-month-boundaries.ts",
-    "test:smoke-client-financial-rbac": "tsx scripts/smoke-client-financial-rbac.ts"
+    "test:smoke-client-financial-rbac": "tsx scripts/smoke-client-financial-rbac.ts",
+    "test:module-2": "tsx scripts/smoke-sales.ts && tsx scripts/smoke-sale-timeline.ts && tsx scripts/smoke-reports.ts && tsx scripts/smoke-client-ranking.ts && tsx scripts/smoke-client-classification.ts && tsx scripts/smoke-purchase-comparison.ts && tsx scripts/smoke-seller-profile.ts && tsx scripts/smoke-seller-goals.ts && tsx scripts/smoke-commissions.ts && tsx scripts/smoke-cheque-returns.ts && tsx scripts/smoke-support-delivery.ts && tsx scripts/smoke-support-workspace.ts && tsx scripts/smoke-delivery-media.ts && tsx scripts/smoke-dashboard-goals.ts && tsx scripts/smoke-central-client-profile.ts && tsx scripts/smoke-client-payment-history.ts && tsx scripts/smoke-commercial-rate-privacy.ts && tsx scripts/smoke-client-financial-rbac.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
