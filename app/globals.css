@@ -670,6 +670,22 @@ a {
   align-items: center;
   gap: 8px;
 }
+.dashboard-header-actions { flex-wrap: wrap; justify-content: flex-end; }
+.dashboard-period-form { display:flex; flex-wrap:wrap; align-items:flex-end; gap:8px; }
+.dashboard-period-form label { display:flex; flex-direction:column; gap:3px; color:var(--erp-muted); font-size:9px; font-weight:700; }
+.dashboard-period-form input { min-width:117px; min-height:31px; border:1px solid var(--erp-line-strong); border-radius:6px; padding:4px 8px; color:var(--erp-text); background:white; font-size:11px; }
+.dashboard-period-form input:focus-visible { outline:2px solid var(--erp-gold); outline-offset:1px; }
+.dashboard-period-form button { min-height:31px; }
+@media(max-width:850px) {
+  .dashboard-header-actions { width:100%; justify-content:flex-start; }
+  .dashboard-period-form { width:100%; }
+}
+@media(max-width:500px) {
+  .dashboard-period-form label { flex:1 1 125px; }
+  .dashboard-period-form input { width:100%; }
+  .dashboard-period-form button { flex:1; }
+}
+
 
 .stitch-period-pill {
   display: inline-flex;
@@ -3202,4 +3218,15 @@ a {
     grid-template-columns: 1fr;
   }
   .reports-period-form button, .reports-comparison-form button { width: 100%; }
+}
+
+/* Guard: later base dashboard rules must not override the responsive grid.
+ * Without this, Performance and Channels overlap on 390px mobile screens. */
+@media (max-width: 1180px) {
+  .dashboard-grid-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dashboard-grid-main > .erp-panel {
+    min-width: 0;
+  }
 }

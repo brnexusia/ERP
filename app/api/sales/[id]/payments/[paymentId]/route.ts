@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { redactCommercialRates } from "@/modules/sales/response-privacy";
 import { getSessionContext } from "@/lib/auth/session";
 import { salePaymentUpdateSchema } from "@/modules/sales/schema";
 import { updateSalePayment } from "@/modules/sales/service";
@@ -20,7 +21,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   try {
-    return NextResponse.json({ result: await updateSalePayment(session, id, paymentId, parsed.data) });
+    return NextResponse.json(redactCommercialRates(session.role, { result: await updateSalePayment(session, id, paymentId, parsed.data) }));
   } catch (error) {
     const response = saleErrorResponse(error);
     if (response) return response;

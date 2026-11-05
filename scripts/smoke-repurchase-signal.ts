@@ -42,12 +42,36 @@ async function main() {
     },
   });
 
+  const monthEndClient = await db.client.create({
+    data: {
+      organizationId: organization.id, responsibleSellerMembershipId: seller.id,
+      name: "Cliente Recompra Fim de Mês",
+      documentType: "CPF", document: `repurchase-monthend-${suffix}`,
+      whatsapp: `55713${String(suffix).slice(-8)}`,
+      email: `repurchase-monthend-${suffix}@example.test`,
+    },
+  });
+  const afterMonthEndClient = await db.client.create({
+    data: {
+      organizationId: organization.id, responsibleSellerMembershipId: seller.id,
+      name: "Cliente Recompra Após Fim de Mês",
+      documentType: "CPF", document: `repurchase-after-monthend-${suffix}`,
+      whatsapp: `55714${String(suffix).slice(-8)}`,
+      email: `repurchase-after-monthend-${suffix}@example.test`,
+    },
+  });
+
   const saleData = [
     [qualifyingClient.id, "2026-01-15T12:00:00.000Z", "100.00"],
     [qualifyingClient.id, "2026-03-15T12:00:00.000Z", "120.00"],
     [qualifyingClient.id, "2026-07-20T12:00:00.000Z", "90.00"],
     [nonQualifyingClient.id, "2026-01-01T12:00:00.000Z", "50.00"],
     [nonQualifyingClient.id, "2026-05-02T12:00:00.000Z", "60.00"],
+    // Aug 31 + 3 calendar months ends Nov 30 (not Dec 1).
+    [monthEndClient.id, "2025-08-31T12:00:00.000Z", "100.00"],
+    [monthEndClient.id, "2025-11-30T12:00:00.000Z", "100.00"],
+    [afterMonthEndClient.id, "2025-08-31T12:00:00.000Z", "100.00"],
+    [afterMonthEndClient.id, "2025-12-01T12:00:00.000Z", "100.00"],
   ] as const;
 
   const sales = [];
@@ -97,12 +121,22 @@ async function main() {
     assert.equal(outside.intervals.length, 1);
     assert.equal(outside.intervals[0].withinThreeMonths, false);
 
+    const monthEndProfile = await getClientCommercialProfile(context, monthEndClient.id);
+    assert.equal(monthEndProfile.commercial.repurchaseWithinThreeMonths.detected, true,
+      "Recompra em 30/11 deve estar dentro do período contado desde 31/08.");
+    assert.equal(monthEndProfile.commercial.repurchaseWithinThreeMonths.qualifyingRepurchases, 1);
+
+    const afterMonthEndProfile = await getClientCommercialProfile(context, afterMonthEndClient.id);
+    assert.equal(afterMonthEndProfile.commercial.repurchaseWithinThreeMonths.detected, false,
+      "Recompra em 01/12 não deve se beneficiar de overflow de meses após 31/08.");
+
+    console.log("✓ limites de recompra em fim de mês aplicados ao perfil comercial real");
     console.log("✓ recompra em até 3 meses é detectada somente a partir de compras pagas");
     console.log("✓ intervalos fora da janela não são classificados como recompra em até 3 meses");
     console.log("✓ sinal factual não inventa efeito comercial de atacado");
   } finally {
     await db.sale.deleteMany({ where: { id: { in: sales.map((sale) => sale.id) } } });
-    await db.client.deleteMany({ where: { id: { in: [qualifyingClient.id, nonQualifyingClient.id] } } });
+    await db.client.deleteMany({ where: { id: { in: [qualifyingClient.id, nonQualifyingClient.id, monthEndClient.id, afterMonthEndClient.id] } } });
     await db.membership.deleteMany({ where: { id: seller.id } });
     await db.user.deleteMany({ where: { id: sellerUser.id } });
     await db.$disconnect();

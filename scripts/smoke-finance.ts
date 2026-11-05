@@ -92,8 +92,11 @@ async function main() {
     const receivablesResponse = await requestJson("/api/finance/receivables", cookie);
     assert.equal(receivablesResponse.status, 200);
     const receivables = (await receivablesResponse.json()).receivables;
+    assert.ok(!JSON.stringify(receivables).includes("passwordHash"), "Financeiro não pode incluir hash de senha do vendedor.");
     const pendingReceivable = receivables.find((item: { id: string }) => item.id === salePayment.id);
     assert.ok(pendingReceivable, "Pagamento pendente deveria aparecer em contas a receber.");
+    assert.equal(Object.hasOwn(pendingReceivable.sale.seller, "commissionPercent"), false,
+      "Contas a receber não devem serializar a taxa de comissão do vínculo de vendedora.");
     assert.equal(pendingReceivable.status, "PENDING");
     assert.equal(Number(pendingReceivable.amount), 100);
 

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { db } from "../lib/db";
+import { hashPassword } from "../lib/auth/password";
 
 const BASE_URL = process.env.APP_URL ?? "http://127.0.0.1:3000";
 
@@ -47,6 +48,7 @@ async function main() {
   let categoryId: string | null = null;
   let subcategoryId: string | null = null;
   let secondOrganizationId: string | null = null;
+  let sellerUserId: string | null = null;
 
   try {
     const categoryResponse = await requestJson("/api/product-categories", cookie, {
@@ -110,7 +112,56 @@ async function main() {
     const lowStock = await requestJson("/api/inventory/low-stock", cookie);
     assert.equal(lowStock.status, 200);
     const lowStockBody = await lowStock.json();
-    assert.ok(lowStockBody.products.some((product: { id: string }) => product.id === productId));
+    const managerStockProduct = lowStockBody.products.find((product: { id: string }) => product.id === productId);
+    assert.ok(managerStockProduct);
+    assert.equal(managerStockProduct.costPrice, "10.5", "Gestão deve continuar enxergando custo.");
+
+    // Costs must be removed server-side for inventory readers with no management role.
+    // A seller has permission to read stock and products, never acquisition costs.
+    const sellerEmail = `erp-stock-seller-${Date.now()}@example.test`;
+    const sellerPassword = "erp-stock-seller-ci-2026";
+    const seller = await db.user.create({
+      data: {
+        name: "Vendedora Estoque CI",
+        email: sellerEmail,
+        passwordHash: await hashPassword(sellerPassword),
+        status: "ACTIVE",
+      },
+    });
+    sellerUserId = seller.id;
+    await db.membership.create({
+      data: { organizationId: organization.id, userId: seller.id, role: "SELLER" },
+    });
+
+    const sellerLogin = await fetch(`${BASE_URL}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: sellerEmail, password: sellerPassword }),
+      redirect: "manual",
+    });
+    assert.equal(sellerLogin.status, 200, "Login de vendedora deve funcionar.");
+    const sellerCookie = cookiePair(sellerLogin.headers.get("set-cookie"));
+    const sellerLowStockResponse = await requestJson("/api/inventory/low-stock", sellerCookie);
+    assert.equal(sellerLowStockResponse.status, 200);
+    const sellerLowStockBody = await sellerLowStockResponse.json();
+    const sellerLowStockProduct = sellerLowStockBody.products.find(
+      (product: { id: string }) => product.id === productId,
+    );
+    assert.ok(sellerLowStockProduct, "Vendedora precisa visualizar produtos com estoque baixo.");
+    assert.equal("costPrice" in sellerLowStockProduct, false,
+      "Consulta de estoque baixo não pode expor custo para vendedoras.");
+    assert.equal(sellerLowStockProduct.lowStock, true);
+    assert.ok(sellerLowStockProduct.stock, "Quantidade de estoque deve permanecer visível.");
+
+    const sellerProductsResponse = await requestJson("/api/products", sellerCookie);
+    assert.equal(sellerProductsResponse.status, 200);
+    const sellerProductsBody = await sellerProductsResponse.json();
+    const sellerCatalogProduct = sellerProductsBody.products.find(
+      (product: { id: string }) => product.id === productId,
+    );
+    assert.ok(sellerCatalogProduct);
+    assert.equal("costPrice" in sellerCatalogProduct, false,
+      "Listagem de produtos também não pode expor custo.");
 
     const stockUpdate = await requestJson(`/api/products/${productId}/stock`, cookie, {
       method: "PATCH",
@@ -149,15 +200,26 @@ async function main() {
 
     const crossTenantProduct = await requestJson(`/api/products/${productId}`, cookie);
     assert.equal(crossTenantProduct.status, 404, "Produto de outra empresa deveria retornar 404.");
+    const crossTenantLowStock = await requestJson("/api/inventory/low-stock", cookie);
+    assert.equal(crossTenantLowStock.status, 200);
+    assert.equal((await crossTenantLowStock.json()).products.some(
+      (product: { id: string }) => product.id === productId,
+    ), false, "Consulta de estoque baixo também deve respeitar o tenant.");
 
     console.log("✓ categoria e subcategoria validadas");
     console.log("✓ cadastro completo de produto, fotos e variação validado");
     console.log("✓ SKU único por empresa validado");
     console.log("✓ estoque mínimo/máximo e indicador de estoque baixo validados");
+    console.log("✓ preços de custo protegidos no endpoint de estoque baixo para vendedoras");
     console.log("✓ catálogo automático público sem preço de custo validado");
     console.log("✓ isolamento multiempresa de produto validado");
   } finally {
     await db.session.deleteMany({ where: { userId: user.id } });
+    if (sellerUserId) {
+      await db.session.deleteMany({ where: { userId: sellerUserId } });
+      await db.membership.deleteMany({ where: { userId: sellerUserId } });
+      await db.user.deleteMany({ where: { id: sellerUserId } });
+    }
     if (secondOrganizationId) {
       await db.organization.deleteMany({ where: { id: secondOrganizationId } });
     }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { redactCommercialRates } from "@/modules/sales/response-privacy";
 import { getSessionContext } from "@/lib/auth/session";
 import { salePaymentCreateSchema } from "@/modules/sales/schema";
 import { addSalePayment } from "@/modules/sales/service";
@@ -21,7 +22,7 @@ export async function POST(request: Request, context: RouteContext) {
 
   try {
     return NextResponse.json(
-      { result: await addSalePayment(session, id, parsed.data) },
+      redactCommercialRates(session.role, { result: await addSalePayment(session, id, parsed.data) }),
       { status: 201 },
     );
   } catch (error) {

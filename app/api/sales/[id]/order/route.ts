@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { redactCommercialRates } from "@/modules/sales/response-privacy";
 import { getSessionContext } from "@/lib/auth/session";
 import { confirmOrder } from "@/modules/sales/service";
 import { saleErrorResponse } from "@/modules/sales/http";
@@ -11,7 +12,7 @@ export async function POST(_request: Request, context: RouteContext) {
 
   const { id } = await context.params;
   try {
-    return NextResponse.json({ sale: await confirmOrder(session, id) });
+    return NextResponse.json(redactCommercialRates(session.role, { sale: await confirmOrder(session, id) }));
   } catch (error) {
     const response = saleErrorResponse(error);
     if (response) return response;

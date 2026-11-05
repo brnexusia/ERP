@@ -2,6 +2,7 @@ import { Prisma, type IntegrationStatus, type MembershipRole } from "@prisma/cli
 import { db } from "@/lib/db";
 import { assertPermission } from "@/lib/auth/permissions";
 import type { IntegrationConfigInput } from "@/modules/integrations/schema";
+import { redactUnsafeSettings } from "@/modules/integrations/settings-safety";
 
 export type IntegrationAccessContext = {
   organizationId: string;
@@ -16,10 +17,11 @@ export class IntegrationNotFoundError extends Error {
   }
 }
 
-function publicIntegration<T extends { secretRef: string | null }>(integration: T) {
-  const { secretRef, ...safe } = integration;
+function publicIntegration<T extends { secretRef: string | null; settings: Prisma.JsonValue | null }>(integration: T) {
+  const { secretRef, settings, ...safe } = integration;
   return {
     ...safe,
+    settings: redactUnsafeSettings(settings),
     secretConfigured: Boolean(secretRef),
   };
 }

@@ -35,7 +35,11 @@ export async function listRepresentatives(context: ClientAccessContext) {
   return db.representative.findMany({
     where: { organizationId: context.organizationId },
     orderBy: [{ name: "asc" }, { createdAt: "asc" }],
-    select: { id: true, name: true, whatsapp: true, commissionPercent: true },
+    select: {
+      id: true, name: true, whatsapp: true,
+      ...(["OWNER", "ADMIN", "MANAGER", "FINANCE"].includes(context.role)
+        ? { commissionPercent: true as const } : {}),
+    },
   });
 }
 

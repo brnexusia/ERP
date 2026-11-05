@@ -13,6 +13,8 @@ export async function GET(request: Request) {
     metric: url.searchParams.get("metric") ?? undefined,
     start: url.searchParams.get("start") ?? undefined,
     end: url.searchParams.get("end") ?? undefined,
+    classAUpToPercent: url.searchParams.get("classAUpToPercent") ?? undefined,
+    classBUpToPercent: url.searchParams.get("classBUpToPercent") ?? undefined,
   });
 
   if (!parsed.success) {

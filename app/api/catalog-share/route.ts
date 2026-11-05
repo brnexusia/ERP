@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   try {
     const share = await ensureCatalogShare(session);
     const origin = new URL(request.url).origin;
-    const url = `${origin}/api/catalog/${share.token}`;
+    const url = `${origin}/catalog/${share.token}`;
 
     return NextResponse.json({
       catalog: {

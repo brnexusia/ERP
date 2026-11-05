@@ -51,6 +51,8 @@ type CentralProfile = {
     inactivityAlert?: boolean;
     averageDaysBetweenPurchases?: number | null;
     mostFrequentSeller?: { name: string; paidSales: number } | null;
+    predominantCategories?: Array<{ categoryId: string; categoryName: string; quantity: string | number; revenue: string | number }>;
+    paymentMethods?: Array<{ method: string; uses: number; amount: string | number }>;
   };
   purchases?: Array<Record<string, unknown>>;
   financial?: {
@@ -64,9 +66,12 @@ type CentralProfile = {
       balance?: string | number;
       movements?: Array<Record<string, unknown>>;
     };
+    paymentHistory?: {
+      summary?: { records: number; paidRecords: number; pendingRecords: number; paidAmount: string | number; byMethod: Record<string, { records: number; paidRecords: number; pendingRecords: number; registeredAmount: string | number; paidAmount: string | number }> };
+      payments?: Array<{ id: string; method: string; status: string; amount: string | number; dueDate: string | null; settledAt: string | null; createdAt: string; sale?: { id: string; seller?: { user?: { name?: string } } } }>;
+    };
   };
   relationship?: Array<Record<string, unknown>>;
-  paymentHistory?: Array<Record<string, unknown>>;
   support?: Array<Record<string, unknown>>;
 };
 
@@ -176,13 +181,13 @@ function ClientLookupButton({ type, onError }: {
   </button>;
 }
 
-export function ClientsWorkspace({ role }: { role: string }) {
+export function ClientsWorkspace({ role, initialClientId }: { role: string; initialClientId?: string | null }) {
   const [clients, setClients] = useState<Client[]>([]);
   const [segments, setSegments] = useState<Segment[]>([]);
   const [representatives, setRepresentatives] = useState<Representative[]>([]);
   const [alerts, setAlerts] = useState<InactivityAlert[]>([]);
   const [inactivityDays, setInactivityDays] = useState<number | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(initialClientId ?? null);
   const [profile, setProfile] = useState<CentralProfile | null>(null);
   const [crm, setCrm] = useState<CrmEntry[]>([]);
   const [search, setSearch] = useState("");
@@ -197,7 +202,7 @@ export function ClientsWorkspace({ role }: { role: string }) {
 
   const canWriteClients = ["OWNER", "ADMIN", "MANAGER", "SELLER", "SUPPORT"].includes(role);
   const canManageCreditLimit = ["OWNER", "ADMIN", "MANAGER"].includes(role);
-  const canMoveFinancial = canWriteClients || role === "FINANCE";
+  const canMoveFinancial = ["OWNER", "ADMIN", "MANAGER", "FINANCE"].includes(role);
 
   const loadSummary = useCallback(async () => {
     setLoading(true);
@@ -347,6 +352,10 @@ export function ClientsWorkspace({ role }: { role: string }) {
     const vale = profile.financial?.vale;
     const selected = profile.client;
     const purchases = (profile.purchases ?? []).map(purchaseSummary);
+    const preferredCategories = profile.commercial?.predominantCategories ?? [];
+    const categoriesTotal = preferredCategories.reduce((sum, item) => sum + Number(item.revenue ?? 0), 0);
+    const paymentHistory = profile.financial?.paymentHistory;
+    const paymentLabels: Record<string, string> = { CARD: "Cartão", PIX: "Pix", BOLETO: "Boleto", CHEQUE: "Cheque", CASH: "Dinheiro", VALE: "Vale" };
 
     return (
       <div className="erp-page">
@@ -397,6 +406,66 @@ export function ClientsWorkspace({ role }: { role: string }) {
                 <strong>{money(vale?.balance)}</strong>
                 <small>Saldo atual</small>
               </article>
+            </section>
+
+            <div className="two-column-layout">
+              <section className="erp-panel">
+                <div className="panel-heading">
+                  <div><p className="erp-kicker">Inteligência comercial · Compras pagas</p><h2>Categorias predominantes</h2></div>
+                  <span className="status-chip">{preferredCategories.length} categoria(s)</span>
+                </div>
+                {preferredCategories.length ? <div className="client-table-wrap">
+                  <table className="client-table">
+                    <thead><tr><th>Categoria</th><th>Unidades</th><th>Valor dos itens</th><th>Participação</th></tr></thead>
+                    <tbody>{preferredCategories.map((item) => <tr key={item.categoryId}>
+                      <td><strong>{item.categoryName}</strong></td>
+                      <td>{String(item.quantity)}</td>
+                      <td>{money(item.revenue)}</td>
+                      <td>{categoriesTotal > 0
+                        ? `${((Number(item.revenue) / categoriesTotal) * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`
+                        : "—"}</td>
+                    </tr>)}</tbody>
+                  </table>
+                </div> : <p className="empty-state">Nenhuma categoria comprada em vendas pagas.</p>}
+              </section>
+
+              <section className="erp-panel">
+                <div className="panel-heading">
+                  <div><p className="erp-kicker">Histórico de pagamentos</p><h2>Formas utilizadas</h2></div>
+                  <span className="status-chip">{paymentHistory?.summary?.records ?? 0} lançamento(s)</span>
+                </div>
+                {paymentHistory?.summary?.records ? <div className="client-table-wrap">
+                  <table className="client-table">
+                    <thead><tr><th>Forma</th><th>Registros</th><th>Pagos</th><th>Pendentes</th><th>Total pago</th></tr></thead>
+                    <tbody>{Object.entries(paymentHistory.summary.byMethod ?? {})
+                      .filter(([, item]) => item.records > 0)
+                      .map(([method, item]) => <tr key={method}>
+                        <td>{paymentLabels[method] ?? method}</td>
+                        <td>{item.records}</td><td>{item.paidRecords}</td><td>{item.pendingRecords}</td>
+                        <td>{money(item.paidAmount)}</td>
+                      </tr>)}</tbody>
+                  </table>
+                </div> : <p className="empty-state">Nenhum pagamento registrado.</p>}
+              </section>
+            </div>
+
+            <section className="erp-panel" aria-label="Lançamentos de pagamento">
+              <div className="panel-heading">
+                <div><p className="erp-kicker">Financeiro · Histórico auditável</p><h2>Lançamentos de pagamento do cliente</h2></div>
+              </div>
+              {paymentHistory?.payments?.length ? <div className="client-table-wrap">
+                <table className="client-table"><thead><tr><th>Data</th><th>Forma</th><th>Valor</th><th>Situação</th><th>Vencimento</th><th>Liquidação</th><th>Vendedora</th></tr></thead>
+                  <tbody>{paymentHistory.payments.map((item) => <tr key={item.id}>
+                    <td>{date(item.createdAt)}</td><td>{paymentLabels[item.method] ?? item.method}</td>
+                    <td>{money(item.amount)}</td>
+                    <td><span className={item.status === "PAID" ? "status-chip success" : "status-chip warning"}>
+                      {item.status === "PAID" ? "Pago" : "Pendente"}
+                    </span></td>
+                    <td>{date(item.dueDate)}</td><td>{date(item.settledAt)}</td>
+                    <td>{item.sale?.seller?.user?.name ?? "—"}</td>
+                  </tr>)}</tbody>
+                </table>
+              </div> : <p className="empty-state">Nenhum lançamento de pagamento para este cliente.</p>}
             </section>
 
             <div className="two-column-layout">

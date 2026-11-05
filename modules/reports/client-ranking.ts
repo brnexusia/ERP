@@ -38,7 +38,7 @@ export async function getClientPurchaseRanking(context: ClientAccessContext, per
     },
     include: {
       segment: true,
-      responsibleSeller: { include: { user: true } },
+      responsibleSeller: { select: { id: true, userId: true, role: true, user: { select: { id: true, name: true } } } },
     },
   });
   const clientById = new Map(clients.map((client) => [client.id, client]));

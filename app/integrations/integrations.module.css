@@ -1,0 +1,12 @@
+.filters { margin-bottom: 16px; }
+.filters label, .form label { display: grid; gap: 6px; color: var(--erp-muted); font-weight: 700; font-size: 10px; }
+.filters input, .form input:not([type="checkbox"]), .form select { width: 100%; min-height: 38px; border: 1px solid var(--erp-line-strong); border-radius: 6px; color: var(--erp-text); background: #fff; padding: 7px 10px; font-size: 11px; }
+.filters input { max-width: 370px; }
+.form input:focus-visible, .form select:focus-visible,.filters input:focus-visible { outline: 2px solid var(--erp-gold); outline-offset: 1px; }
+.form { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+.check { grid-column: 1 / -1; display: flex!important; align-items: center; flex-direction: row; }
+.check input { width: 15px; height: 15px; accent-color: var(--erp-gold); }
+.actions { grid-column: 1 / -1; display: flex; gap: 9px; flex-wrap: wrap; justify-content: flex-end; }
+.help { color: var(--erp-muted); font-size: 10px; line-height: 1.6; margin: 16px 0 0; }
+@media (max-width: 800px) { .form { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 550px) { .form { grid-template-columns: 1fr; } .actions button { flex: 1; } }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { redactCommercialRates } from "@/modules/sales/response-privacy";
 import { getSessionContext } from "@/lib/auth/session";
 import { getClientPurchaseHistory } from "@/modules/sales/service";
 import { saleErrorResponse } from "@/modules/sales/http";
@@ -11,7 +12,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
   const { id } = await context.params;
   try {
-    return NextResponse.json({ purchases: await getClientPurchaseHistory(session, id) });
+    return NextResponse.json(redactCommercialRates(session.role, { purchases: await getClientPurchaseHistory(session, id) }));
   } catch (error) {
     const response = saleErrorResponse(error);
     if (response) return response;

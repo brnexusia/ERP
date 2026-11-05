@@ -1,0 +1,7 @@
+.form { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+.form label { display: grid; gap: 6px; min-width: 0; flex: 1 1 160px; color: var(--erp-muted); font-size: 10px; font-weight: 700; }
+.form input,.form select { min-height: 38px; width: 100%; padding: 8px 10px; border: 1px solid var(--erp-line-strong); border-radius: 6px; color: var(--erp-text); background: #fff; font-size: 11px; }
+.form input:focus-visible,.form select:focus-visible { outline: 2px solid var(--erp-gold); outline-offset: 1px; }
+.form button { min-height: 38px; white-space: nowrap; }
+.hint { margin: 0 0 15px; color: var(--erp-muted); font-size: 11px; line-height: 1.6; }
+@media (max-width: 560px) { .form label,.form button { flex: 1 1 100%; } }
