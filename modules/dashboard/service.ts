@@ -6,6 +6,7 @@ import { getClientPurchaseRanking } from "@/modules/reports/client-ranking";
 import { listLowStockProducts } from "@/modules/products/service";
 import { getFinancialReport } from "@/modules/finance/service";
 import { getSellerGoalsDashboard } from "@/modules/sellers/goal-service";
+import { isModuleReleased } from "@/lib/module-release";
 
 export type DashboardAccessContext = {
   organizationId: string;
@@ -19,8 +20,8 @@ export async function getGeneralDashboard(
 ) {
   const canReadSales = hasPermission(context.role, "sales:read");
   const canReadClients = hasPermission(context.role, "clients:read");
-  const canReadInventory = hasPermission(context.role, "inventory:read");
-  const canReadFinance = hasPermission(context.role, "finance:read");
+  const canReadInventory = isModuleReleased(3) && hasPermission(context.role, "inventory:read");
+  const canReadFinance = isModuleReleased(4) && hasPermission(context.role, "finance:read");
 
   const [commercial, sellerGoals, inactivity, clientRanking, lowStock, finance] = await Promise.all([
     canReadSales ? getCommercialDashboard(context, period) : Promise.resolve(null),

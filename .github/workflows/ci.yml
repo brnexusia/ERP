@@ -37,6 +37,8 @@ jobs:
       SEED_ADMIN_PASSWORD: ci-password-123
       SEED_ORG_NAME: Pedro CI
       SEED_ORG_SLUG: pedro-ci
+      ERP_ENABLE_MODULE_3: "true" # CI fully exercises unreleased implementation.
+      ERP_ENABLE_MODULE_4: "true" # Deployment defaults remain locked.
 
     steps:
       - name: Checkout
@@ -67,6 +69,9 @@ jobs:
 
       - name: Verify tenant isolation and permissions
         run: pnpm test:foundation
+
+      - name: Verify staged module release gates
+        run: pnpm test:module-release
 
       - name: Typecheck
         run: pnpm typecheck

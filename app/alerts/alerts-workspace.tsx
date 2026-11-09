@@ -58,7 +58,7 @@ export function AlertsWorkspace() {
       <div>
         <p className="erp-kicker">Operação · Atenção necessária</p>
         <h1>Central de alertas</h1>
-        <p>Clientes que atingiram os dias de inatividade configurados e produtos no estoque mínimo ou abaixo.</p>
+        <p>Acompanhe alertas operacionais dos módulos liberados.</p>
       </div>
       <button type="button" className="secondary-button" disabled={loading} onClick={() => void refresh()}>
         {loading ? "Consultando..." : "Atualizar alertas"}
@@ -74,12 +74,12 @@ export function AlertsWorkspace() {
       <div className={styles.metricRow} aria-label="Resumo de alertas">
         <div className={styles.metric}><span>Alertas em aberto</span><strong>{data.summary.total}</strong></div>
         <div className={styles.metric}><span>Clientes inativos</span><strong>{data.summary.inactiveClients}</strong></div>
-        <div className={styles.metric}><span>Produtos com estoque baixo</span><strong>{data.summary.lowStockProducts}</strong></div>
+        {data.permissions.inventory && <div className={styles.metric}><span>Produtos com estoque baixo</span><strong>{data.summary.lowStockProducts}</strong></div>}
       </div>
       <div className={styles.toolbar}>
         <label htmlFor="alerts-search">Buscar alerta</label>
         <input id="alerts-search" value={filter} onChange={(event) => setFilter(event.target.value)}
-          placeholder="Cliente, vendedora, produto ou SKU" />
+          placeholder={data?.permissions.inventory ? "Cliente, vendedora, produto ou SKU" : "Cliente ou vendedora"} />
       </div>
       {data.permissions.clients && <section className={styles.group} aria-label="Alertas de inatividade">
         <div className={styles.groupHeader}>

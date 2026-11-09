@@ -239,7 +239,7 @@ export function DashboardWorkspace({ userName }: { userName: string }) {
         <section className="erp-panel dashboard-loading">Carregando indicadores...</section>
       ) : (
         <>
-          <section className="dashboard-metrics" aria-busy={loading}>
+          <section className={`dashboard-metrics${!dashboard.inventory && !dashboard.finance ? " dashboard-metrics-early" : ""}`} aria-busy={loading}>
             <article className="stitch-metric-card">
               <div className="metric-card-head"><span>Faturamento</span><i>R$</i></div>
               <strong>{money(dashboard.commercial?.revenue)}</strong>
@@ -260,16 +260,16 @@ export function DashboardWorkspace({ userName }: { userName: string }) {
               <strong>{money(dashboard.commercial?.averageTicket)}</strong>
               <div className="metric-card-foot"><small>Por venda concluída</small><b>Média</b></div>
             </article>
-            <article className="stitch-metric-card">
+            {dashboard.inventory && <article className="stitch-metric-card">
               <div className="metric-card-head"><span>Estoque baixo</span><i>!</i></div>
-              <strong>{dashboard.inventory?.lowStockCount ?? 0}</strong>
+              <strong>{dashboard.inventory.lowStockCount ?? 0}</strong>
               <div className="metric-card-foot"><small>Estoque atual, independente do período</small><b>Atenção</b></div>
-            </article>
-            <article className="stitch-metric-card">
+            </article>}
+            {dashboard.finance && <article className="stitch-metric-card">
               <div className="metric-card-head"><span>Saldo realizado</span><i>↕</i></div>
-              <strong>{money(dashboard.finance?.cashFlow?.net)}</strong>
+              <strong>{money(dashboard.finance.cashFlow?.net)}</strong>
               <div className="metric-card-foot"><small>Entradas menos saídas no período</small><b>Caixa</b></div>
-            </article>
+            </article>}
           </section>
 
           <section className="dashboard-grid dashboard-grid-main">
@@ -415,13 +415,14 @@ export function DashboardWorkspace({ userName }: { userName: string }) {
                 </div>
               </div>
               <div className="attention-list">
-                <div><span>!</span><p><strong>Estoque baixo</strong><small>{dashboard.inventory?.lowStockCount ?? 0} produto(s) abaixo do mínimo.</small></p></div>
-                <div><span>R$</span><p><strong>Contas a receber</strong><small>{money(dashboard.finance?.accountsReceivable?.pendingAmount)} em aberto.</small></p></div>
+                {dashboard.inventory && <div><span>!</span><p><strong>Estoque baixo</strong><small>{dashboard.inventory.lowStockCount ?? 0} produto(s) abaixo do mínimo.</small></p></div>}
+                {dashboard.finance && <div><span>R$</span><p><strong>Contas a receber</strong><small>{money(dashboard.finance.accountsReceivable?.pendingAmount)} em aberto.</small></p></div>}
                 <div><span>↻</span><p><strong>Clientes inativos</strong><small>{inactivity.length} cliente(s) aguardando ação comercial.</small></p></div>
               </div>
             </article>
           </section>
 
+          {dashboard.inventory && (
           <section className="erp-panel stitch-panel">
             <div className="panel-heading">
               <div>
@@ -451,6 +452,7 @@ export function DashboardWorkspace({ userName }: { userName: string }) {
               </div>
             )}
           </section>
+          )}
         </>
       )}
     </div>
