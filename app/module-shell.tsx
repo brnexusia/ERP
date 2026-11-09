@@ -80,7 +80,7 @@ export function ModuleShell({
           </div>
         </div>
 
-        <nav className="erp-nav" aria-label="Navegação principal">
+        <nav className="erp-nav" aria-label="Navegação principal" tabIndex={0}>
           <p className="erp-nav-section">Principal</p>
           <Link className={active === "dashboard" ? "active" : ""} href="/">
             <NavIcon kind="dashboard" />
