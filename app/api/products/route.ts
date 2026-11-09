@@ -3,13 +3,19 @@ import { getSessionContext } from "@/lib/auth/session";
 import { productCreateSchema } from "@/modules/products/schema";
 import { createProduct, listProducts } from "@/modules/products/service";
 import { productErrorResponse } from "@/modules/products/http";
+import { isModuleReleased } from "@/lib/module-release";
 
 export async function GET() {
   const session = await getSessionContext();
   if (!session) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
 
   try {
-    return NextResponse.json({ products: await listProducts(session) });
+    const products = await listProducts(session);
+    if (isModuleReleased(3)) return NextResponse.json({ products });
+    // The commercial quote requires a price lookup, not stock/cost or product administration.
+    return NextResponse.json({
+      products: products.map(({ id, name, sku, salePrice }) => ({ id, name, sku, salePrice })),
+    });
   } catch (error) {
     const response = productErrorResponse(error);
     if (response) return response;

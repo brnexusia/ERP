@@ -174,3 +174,8 @@ A matriz requisito oficial → implementação → progresso está em `docs/SCOP
 Permanecem sem implementação automática final até aprovação objetiva: regra padrão de “reduziu compras”, regra padrão de baixa saída, faixas/classificação final da Curva ABC, comissões, efeito comercial do auto-atacado, baixa/reserva de estoque, promoções/descontos progressivos e integrações externas cujo contrato técnico ainda não foi fornecido. A comparação factual de compras já pode ser executada com períodos e métrica escolhidos explicitamente.
 
 Metas não estão mais nessa lista: a empresa escolhe por meta uma métrica suportada pela fonte e informa explicitamente o período, sem recorrência presumida. A janela factual de recompra do auto-atacado também já é detectada; somente seu efeito comercial permanece pendente.
+
+
+## Liberação operacional controlada — 09/11/2026
+
+A liberação visível é restrita aos Módulos 1 e 2. Módulos 3 (Produtos/Estoque) e 4 (Financeiro/Integrações/Promoções) permanecem construídos parcialmente, porém bloqueados no menu, páginas e APIs por padrão. Dependências estritamente necessárias ao orçamento, à cobrança comercial e ao status VaxChat/VaxLab do Módulo 1 foram preservadas, sem liberar gestão dos módulos 3/4. As flags do servidor `ERP_ENABLE_MODULE_3` e `ERP_ENABLE_MODULE_4` são `false` por padrão. Detalhes, exceções e testes: `docs/MODULE_RELEASE_GATES.md`. Esta alteração **não** equivale a homologação final, publicação no EasyPanel ou remoção dos dados existentes.

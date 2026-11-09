@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import type { MembershipRole } from "@prisma/client";
 import { hasPermission } from "@/lib/auth/permissions";
 import { LogoutButton } from "@/app/logout-button";
+import { isModuleReleased } from "@/lib/module-release";
 
 type ModuleShellProps = {
   children: ReactNode;
@@ -92,10 +93,14 @@ export function ModuleShell({
 
           <p className="erp-nav-section">Operação</p>
           <Link className={active === "sales" ? "active" : ""} href="/sales"><NavIcon kind="sales" /><span>Vendas & Pedidos</span><b>02</b></Link>
-          {hasPermission(role, "inventory:read") && (
+          {hasPermission(role, "inventory:read") && (isModuleReleased(3) ? (
             <Link className={active === "products" ? "active" : ""} href="/products"><NavIcon kind="inventory" /><span>Produtos & Estoque</span><b>03</b></Link>
-          )}
-          <Link className={active === "alerts" ? "active" : ""} href="/alerts"><NavIcon kind="support" /><span>Central de alertas</span><b>01/03</b></Link>
+          ) : (
+            <span className="erp-nav-disabled" aria-disabled="true" title="Módulo 3 bloqueado até liberação">
+              <NavIcon kind="inventory" /><span>Produtos & Estoque</span><b>🔒 03</b>
+            </span>
+          ))}
+          <Link className={active === "alerts" ? "active" : ""} href="/alerts"><NavIcon kind="support" /><span>Central de alertas</span><b>{isModuleReleased(3) ? "01/03" : "01"}</b></Link>
           {hasPermission(role, "reports:read") && hasPermission(role, "sales:read") && hasPermission(role, "clients:read") && (
             <Link className={active === "reports" ? "active" : ""} href="/reports">
               <NavIcon kind="reports" /><span>Relatórios & BI</span><b>02</b>
@@ -114,15 +119,27 @@ export function ModuleShell({
           <Link className={active === "support" ? "active" : ""} href="/support"><NavIcon kind="support" /><span>Atendimento & SAC</span><b>02</b></Link>
 
           <p className="erp-nav-section">Administração</p>
-          {hasPermission(role, "finance:read") && (
+          {hasPermission(role, "finance:read") && (isModuleReleased(4) ? (
             <Link className={active === "finance" ? "active" : ""} href="/finance"><NavIcon kind="finance" /><span>Financeiro</span><b>04</b></Link>
-          )}
-          {hasPermission(role, "integrations:manage") && (
+          ) : (
+            <span className="erp-nav-disabled" aria-disabled="true" title="Módulo 4 bloqueado até liberação">
+              <NavIcon kind="finance" /><span>Financeiro</span><b>🔒 04</b>
+            </span>
+          ))}
+          {hasPermission(role, "integrations:manage") && (isModuleReleased(4) ? (
             <Link className={active === "integrations" ? "active" : ""} href="/integrations"><NavIcon kind="integrations" /><span>Integrações</span><b>04</b></Link>
-          )}
-          {hasPermission(role, "organization:manage") && (
+          ) : (
+            <span className="erp-nav-disabled" aria-disabled="true" title="Módulo 4 bloqueado até liberação">
+              <NavIcon kind="integrations" /><span>Integrações</span><b>🔒 04</b>
+            </span>
+          ))}
+          {hasPermission(role, "organization:manage") && (isModuleReleased(4) ? (
             <Link className={active === "promotions" ? "active" : ""} href="/promotions"><NavIcon kind="sales" /><span>Promoções · rascunhos</span><b>04</b></Link>
-          )}
+          ) : (
+            <span className="erp-nav-disabled" aria-disabled="true" title="Módulo 4 bloqueado até liberação">
+              <NavIcon kind="sales" /><span>Promoções</span><b>🔒 04</b>
+            </span>
+          ))}
           <Link className={active === "settings" ? "active" : ""} href="/clients/settings">
             <NavIcon kind="settings" />
             <span>Configurações</span>

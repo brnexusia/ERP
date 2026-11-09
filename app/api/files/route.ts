@@ -3,6 +3,7 @@ import { getSessionContext } from "@/lib/auth/session";
 import { fileUploadMetadataSchema } from "@/modules/storage/schema";
 import { storeFile } from "@/modules/storage/service";
 import { fileStorageErrorResponse } from "@/modules/storage/http";
+import { isModuleReleased } from "@/lib/module-release";
 
 export const runtime = "nodejs";
 
@@ -31,6 +32,10 @@ export async function POST(request: Request) {
       { error: "Metadados do arquivo inválidos.", details: parsed.error.flatten() },
       { status: 400 },
     );
+  }
+
+  if (parsed.data.purpose === "PRODUCT_IMAGE" && !isModuleReleased(3)) {
+    return NextResponse.json({ error: "Módulo 3 bloqueado." }, { status: 403 });
   }
 
   try {

@@ -2,6 +2,7 @@ import type { MembershipRole } from "@prisma/client";
 import { PermissionDeniedError, hasPermission } from "@/lib/auth/permissions";
 import { listInactivityAlerts } from "@/modules/reports/service";
 import { listLowStockProducts } from "@/modules/products/service";
+import { isModuleReleased } from "@/lib/module-release";
 
 export type AlertAccessContext = {
   organizationId: string;
@@ -17,7 +18,7 @@ export type AlertAccessContext = {
 export async function getOperationalAlerts(context: AlertAccessContext) {
   const clientsAllowed = hasPermission(context.role, "clients:read") &&
     hasPermission(context.role, "sales:read");
-  const inventoryAllowed = hasPermission(context.role, "inventory:read");
+  const inventoryAllowed = isModuleReleased(3) && hasPermission(context.role, "inventory:read");
   if (!clientsAllowed && !inventoryAllowed) {
     throw new PermissionDeniedError(["clients:read", "inventory:read"]);
   }

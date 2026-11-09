@@ -3230,3 +3230,12 @@ a {
     min-width: 0;
   }
 }
+
+/* Release: modules 3 and 4 hidden from the dashboard until enabled. */
+@media (min-width: 1181px) {
+  .dashboard-metrics.dashboard-metrics-early {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.erp-nav-disabled[aria-disabled="true"] { user-select: none; opacity: 0.7; }
+.erp-nav-disabled[aria-disabled="true"] b { min-width: 37px; }

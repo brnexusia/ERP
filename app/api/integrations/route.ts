@@ -3,13 +3,18 @@ import { getSessionContext } from "@/lib/auth/session";
 import { integrationConfigSchema } from "@/modules/integrations/schema";
 import { integrationErrorResponse } from "@/modules/integrations/http";
 import { listIntegrations, upsertIntegration } from "@/modules/integrations/service";
+import { isModuleReleased } from "@/lib/module-release";
 
 export async function GET() {
   const session = await getSessionContext();
   if (!session) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
 
   try {
-    return NextResponse.json({ integrations: await listIntegrations(session) });
+    const integrations = await listIntegrations(session);
+    return NextResponse.json({
+      integrations: isModuleReleased(4) ? integrations
+        : integrations.filter(({ provider }) => provider === "VAXCHAT" || provider === "VAXLAB"),
+    });
   } catch (error) {
     const response = integrationErrorResponse(error);
     if (response) return response;
